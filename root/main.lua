@@ -4,13 +4,15 @@ Lg.setDefaultFilter("nearest")
 local Game = require("game")
 local Input = require("input")
 
-DISPLAY_WIDTH = 240
-DISPLAY_HEIGHT = 180
 MOUSE_X = 0
 MOUSE_Y = 0
-local display_canvas = Lg.newCanvas(DISPLAY_WIDTH, DISPLAY_HEIGHT)
+local display_canvas = Lg.newCanvas(DISPLAY_WIDTH, DISPLAY_HEIGHT, { dpiscale = 1.0 })
 
-local font = Lg.newFont("res/fonts/ProggyClean.ttf", 16)
+local display_ox = 0.0
+local display_oy = 0.0
+local display_scale = 1.0
+
+local font = Lg.newFont("res/fonts/ProggyClean.ttf", 16, "none", 1.0)
 
 love.audio.newSource("res/safety.xm", "stream"):play()
 local game = Game()
@@ -41,12 +43,25 @@ function love.visible(visible)
     end
 end
 
+local function update_display_fit()
+    display_scale = math.min(Lg.getHeight() / DISPLAY_HEIGHT, Lg.getWidth() / DISPLAY_WIDTH)
+    display_scale = math.max(1, display_scale)
+    -- display_scale = math.floor(display_scale)
+    display_ox = (Lg.getWidth() - DISPLAY_WIDTH * display_scale) / 2
+    display_oy = (Lg.getHeight() - DISPLAY_HEIGHT * display_scale) / 2
+    display_ox = math.floor(display_ox)
+    display_oy = math.floor(display_oy)
+    -- print(display_ox, display_oy, display_scale)
+end
+
 function love.update(dt)
     batteries.manual_gc(3e-3)
-    Input.update()
 
-    MOUSE_X = love.mouse.getX() / Lg.getWidth() * DISPLAY_WIDTH
-    MOUSE_Y = love.mouse.getY() / Lg.getHeight() * DISPLAY_HEIGHT
+    update_display_fit()
+    MOUSE_X = (love.mouse.getX() - display_ox) / display_scale
+    MOUSE_Y = (love.mouse.getY() - display_oy) / display_scale
+    
+    Input.update()
 
     game:update(dt)
 
@@ -56,7 +71,7 @@ end
 
 function love.draw()
     Lg.setCanvas(display_canvas)
-    Lg.clear()
+    Lg.clear(Lg.getBackgroundColor())
     Lg.setFont(font)
 
     game:draw()
@@ -64,11 +79,10 @@ function love.draw()
     Lg.print(("%.1f Kb"):format(collectgarbage("count")), 10, 10)
 
     Lg.setCanvas()
+    Lg.clear(0, 0, 0, 1)
 
     Lg.origin()
-    Lg.draw(display_canvas, 0, 0, 0,
-            Lg.getWidth() / display_canvas:getWidth(),
-            Lg.getHeight() / display_canvas:getHeight())
+    Lg.draw(display_canvas, display_ox, display_oy, 0, display_scale, display_scale)
 end
 
 function love.run()
