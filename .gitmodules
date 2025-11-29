@@ -1,0 +1,3 @@
+[submodule "root/concord"]
+	path = root/concord
+	url = https://github.com/Keyslam-Group/Concord.git

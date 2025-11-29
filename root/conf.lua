@@ -1,3 +1,5 @@
+print("Lua version:", _VERSION)
+
 -- this is to make a lua debugger extension work
 if os.getenv("LOCAL_LUA_DEBUGGER_VSCODE") == "1" then
     require("lldebugger").start()
@@ -24,4 +26,5 @@ function love.conf(t)
     t.window.resizable = false
     t.window.width = 960
     t.window.height = 720
+    t.window.vsync = 1
 end

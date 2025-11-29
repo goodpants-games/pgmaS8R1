@@ -40,3 +40,4 @@ end
 
 
 require("batteries"):export()
+Lg = love.graphics

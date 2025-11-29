@@ -1,10 +1,34 @@
 require("envsetup")
+Lg.setDefaultFilter("nearest")
 
-local Point = require("game.testclass")
-local p = Point(50, 50)
+local Game = require("game")
+local Input = require("input")
 
-local music = love.audio.newSource("res/safety.xm", "stream")
-music:play()
+DISPLAY_WIDTH = 240
+DISPLAY_HEIGHT = 180
+MOUSE_X = 0
+MOUSE_Y = 0
+local display_canvas = Lg.newCanvas(DISPLAY_WIDTH, DISPLAY_HEIGHT)
+
+local font = Lg.newFont("res/fonts/ProggyClean.ttf", 16)
+
+love.audio.newSource("res/safety.xm", "stream"):play()
+local game = Game()
+local playerEnt
+
+function love.load()
+    local ent = game:newEntity()
+        :give("position", 100, 100)
+        :give("rotation", 0)
+        :give("sprite", Lg.newImage("res/swatPixelart.png"))
+
+    ent.sprite.sx = 1
+    ent.sprite.sy = 1
+
+    playerEnt = ent
+
+    Lg.setBackgroundColor(0.5, 0.5, 0.5)
+end
 
 local _paused_sources
 function love.visible(visible)
@@ -19,22 +43,32 @@ end
 
 function love.update(dt)
     batteries.manual_gc(3e-3)
+    Input.update()
 
-    p.x = love.mouse.getX()
-    p.y = love.mouse.getY()
+    MOUSE_X = love.mouse.getX() / Lg.getWidth() * DISPLAY_WIDTH
+    MOUSE_Y = love.mouse.getY() / Lg.getHeight() * DISPLAY_HEIGHT
+
+    game:update(dt)
+
+    playerEnt.position.x = MOUSE_X
+    playerEnt.position.y = MOUSE_Y
 end
 
 function love.draw()
-    local t = {"foo", "bar", "baz", "world!"}
-    local f = table.index_of(t, "world!")
+    Lg.setCanvas(display_canvas)
+    Lg.clear()
+    Lg.setFont(font)
 
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.print(("Hello, %s (%i)"):format(t[f], f), 10, 10)
-    love.graphics.print(("%.1f Kb"):format(collectgarbage("count")), 10, 20)
-    love.graphics.print(("%.3f"):format(p:length()), 10, 30)
+    game:draw()
+    Lg.setColor(1, 1, 1)
+    Lg.print(("%.1f Kb"):format(collectgarbage("count")), 10, 10)
 
-    love.graphics.setColor(1, 0, 0)
-    love.graphics.circle("fill", p.x, p.y, 4)
+    Lg.setCanvas()
+
+    Lg.origin()
+    Lg.draw(display_canvas, 0, 0, 0,
+            Lg.getWidth() / display_canvas:getWidth(),
+            Lg.getHeight() / display_canvas:getHeight())
 end
 
 function love.run()
