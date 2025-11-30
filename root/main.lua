@@ -22,10 +22,13 @@ function love.load()
     local ent = game:newEntity()
         :give("position", 100, 100)
         :give("rotation", 0)
+        :give("collision", 13, 8)
+        :give("player_control")
+        :give("actor")
         :give("sprite", Lg.newImage("res/swatPixelart.png"))
 
-    ent.sprite.sx = 1
-    ent.sprite.sy = 1
+    ent.sprite.oy = 9
+    game.cam_follow = ent
 
     playerEnt = ent
 
@@ -62,11 +65,7 @@ function love.update(dt)
     MOUSE_Y = (love.mouse.getY() - display_oy) / display_scale
     
     Input.update()
-
     game:update(dt)
-
-    playerEnt.position.x = MOUSE_X
-    playerEnt.position.y = MOUSE_Y
 end
 
 function love.draw()
