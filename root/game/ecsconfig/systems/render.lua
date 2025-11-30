@@ -22,17 +22,31 @@ function render_system:draw()
                 math.floor(sprite.img:getWidth() / 2 + sprite.ox), math.floor(sprite.img:getHeight() / 2 + sprite.oy))
     end
 
-    for _, entity in ipairs(self.dbgdraw_pool) do
-        local pos = entity.position
-        local rect = entity.collision
+    if Debug.enabled then
+        for _, entity in ipairs(self.dbgdraw_pool) do
+            local pos = entity.position
+            local rect = entity.collision
+            local actor = entity.actor
 
-        Lg.setColor(1, 0, 0)
-        Lg.setLineWidth(1)
-        Lg.rectangle("line",
-                     math.floor(pos.x - rect.w / 2.0) + 0.5,
-                     math.floor(pos.y - rect.h / 2.0) + 0.5,
-                     rect.w,
-                     rect.h)
+            Lg.setColor(1, 0, 0, 0.2)
+            Lg.setLineWidth(1)
+            Lg.setLineStyle("rough")
+            Lg.rectangle("line",
+                         math.floor(pos.x - rect.w / 2.0) + 0.5,
+                         math.floor(pos.y - rect.h / 2.0) + 0.5,
+                         rect.w,
+                         rect.h)
+            
+            if actor then
+                local lookx = math.cos(actor.look_angle)
+                local looky = math.sin(actor.look_angle)
+
+                Lg.setColor(1, 0, 0, 0.8)
+                Lg.line(
+                    math.floor(pos.x) + 0.5, math.floor(pos.y) + 0.5,
+                    math.floor(pos.x + lookx * 10) + 0.5, math.floor(pos.y + looky * 10) + 0.5)
+            end
+        end
     end
 end
 

@@ -87,7 +87,7 @@ local function resolve_tilemap_collisions(ent, game)
 
         if cell_found then
             -- print("intersection!")
-            DEBUG.draw.rect_lines(cx * game.tile_width, cy * game.tile_height, game.tile_width, game.tile_height)
+            Debug.draw.rect_lines(cx * game.tile_width, cy * game.tile_height, game.tile_width, game.tile_height)
 
             local penetration, nx, ny =
                 rect_collision_resolution(pos.x, pos.y, collider.w, collider.h,

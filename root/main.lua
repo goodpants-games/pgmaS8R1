@@ -7,7 +7,7 @@ sceneman.scenePrefix = "scenes."
 
 MOUSE_X = 0
 MOUSE_Y = 0
-DEBUG = {
+Debug = {
     enabled = false,
     draw = {}
 }
@@ -20,41 +20,48 @@ local display_scale = 1.0
 
 local debug_draw_list = {}
 
-function DEBUG.draw.color(r, g, b, a)
-    if not DEBUG.enabled then return end
+function Debug.draw.color(r, g, b, a)
+    if not Debug.enabled then return end
     table.insert(debug_draw_list, function()
         Lg.setColor(r, g, b, a)
     end)
 end
 
-function DEBUG.draw.push()
-    if not DEBUG.enabled then return end
+function Debug.draw.push()
+    if not Debug.enabled then return end
     table.insert(debug_draw_list, Lg.push)
 end
 
-function DEBUG.draw.pop()
-    if not DEBUG.enabled then return end
+function Debug.draw.pop()
+    if not Debug.enabled then return end
     table.insert(debug_draw_list, Lg.pop)
 end
 
-function DEBUG.draw.translate(x, y)
-    if not DEBUG.enabled then return end
+function Debug.draw.translate(x, y)
+    if not Debug.enabled then return end
     table.insert(debug_draw_list, function()
         Lg.translate(x, y)
     end)
 end
 
-function DEBUG.draw.point(x, y)
-    if not DEBUG.enabled then return end
+function Debug.draw.point(x, y)
+    if not Debug.enabled then return end
     table.insert(debug_draw_list, function()
         Lg.points(x + 0.5, y + 0.5)
     end)
 end
 
-function DEBUG.draw.rect_lines(x, y, w, h)
-    if not DEBUG.enabled then return end
+function Debug.draw.rect_lines(x, y, w, h)
+    if not Debug.enabled then return end
     table.insert(debug_draw_list, function()
         Lg.rectangle("line", x + 0.5, y + 0.5, w, h)
+    end)
+end
+
+function Debug.draw.line(x0, y0, x1, y1)
+    if not Debug.enabled then return end
+    table.insert(debug_draw_list, function()
+        Lg.line(x0 + 0.5, y0 + 0.5, x1 + 0.5, y1 + 0.5)
     end)
 end
 
@@ -63,7 +70,7 @@ local font = Lg.newFont("res/fonts/ProggyClean.ttf", 16, "none", 1.0)
 function love.load(args)
     for _, arg in ipairs(args) do
         if arg == "--debug" then
-            DEBUG.enabled = true
+            Debug.enabled = true
             print("enable debug")
         end
     end

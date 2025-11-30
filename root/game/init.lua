@@ -1,5 +1,6 @@
 local Concord = require("concord")
 local Input = require("input")
+local bit = require("bit")
 
 local ecsconfig = require("game.ecsconfig")
 
@@ -19,7 +20,7 @@ local ecsconfig = require("game.ecsconfig")
 ---@overload fun():Game
 local Game = batteries.class({ name = "Game" })
 
-Game.TICK_RATE = 30
+Game.TICK_RATE = 60
 Game.TICK_LEN = 1 / Game.TICK_RATE
 
 function Game:new()
@@ -65,7 +66,11 @@ function Game:new()
     local i = 1
     for y=0, h-1 do
         for x=0, w-1 do
-            local gid = self._map[i]
+            local cellv = self._map[i]
+            local gid = bit.band(cellv,   0x0FFFFFFF)
+            local fliph = bit.band(cellv, 0x80000000) ~= 0
+            local flipv = bit.band(cellv, 0x40000000) ~= 0
+            local flipd = bit.band(cellv, 0x20000000) ~= 0
 
             -- collision
             if gid > 0 then
@@ -76,7 +81,21 @@ function Game:new()
 
             -- render
             if gid > 0 then
-                batch:add(tileset_quads[gid], x * tw, y * th)
+                local r = 0
+                local sx = 1
+                local sy = 1
+
+                if flipd then sx = -sx end
+                if fliph then sx = -sx end
+                if flipv then sy = -sy end
+                if flipd then
+                    r = math.pi / 2.0
+                end
+
+                batch:add(tileset_quads[gid],
+                          (x+0.5) * tw, (y+0.5) * th,
+                          r, sx, sy,
+                          math.floor(tw/2), math.floor(th/2))
             end
 
             i=i+1
@@ -124,8 +143,8 @@ function Game:tick()
 end
 
 function Game:update(dt)
-    DEBUG.draw.push()
-    DEBUG.draw.translate(math.floor(-self.cam_x + DISPLAY_WIDTH / 2.0), math.floor(-self.cam_y + DISPLAY_HEIGHT / 2.0))
+    Debug.draw.push()
+    Debug.draw.translate(math.floor(-self.cam_x + DISPLAY_WIDTH / 2.0), math.floor(-self.cam_y + DISPLAY_HEIGHT / 2.0))
 
     self.world:emit("update", dt)
 
@@ -142,6 +161,8 @@ function Game:update(dt)
         dt_to_accum = Game.TICK_LEN * 0.5
     elseif math.abs(dt - Game.TICK_LEN * 0.25) < DT_SNAP_EPSILON then -- 120 fps?
         dt_to_accum = Game.TICK_LEN * 0.25
+    else
+        print("no dt snap")
     end
 
     local iter = 1
@@ -159,7 +180,7 @@ function Game:update(dt)
         iter=iter+1
     end
 
-    DEBUG.draw.pop()
+    Debug.draw.pop()
 end
 
 function Game:draw()

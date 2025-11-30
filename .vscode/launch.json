@@ -12,7 +12,8 @@
                 "command": "lovec"
             },
             "cwd": "${workspaceFolder}/root",
-            "args": [".", "--debug"]
+            "args": [".", "--debug"],
+            "preLaunchTask": "Build assets"
         }
     ]
 }

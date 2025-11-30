@@ -23,7 +23,8 @@ end)
 Concord.component("actor", function(cmp)
     cmp.move_x = 0
     cmp.move_y = 0
-
+    cmp.look_angle = 0
+    
     -- px/tick
     cmp.move_speed = 2
 end)

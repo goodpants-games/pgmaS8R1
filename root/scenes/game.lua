@@ -18,7 +18,7 @@ function scene.load()
         :give("collision", 13, 8)
         :give("player_control")
         :give("actor")
-        :give("sprite", Lg.newImage("res/swatPixelart.png"))
+        :give("sprite", Lg.newImage("res/robot.png"))
 
     ent.sprite.oy = 9
     scndat.game.cam_follow = ent
