@@ -89,6 +89,12 @@ function love.visible(visible)
     end
 end
 
+function love.keypressed(key)
+    if key == "escape" then
+        sceneman.switchScene("menu")
+    end
+end
+
 local function update_display_fit()
     display_scale = math.min(Lg.getHeight() / DISPLAY_HEIGHT, Lg.getWidth() / DISPLAY_WIDTH)
     display_scale = math.max(1, display_scale)

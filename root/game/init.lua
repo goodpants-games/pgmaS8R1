@@ -1,5 +1,5 @@
 local Concord = require("concord")
-local Input = require("input")
+local tiled = require("tiled")
 local bit = require("bit")
 
 local ecsconfig = require("game.ecsconfig")
@@ -15,7 +15,7 @@ local ecsconfig = require("game.ecsconfig")
 ---@field tile_height integer Tile height in pixels
 ---@field private _map integer[]
 ---@field private _colmap integer[]
----@field private _map_batch love.SpriteBatch
+---@field private _tiled_map pklove.tiled.Map
 ---@field private _dt_accum number
 ---@overload fun():Game
 local Game = batteries.class({ name = "Game" })
@@ -36,31 +36,26 @@ function Game:new()
         ecsconfig.systems.physics,
         ecsconfig.systems.render)
 
-    local loaded_tmx = assert(love.filesystem.load("res/maps/map.lua"))()
+    local loaded_tmx = tiled.loadMap("res/maps/map.lua")
+    self._tiled_map = loaded_tmx
+
     local w, h = loaded_tmx.width, loaded_tmx.height
     local tw, th = loaded_tmx.tilewidth, loaded_tmx.tileheight
     self.map_width, self.map_height = w, h
     self.tile_width, self.tile_height = tw, th
 
     -- parse tmx data
-    assert(loaded_tmx.layers[1] and loaded_tmx.layers[1].encoding == "lua")
-    self._map = table.copy(loaded_tmx.layers[1].data)
+    local tile_layer = assert(loaded_tmx.layers[1]) --[[@as pklove.tiled.TileLayer]]
+    self._map = table.copy(tile_layer.data)
 
-    -- parse tsx data
-    local loaded_tsx = assert(loaded_tmx.tilesets[1])
-    local tileset_img = Lg.newImage("res/" .. loaded_tsx.image)
-    ---@type love.Quad[]
-    local tileset_quads = {}
-    for i=1, loaded_tsx.tilecount do
-        local x = ((i-1) % loaded_tsx.columns) * loaded_tsx.tilewidth
-        local y = math.floor((i-1) / loaded_tsx.columns) * loaded_tsx.tileheight
-        tileset_quads[i] = Lg.newQuad(x, y, loaded_tsx.tilewidth, loaded_tsx.tileheight, tileset_img)
+    for _, layer in ipairs(loaded_tmx.layers) do
+        if layer.type == "tilelayer" then
+            ---@cast layer pklove.tiled.TileLayer
+            layer:syncGraphics()
+        end
     end
 
-    -- render map render and collision data
-    local batch = Lg.newSpriteBatch(tileset_img, w * h)
-    self._map_batch = batch
-
+    -- get collision data
     self._colmap = {}
 
     local i = 1
@@ -68,9 +63,6 @@ function Game:new()
         for x=0, w-1 do
             local cellv = self._map[i]
             local gid = bit.band(cellv,   0x0FFFFFFF)
-            local fliph = bit.band(cellv, 0x80000000) ~= 0
-            local flipv = bit.band(cellv, 0x40000000) ~= 0
-            local flipd = bit.band(cellv, 0x20000000) ~= 0
 
             -- collision
             if gid > 0 then
@@ -79,37 +71,13 @@ function Game:new()
                 self._colmap[i] = 0
             end
 
-            -- render
-            if gid > 0 then
-                local r = 0
-                local sx = 1
-                local sy = 1
-
-                if flipd then sx = -sx end
-                if fliph then sx = -sx end
-                if flipv then sy = -sy end
-                if flipd then
-                    r = math.pi / 2.0
-                end
-
-                batch:add(tileset_quads[gid],
-                          (x+0.5) * tw, (y+0.5) * th,
-                          r, sx, sy,
-                          math.floor(tw/2), math.floor(th/2))
-            end
-
             i=i+1
         end
-    end
-
-    tileset_img:release()
-    for _,q in pairs(tileset_quads) do
-        q:release()
     end
 end
 
 function Game:release()
-    self._map_batch:release()
+    self._tiled_map:release()
 end
 
 function Game:newEntity()
@@ -187,7 +155,8 @@ function Game:draw()
     Lg.push()
     Lg.translate(math.floor(-self.cam_x + DISPLAY_WIDTH / 2.0), math.floor(-self.cam_y + DISPLAY_HEIGHT / 2.0))
 
-    Lg.draw(self._map_batch, 0, 0)
+    local tl = self._tiled_map.layers[1] --[[@as pklove.tiled.TileLayer]]
+    tl:draw()
     self.world:emit("draw")
 
     Lg.pop()

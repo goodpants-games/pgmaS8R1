@@ -50,7 +50,7 @@ def scan_tileset_directory() -> bool:
     return True
 
 def scan_tiled_directory() -> bool:
-    dirpath = 'assets/tiled'
+    dirpath = 'assets/tiled/maps'
     for basename in os.listdir(dirpath):
         path = os.path.normpath(os.path.join(dirpath, basename))
         (filename, fileext) = os.path.splitext(basename)
