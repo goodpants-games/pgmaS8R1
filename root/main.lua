@@ -1,8 +1,9 @@
 require("envsetup")
 Lg.setDefaultFilter("nearest")
 
-local Game = require("game")
 local Input = require("input")
+local sceneman = require("sceneman")
+sceneman.scenePrefix = "scenes."
 
 MOUSE_X = 0
 MOUSE_Y = 0
@@ -59,10 +60,6 @@ end
 
 local font = Lg.newFont("res/fonts/ProggyClean.ttf", 16, "none", 1.0)
 
-love.audio.newSource("res/cemetery.xm", "stream"):play()
-local game = Game()
-local playerEnt
-
 function love.load(args)
     for _, arg in ipairs(args) do
         if arg == "--debug" then
@@ -71,21 +68,7 @@ function love.load(args)
         end
     end
 
-    local ent = game:newEntity()
-        :give("position", 100, 100)
-        :give("rotation", 0)
-        :give("velocity", 0, 0)
-        :give("collision", 13, 8)
-        :give("player_control")
-        :give("actor")
-        :give("sprite", Lg.newImage("res/swatPixelart.png"))
-
-    ent.sprite.oy = 9
-    game.cam_follow = ent
-
-    playerEnt = ent
-
-    Lg.setBackgroundColor(0.5, 0.5, 0.5)
+    sceneman.switchScene("game")
 end
 
 local _paused_sources
@@ -118,7 +101,7 @@ function love.update(dt)
     MOUSE_Y = (love.mouse.getY() - display_oy) / display_scale
     
     Input.update()
-    game:update(dt)
+    sceneman.update(dt)
 end
 
 function love.draw()
@@ -126,7 +109,7 @@ function love.draw()
     Lg.clear(Lg.getBackgroundColor())
     Lg.setFont(font)
 
-    game:draw()
+    sceneman.draw()
 
     -- commit debug draw list
     Lg.push()
@@ -142,9 +125,9 @@ function love.draw()
     Lg.setColor(1, 1, 1)
     Lg.print(("%.1f Kb"):format(collectgarbage("count")), 10, 10)
 
+    -- draw display onto window
     Lg.setCanvas()
     Lg.clear(0, 0, 0, 1)
-
     Lg.origin()
     Lg.draw(display_canvas, display_ox, display_oy, 0, display_scale, display_scale)
 end

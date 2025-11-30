@@ -21,6 +21,10 @@ if not package.loaded["bit"] then
 	package.loaded["bit"] = bit32
 end
 
+if not unpack then
+    unpack = table.unpack
+end
+
 DISPLAY_WIDTH = 240
 DISPLAY_HEIGHT = 180
 
