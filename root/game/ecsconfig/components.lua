@@ -9,6 +9,11 @@ Concord.component("rotation", function(cmp, ang)
     cmp.ang = ang or 0
 end)
 
+Concord.component("velocity", function(cmp, xv, yv)
+    cmp.x = xv or 0
+    cmp.y = yv or 0
+end)
+
 -- collision hitbox
 Concord.component("collision", function(cmp, w, h)
     cmp.w = w

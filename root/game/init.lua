@@ -13,6 +13,7 @@ local ecsconfig = require("game.ecsconfig")
 ---@field tile_width integer Tile width in pixels
 ---@field tile_height integer Tile height in pixels
 ---@field private _map integer[]
+---@field private _colmap integer[]
 ---@field private _map_batch love.SpriteBatch
 ---@field private _dt_accum number
 ---@overload fun():Game
@@ -31,12 +32,14 @@ function Game:new()
     self.world:addSystems(
         ecsconfig.systems.player_controller,
         ecsconfig.systems.actor,
+        ecsconfig.systems.physics,
         ecsconfig.systems.render)
 
     local loaded_tmx = assert(love.filesystem.load("res/maps/map.lua"))()
     local w, h = loaded_tmx.width, loaded_tmx.height
     local tw, th = loaded_tmx.tilewidth, loaded_tmx.tileheight
     self.map_width, self.map_height = w, h
+    self.tile_width, self.tile_height = tw, th
 
     -- parse tmx data
     assert(loaded_tmx.layers[1] and loaded_tmx.layers[1].encoding == "lua")
@@ -53,14 +56,25 @@ function Game:new()
         tileset_quads[i] = Lg.newQuad(x, y, loaded_tsx.tilewidth, loaded_tsx.tileheight, tileset_img)
     end
 
-    -- render map
+    -- render map render and collision data
     local batch = Lg.newSpriteBatch(tileset_img, w * h)
     self._map_batch = batch
+
+    self._colmap = {}
 
     local i = 1
     for y=0, h-1 do
         for x=0, w-1 do
             local gid = self._map[i]
+
+            -- collision
+            if gid > 0 then
+                self._colmap[i] = 1
+            else
+                self._colmap[i] = 0
+            end
+
+            -- render
             if gid > 0 then
                 batch:add(tileset_quads[gid], x * tw, y * th)
             end
@@ -87,7 +101,14 @@ end
 ---@param y integer 0-based
 ---@return integer
 function Game:get_tile(x, y)
-    return self._map[y * self.map_width + x]
+    return self._map[y * self.map_width + x + 1]
+end
+
+---@param x integer 0-based
+---@param y integer 0-based
+---@return integer
+function Game:get_col(x, y)
+    return self._colmap[y * self.map_width + x + 1]
 end
 
 function Game:tick()
@@ -103,13 +124,42 @@ function Game:tick()
 end
 
 function Game:update(dt)
+    DEBUG.draw.push()
+    DEBUG.draw.translate(math.floor(-self.cam_x + DISPLAY_WIDTH / 2.0), math.floor(-self.cam_y + DISPLAY_HEIGHT / 2.0))
+
     self.world:emit("update", dt)
 
-    self._dt_accum = self._dt_accum + dt
-    while self._dt_accum >= Game.TICK_LEN do
-        self:tick()
-        self._dt_accum = self._dt_accum - Game.TICK_LEN
+    -- dt snap calculation
+    -- https://medium.com/@tglaiel/how-to-make-your-game-run-at-60fps-24c61210fe75
+    local dt_to_accum = dt
+    local DT_SNAP_EPSILON = 0.002
+
+    if math.abs(dt - Game.TICK_LEN) < DT_SNAP_EPSILON then -- 30 fps?
+        dt_to_accum = Game.TICK_LEN
+    elseif math.abs(dt - Game.TICK_LEN * 2.0) < DT_SNAP_EPSILON then -- 15 fps?
+        dt_to_accum = Game.TICK_LEN * 2.0
+    elseif math.abs(dt - Game.TICK_LEN * 0.5) < DT_SNAP_EPSILON then -- 60 fps?
+        dt_to_accum = Game.TICK_LEN * 0.5
+    elseif math.abs(dt - Game.TICK_LEN * 0.25) < DT_SNAP_EPSILON then -- 120 fps?
+        dt_to_accum = Game.TICK_LEN * 0.25
     end
+
+    local iter = 1
+    self._dt_accum = self._dt_accum + dt_to_accum
+    while self._dt_accum >= Game.TICK_LEN do
+        if iter > 8 then
+            print("too many ticks in one frame!")
+            self._dt_accum = self._dt_accum % Game.TICK_LEN
+            break
+        end
+        
+        self:tick()
+
+        self._dt_accum = self._dt_accum - Game.TICK_LEN
+        iter=iter+1
+    end
+
+    DEBUG.draw.pop()
 end
 
 function Game:draw()

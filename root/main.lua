@@ -6,22 +6,75 @@ local Input = require("input")
 
 MOUSE_X = 0
 MOUSE_Y = 0
+DEBUG = {
+    enabled = false,
+    draw = {}
+}
+
 local display_canvas = Lg.newCanvas(DISPLAY_WIDTH, DISPLAY_HEIGHT, { dpiscale = 1.0 })
 
 local display_ox = 0.0
 local display_oy = 0.0
 local display_scale = 1.0
 
+local debug_draw_list = {}
+
+function DEBUG.draw.color(r, g, b, a)
+    if not DEBUG.enabled then return end
+    table.insert(debug_draw_list, function()
+        Lg.setColor(r, g, b, a)
+    end)
+end
+
+function DEBUG.draw.push()
+    if not DEBUG.enabled then return end
+    table.insert(debug_draw_list, Lg.push)
+end
+
+function DEBUG.draw.pop()
+    if not DEBUG.enabled then return end
+    table.insert(debug_draw_list, Lg.pop)
+end
+
+function DEBUG.draw.translate(x, y)
+    if not DEBUG.enabled then return end
+    table.insert(debug_draw_list, function()
+        Lg.translate(x, y)
+    end)
+end
+
+function DEBUG.draw.point(x, y)
+    if not DEBUG.enabled then return end
+    table.insert(debug_draw_list, function()
+        Lg.points(x + 0.5, y + 0.5)
+    end)
+end
+
+function DEBUG.draw.rect_lines(x, y, w, h)
+    if not DEBUG.enabled then return end
+    table.insert(debug_draw_list, function()
+        Lg.rectangle("line", x + 0.5, y + 0.5, w, h)
+    end)
+end
+
 local font = Lg.newFont("res/fonts/ProggyClean.ttf", 16, "none", 1.0)
 
-love.audio.newSource("res/safety.xm", "stream"):play()
+love.audio.newSource("res/cemetery.xm", "stream"):play()
 local game = Game()
 local playerEnt
 
-function love.load()
+function love.load(args)
+    for _, arg in ipairs(args) do
+        if arg == "--debug" then
+            DEBUG.enabled = true
+            print("enable debug")
+        end
+    end
+
     local ent = game:newEntity()
         :give("position", 100, 100)
         :give("rotation", 0)
+        :give("velocity", 0, 0)
         :give("collision", 13, 8)
         :give("player_control")
         :give("actor")
@@ -74,6 +127,18 @@ function love.draw()
     Lg.setFont(font)
 
     game:draw()
+
+    -- commit debug draw list
+    Lg.push()
+    Lg.origin()
+    Lg.setColor(1, 1, 1)
+    for _, v in ipairs(debug_draw_list) do
+        v()
+    end
+    table.clear(debug_draw_list)
+    Lg.pop()
+
+    -- debug text
     Lg.setColor(1, 1, 1)
     Lg.print(("%.1f Kb"):format(collectgarbage("count")), 10, 10)
 
