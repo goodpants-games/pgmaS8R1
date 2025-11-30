@@ -3,59 +3,90 @@
 
     scene management
     ----
-    from the main script, call sceneman.update(dt) and sceneman.draw() on every update and draw, respectively
-    (obviously).
+    from the main script, call sceneman.update(dt) and sceneman.draw() on every
+    update and draw, respectively (obviously).
 
     if you want to switch scene, call sceneman.switchScene(path, ...):
         - path is the require path to the lua script.
         - ... are the args to pass to the scene's load function.
 
-    you can set sceneman.scenePrefix if all scenes are organized under a common folder, and you want to save typing.
-    this scene prefix will be directly inserted before the path given in switchScene. also, sceneman.currentScene
+    you can set sceneman.scenePrefix if all scenes are organized under a common
+    folder, and you want to save typing. this scene prefix will be directly
+    inserted before the path given in switchScene. also, sceneman.currentScene
     can be read to return the current scene. it is not advised to write to it.
 
 
     scene creation
     ----
     each scene should belong in its own script.
-    to create a scene, call `sceneman.scene()`. it will return a scene object where you can then assign callbacks such
-    as "load", "update(dt)", and "draw" (among others). the script must then return this scene object.
+    to create a scene, call `sceneman.scene()`. it will return a scene object
+    where you can then assign callbacks such as "load", "update(dt)", and "draw"
+    (among others). the script must then return this scene object.
 
 
-    callbacks
+    callback modes
     ----
-    you can also set names of love callbacks to each scene object. sceneman will then assign those functions to the
-    respective love callback on load. you may also set sceneman.setLoveCallback(cbName, func) to override this
-    process.
+    there are three available callback modes, used to control how LOVE events
+    are dispatched to each scene:
+    - manual: you must call sceneman.dispatch(eventName, ...) when the LOVE
+              event occurs.
+    - set:    when a scene is loaded, it automatically assigns the scene's
+              callbacks to the love table. but this prevents you from setting up
+              LOVE callbacks directly, since it will be overwritten when a scene
+              changes.
+    - hook:   this attaches a metatable to the love table to make LOVE event
+              callbacks go through the current scene. to call the relevant event
+              callback defined in the love table, you call
+              sceneman.rawCallback(eventName, ...).
+    
+    to set the callback mode, you must call sceneman.setCallbackMode(mode) on
+    project initialization. if not called, it will fall back to the "manual"
+    callback mode.
 
-    there is also an alternative (and recommended) callback plan you enable by calling sceneman.enableCallbackHook()
-    on application initialization. this will assign a metatable to the love table, making it so any love callbacks 
-    will go through the callback of the active scene instead. you may still define callbacks in the love table. these
-    raw callbacks can be called using `sceneman.rawCallback(cbName, ...)`.
+    note that the scene's load, update, and draw functions are automatically
+    called by sceneman.update and sceneman.draw. also note that event callbacks
+    are not called during transitions.
+
+    for the "set" and "hook" callback modes, you can override the event
+    injection process by setting the sceneman.setLoveCallback property. it
+    should be assigned a function of this form:
+    
+        function(eventName, scene):void
+    
+    where eventName is the name of the event, and scene is the scene table being
+    loaded. with the "set" mode, this overrides the process of assigning the
+    callback to the love table, meaning that you can cancel the process by
+    simply not making an assignment to the love table in your function. but for
+    the "hook" mode, the hook process will occur regardless.
 
 
     transitions
     ----
-    you can switch to a scene with a transition by calling sceneman.useTransition(transitionPath, ...) before calling
-    switchScene. the arguments work similarly to switchScene.
+    you can switch to a scene with a transition by calling
+    sceneman.useTransition(transitionPath, ...) before calling switchScene. the
+    arguments work similarly to switchScene.
 
-    it will use the given transition only for the next switchScene call. afterwards, it will be reset.
+    it will use the given transition only for the next switchScene call.
+    afterwards, it will be reset.
 
-    there is also a sceneman.transitionPrefix that functions similarly to sceneman.scenePrefix, but for transitions.
+    there is also a sceneman.transitionPrefix that functions similarly to
+    sceneman.scenePrefix, but for transitions.
 
-    to create a transition, make a script and call sceneman.transition(). it will return a transition object where you
-    will then assign the callbacks "load" (optional), "update(dt)", and "draw". the script must then return this
-    transition object.
+    to create a transition, make a script and call sceneman.transition(). it
+    will return a transition object where you will then assign the callbacks
+    "load" (optional), "update(dt)", and "draw". the script must then return
+    this transition object.
 
-    additionally, each transition object will have three fields related to the current state of the transition, which
-    are set before load is called:
-        - oldScene: the scene that is being transitioned from. can be set to nil when the scene can be unloaded.
+    additionally, each transition object will have three fields related to the
+    current state of the transition, which are set before load is called:
+        - oldScene: the scene that is being transitioned from. can be set to nil
+                    when the scene can be unloaded.
         - newScene: the scene that is being transitioned to. do not set.
-        - done:     set to false before load is called, when set to true the transition will end on the next
-                    sceneman.update call
+        - done:     set to false before load is called, when set to true the
+                    transition will end on the next sceneman.update call
 
-    while the transition is in progress, scene.currentScene will be nil and scene.currentTransition will be set to the
-    transition object.
+    while the transition is in progress, scene.currentScene will be nil and
+    scene.currentTransition will be set to the transition object.
 
     
     copyright notice
@@ -81,12 +112,17 @@
 --]]
 
 local sceneman = {}
-sceneman._version = "0.1.0"
+sceneman._version = "0.2.0"
 
 -- placeholder functions
 local function functionNoOp() end
 
----@class Scene
+---@alias sceneman.CallbackMode
+---|    "manual"
+---|    "set"
+---|    "hook"
+
+---@class sceneman.Scene
 ---@field load fun(args...: string)|nil
 ---@field unload fun()|nil
 ---@field update fun(dt: number)|nil
@@ -99,12 +135,12 @@ Scene.unload = functionNoOp
 Scene.update = functionNoOp
 Scene.draw = functionNoOp
 
----@class Transition
+---@class sceneman.Transition
 ---@field load fun(args...: string)|nil
 ---@field update fun(dt: number)|nil
 ---@field draw fun()|nil
----@field oldScene Scene?
----@field newScene Scene
+---@field oldScene sceneman.Scene?
+---@field newScene sceneman.Scene
 ---@field done boolean
 local Transition = {}
 Transition.__index = Transition
@@ -113,15 +149,21 @@ Transition.load = functionNoOp
 Transition.update = functionNoOp
 Transition.draw = functionNoOp
 
----Let this module define a new scene. The calling module must then define callbacks in and return the scene object.
----@return Scene
+---Let this module define a new scene. The calling module must then define
+---callbacks in and return the scene object.
+---@return sceneman.Scene
 function sceneman.scene()
+    if sceneman.callbackMode == nil then
+        sceneman.setCallbackMode("manual")
+    end
+
     local scene = setmetatable({}, Scene)
     return scene
 end
 
----Let this module define a new transition. The calling module must then define callbacks in and return the transition object.
----@return Transition
+---Let this module define a new transition. The calling module must then define
+---callbacks in and return the transition object.
+---@return sceneman.Transition
 function sceneman.transition()
     local trans = setmetatable({}, Transition)
     return trans
@@ -185,8 +227,6 @@ for _, v in ipairs({
     loveCallbacks[v] = true
 end
 
-local loveMt = false
-
 local function defaultSetLoveCallback(callbackName, func)
     love[callbackName] = func
 end
@@ -195,18 +235,27 @@ local function defaultSetLoveCallbackMt()
     -- no-op
 end
 
+---**For the "set" and "hook" callback modes.**
+---
+---User-provided function that is called when a scene wants to hook into a LOVE
+---callback, excluding load, update and draw. If nil (the default), it will hook
+---it into the proper callback itself.
 ---@type fun(callbackName: string, func: function)
----Function that is called when a scene wants to hook into a LOVE callback, excluding load, update and draw.
----If nil (the default), will hook it into the proper callback itself.
 sceneman.setLoveCallback = nil
 
----@type fun(name: string, ...)|nil Call the raw LOVE callback. Only defined if sceneman.enableCallbackHook() was called
+---**For the "hook" callback mode.**
+---
+---Call the LOVE callback defined in the love table instead of the the scene
+---table.
+---@type fun(name: string, ...)|nil
 sceneman.rawCallback = nil
 
----@type Scene?
+---(Read-only)
+---@type sceneman.Scene?
 sceneman.currentScene = nil
 
----@type Transition?
+---(Read-only)
+---@type sceneman.Transition?
 sceneman.currentTransition = nil
 
 ---The string to prepend to scenePath when sceneman.loadScene is called.
@@ -215,7 +264,13 @@ sceneman.scenePrefix = ""
 ---The string to prepend to transitionPath when sceneman.useTransition is called
 sceneman.transitionPrefix = ""
 
----Load a scene from a Lua script. It will be loaded at the next scene.update call.
+---(Read-only) The current callback mode. To change, call
+---sceneman.setCallbackMode
+---@type string
+sceneman.callbackMode = nil
+
+---Load a scene from a Lua script. It will be loaded on the next scene.update
+---call.
 ---@param scenePath string The path to the scene script.
 ---@param ... any Arguments to pass to the scene.
 function sceneman.switchScene(scenePath, ...)
@@ -228,7 +283,8 @@ function sceneman.switchScene(scenePath, ...)
     }
 end
 
----Load a transition from a Lua script. It will be used for the next switchScene call.
+---Load a transition from a Lua script. It will be used for the next switchScene
+---call.
 ---@param transitionPath string The path to the transition script.
 ---@param ... any Arguments to pass to the transition.
 function sceneman.useTransition(transitionPath, ...)
@@ -241,15 +297,11 @@ function sceneman.useTransition(transitionPath, ...)
     }
 end
 
----Enable a callback-hooking plan that assigns a metatable to the LOVE global, allowing LOVE callback functions to be "intercepted" by the
----active scene's equivalenty-named callback function. The callback function may then call sceneman.loveCallback
----to call the original LOVE callback function.
-function sceneman.enableCallbackHook()
-    if loveMt then
-        return
-    end
-    loveMt = true
-
+---Enable a callback-hooking plan that assigns a metatable to the LOVE global,
+---allowing LOVE callback functions to be "intercepted" by the active scene's
+---equivalenty-named callback function. The callback function may then call
+---sceneman.rawCallback to call the original LOVE callback function.
+local function enableCallbackHook()
     local rawCallbacks = {}
 
     for cbName, _ in pairs(loveCallbacks) do
@@ -287,12 +339,30 @@ function sceneman.enableCallbackHook()
     end
 end
 
-function sceneman.isCallbackHookEnabled()
-    return loveMt
+---Use a callback mode. If called, must be before any scenes or transitions are
+---created.
+---@param mode sceneman.CallbackMode
+function sceneman.setCallbackMode(mode)
+    if sceneman.callbackMode ~= nil then
+        error("cannot set callback mode more than once or after a scene was created.", 2)
+    end
+
+    if mode == "manual" then
+        sceneman.callbackMode = "manual" 
+    elseif mode == "set" then
+        sceneman.callbackMode = "set"
+    elseif mode == "hook" then
+        sceneman.callbackMode = "hook"
+        enableCallbackHook()
+    else
+        error(("invalid callback mode '%s'. must be 'manual', 'set', or 'hook'."):format(tostring(mode)), 2)
+    end
 end
 
 local function assignLoveCallbacks(scene)
-    local setCallback = sceneman.setLoveCallback or (loveMt and defaultSetLoveCallbackMt or defaultSetLoveCallback)
+    if sceneman.callbackMode == "manual" then return end
+
+    local setCallback = sceneman.setLoveCallback or (sceneman.callbackMode == "hook" and defaultSetLoveCallbackMt or defaultSetLoveCallback)
     for k, v in pairs(scene) do
         if loveCallbacks[k] then
             setCallback(k, v)
@@ -314,11 +384,12 @@ function sceneman.update(dt)
 
             sceneman.currentScene = sceneman.currentTransition.newScene
             sceneman.currentTransition = nil
+            assignLoveCallbacks(sceneman.currentScene)
         end
     elseif sceneLoad then
         -- load scene with transition
         if transitionLoad then
-            ---@type Transition
+            ---@type sceneman.Transition
             local inst = transitionLoad.transition
             sceneman.currentTransition = inst
 
@@ -357,6 +428,22 @@ function sceneman.draw()
         sceneman.currentTransition.draw()
     elseif sceneman.currentScene then
         sceneman.currentScene.draw()
+    end
+end
+
+---Dispatch an event to the current scene.
+---
+---This simply calls the function of the same name in the current scene table
+---with the given arguments.
+---@param name string
+---@param ... any
+function sceneman.dispatch(name, ...)
+    if not sceneman.currentScene then
+        return
+    end
+
+    if sceneman.currentScene[name] then
+        sceneman.currentScene[name](...)
     end
 end
 

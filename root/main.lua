@@ -4,6 +4,7 @@ Lg.setDefaultFilter("nearest")
 local Input = require("input")
 local sceneman = require("sceneman")
 sceneman.scenePrefix = "scenes."
+sceneman.setCallbackMode("manual")
 
 MOUSE_X = 0
 MOUSE_Y = 0
@@ -92,6 +93,8 @@ end
 function love.keypressed(key)
     if key == "escape" then
         sceneman.switchScene("menu")
+    else
+        sceneman.dispatch("keypressed", key)
     end
 end
 
