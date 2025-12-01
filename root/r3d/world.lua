@@ -170,11 +170,13 @@ function World:draw()
         local mv = model.transform:mul(view_mat, self:_push_mat())
         shader:send("u_mat_modelview", mv)
 
-        local mv_it = mv:inverse(self:_push_mat())
-                        :transpose(self:_push_mat())
+        if shader:hasUniform("u_mat_modelview_norm") then
+            local mv_it = mv:inverse(self:_push_mat())
+                            :transpose(self:_push_mat())
 
-        shader:send("u_mat_modelview_norm", mv_it:to_mat3(self._tmp_mat3))
-
+            shader:send("u_mat_modelview_norm", mv_it:to_mat3(self._tmp_mat3))
+        end
+        
         Lg.draw(model.mesh)
 
         self:_restore_mat_stack(sp)
