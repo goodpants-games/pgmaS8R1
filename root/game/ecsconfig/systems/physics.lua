@@ -1,30 +1,34 @@
 local Concord = require("concord")
 
-local COLLISION_MARGIN = 1
+local COLLISION_MARGIN = 0.001
 
 local system = Concord.system({
     pool = {"position", "velocity"}
 })
 
-local function rect_collision_resolution(rx0, ry0, rw0, rh0, rx1, ry1, rw1, rh1)
+local function rect_collision(rx0, ry0, rw0, rh0, rx1, ry1, rw1, rh1)
     local xe0 = rw0 / 2.0
     local ye0 = rh0 / 2.0
     local xe1 = rw1 / 2.0
     local ye1 = rh1 / 2.0
 
-    local l0 = rx0 - xe0
-    local r0 = rx0 + xe0
-    local t0 = ry0 - ye0
-    local b0 = ry0 + ye0
+    local l0 = rx0 - xe0 + COLLISION_MARGIN
+    local r0 = rx0 + xe0 - COLLISION_MARGIN
+    local t0 = ry0 - ye0 + COLLISION_MARGIN
+    local b0 = ry0 + ye0 - COLLISION_MARGIN
 
     local l1 = rx1 - xe1
     local r1 = rx1 + xe1
     local t1 = ry1 - ye1
     local b1 = ry1 + ye1
     
-    local pr = r0 - l1
+    -- local pr = r0 - l1
+    -- local pt = b0 - t1
+    -- local pl = r1 - l0
+    -- local pb = b1 - t0
+    local pl = r0 - l1
     local pt = b0 - t1
-    local pl = r1 - l0
+    local pr = r1 - l0
     local pb = b1 - t0
     local mp = math.min(pr, pt, pl, pb)
     if mp < 0 then
@@ -36,14 +40,33 @@ local function rect_collision_resolution(rx0, ry0, rw0, rh0, rx1, ry1, rw1, rh1)
     if mp == pl then
         nx, ny = -1, 0
     elseif mp == pt then
-        nx, ny = 0, 1
+        nx, ny = 0, -1
     elseif mp == pr then
         nx, ny = 1, 0
     elseif mp == pb then
-        nx, ny = 0, -1
+        nx, ny = 0, 1
     end
 
-    return mp, nx, ny
+    return mp + COLLISION_MARGIN, nx, ny
+end
+
+local function get_tile_collision_bounds(cx, cy, tw, th, colv)
+    local colx, coly, colw, colh
+    if colv == 1 then
+        colx = (cx+0.5) * tw
+        coly = (cy+0.5) * th
+        colw = tw
+        colh = th
+    elseif colv == 2 then
+        colx = (cx+0.5) * tw
+        coly = (cy+0.75) * th
+        colw = tw
+        colh = th / 2
+    else
+        error("unknown collision type " .. colv)
+    end
+
+    return colx, coly, colw, colh
 end
 
 ---@param ent any
@@ -57,51 +80,91 @@ local function resolve_tilemap_collisions(ent, game)
 
     local tw, th = game.tile_width, game.tile_height
 
-    for _=0, 4 do
+    for _=1, 4 do
         local minx = math.floor((pos.x - cxe + COLLISION_MARGIN) / tw)
         local maxx = math.ceil((pos.x + cxe - COLLISION_MARGIN) / th)
         local miny = math.floor((pos.y - cye + COLLISION_MARGIN) / tw)
         local maxy = math.ceil((pos.y + cye - COLLISION_MARGIN) / th)
 
         -- find the closest intersecting cell
-        local cell_found = false
+        -- local cell_value = 0
         local cx = -1
         local cy = -1
         local cell_min_dist = math.huge
+        local col_pn, col_nx, col_ny
+
         for y=miny, maxy-1 do
             for x=minx, maxx-1 do
-                if game:get_col(x, y) ~= 0 then
+                local v = game:get_col(x, y)
+                if v ~= 0 then
                     local dx = (x+0.5) * tw - pos.x
                     local dy = (y+0.5) * th - pos.y
                     local dist = dx*dx + dy*dy
 
-                    if dist < cell_min_dist then
-                        cell_found = true
-                        cx = x
-                        cy = y
-                        cell_min_dist = dist
+                    if dist < cell_min_dist or true then
+                        local colx, coly, colw, colh =
+                            get_tile_collision_bounds(x, y, tw, th, v)
+                        local pn, nx, ny =
+                            rect_collision(pos.x, pos.y, collider.w, collider.h,
+                                           colx, coly, colw, colh)
+
+                        if pn and (col_pn == nil or pn > col_pn) then
+                            cx = x
+                            cy = y
+                            cell_min_dist = dist
+                            col_pn, col_nx, col_ny = pn, nx, ny
+
+                            Debug.draw.color(1, 1, 1)
+                            Debug.draw.rect_lines(colx - colw / 2.0,
+                                                  coly - colh / 2.0,
+                                                  colw, colh)
+                        end
                     end
+
+                    -- if dist < cell_min_dist then
+                    --     cell_value = v
+                    --     cx = x
+                    --     cy = y
+                    --     cell_min_dist = dist
+                    -- end
                 end
             end
         end
 
-        if cell_found then
-            -- print("intersection!")
-            Debug.draw.rect_lines(cx * game.tile_width, cy * game.tile_height, game.tile_width, game.tile_height)
+        if col_pn then
+            Debug.draw.color(1, 0, 0)
+            Debug.draw.rect_lines(cx * tw, cy * th, tw, th)
+            -- -- print("intersection!")
+            -- local colx, coly, colw, colh
+            -- if cell_value == 1 then
+            --     colx = (cx+0.5) * tw
+            --     coly = (cy+0.5) * th
+            --     colw = tw
+            --     colh = th
+            -- elseif cell_value == 2 then
+            --     colx = (cx+0.5) * tw
+            --     coly = (cy+0.75) * th
+            --     colw = tw
+            --     colh = th / 2
+            -- else
+            --     error("unknown collision type " .. cell_value)
+            -- end
 
-            local penetration, nx, ny =
-                rect_collision_resolution(pos.x, pos.y, collider.w, collider.h,
-                                        (cx+0.5) * tw, (cy+0.5) * th, tw, th)
+            -- local penetration, nx, ny =
+            --     rect_collision_resolution(pos.x, pos.y, collider.w, collider.h,
+            --                               colx, coly, colw, colh)
+            local penetration, nx, ny = col_pn, col_nx, col_ny
 
-            assert(penetration)
-            pos.x = pos.x - nx * penetration
-            pos.y = pos.y - ny * penetration
+            if penetration then
+                pos.x = pos.x + nx * penetration
+                pos.y = pos.y + ny * penetration
 
-            local px, py = ny, -nx
-            local pdot = px * vel.x + py * vel.y
+                local px, py = -ny, nx
+                local pdot = px * vel.x + py * vel.y
 
-            vel.x = px * pdot
-            vel.y = py * pdot
+                vel.x = px * pdot
+                vel.y = py * pdot
+            end
         else
             break
         end

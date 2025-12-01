@@ -48,30 +48,54 @@ function Game:new()
     local tile_layer = assert(loaded_tmx.layers[1]) --[[@as pklove.tiled.TileLayer]]
     self._map = table.copy(tile_layer.data)
 
+    ---@type pklove.tiled.TileLayer?
+    local col_layer
+
     for _, layer in ipairs(loaded_tmx.layers) do
+        
         if layer.type == "tilelayer" then
             ---@cast layer pklove.tiled.TileLayer
-            layer:syncGraphics()
+            
+            local is_col_layer = layer.class == "collision"
+            if not is_col_layer then
+                layer:syncGraphics()
+            else
+                layer.visible = false
+                col_layer = layer
+            end
         end
     end
 
     -- get collision data
     self._colmap = {}
 
-    local i = 1
-    for y=0, h-1 do
-        for x=0, w-1 do
-            local cellv = self._map[i]
-            local gid = bit.band(cellv,   0x0FFFFFFF)
+    if col_layer then
+        local i = 1
+        for y=0, h-1 do
+            for x=0, w-1 do
+                local cellv = col_layer.data[i]
+                local gid = bit.band(cellv, 0x0FFFFFFF)
 
-            -- collision
-            if gid > 0 then
-                self._colmap[i] = 1
-            else
-                self._colmap[i] = 0
+                -- collision
+                if gid > 0 then
+                    local tile_info = loaded_tmx:getTileInfo(gid)
+                    self._colmap[i] = tile_info.id
+                else
+                    self._colmap[i] = 0
+                end
+
+                i=i+1
             end
+        end
+    else
+        print("warning: no collision map")
 
-            i=i+1
+        local i=1
+        for y=0, h-1 do
+            for x=0, w-1 do
+                self._colmap[i] = 0
+                i=i+1
+            end
         end
     end
 end

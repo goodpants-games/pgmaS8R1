@@ -35,7 +35,7 @@
     method list:
         - map:release(): releases all gpu resources loaded by the map
         - map:draw()
-        - map:getTileInfo()
+        - map:getTileInfo(globalId)
         - map:getLayerByName(layerName)
         - map:getLayersByClass(class)
         - map:getBackgroundColor(): returns 4 numbers corresponding to r,g,b,a values to pass into love.graphics.setBackgroundColor
@@ -110,7 +110,7 @@
     3. This notice may not be removed or altered from any source distribution.
 --]]
 
-local module_root = ...
+local module_root = (...):gsub("%.init.lua$", "")
 
 -- polyfill table.new
 ---@type fun(size:integer, fill:any):table
@@ -173,6 +173,7 @@ Layer.__index = Layer
 ---@class pklove.tiled.Tile
 ---@field textureId integer
 ---@field tilesetId integer
+---@field id integer
 ---@field quad love.Quad
 
 ---@class pklove.tiled.Map
@@ -235,6 +236,15 @@ local function tfind(t, v)
     return nil
 end
 
+---User-provided function to map a relative path defined in a .tmx or .tsx
+---export to a useable and normalized path for loading.
+---@type (fun(cwd:string, path:string):string)|nil
+tiled.mapPath = nil
+
+local function defaultMapPath(cwd, path)
+    return Path.normalize(Path.join(cwd, path))
+end
+
 ---@param fileDir string
 ---@param map pklove.tiled.Map
 ---@param tileset pklove.tiled.Tileset
@@ -243,7 +253,7 @@ local function loadTileset(fileDir, map, tileset, loadSettings)
     local globalTiles = map._globalTiles
     local loadedTextures = map.textures
 
-    local texPath = Path.normalize(Path.join(fileDir, tileset.image))
+    local texPath = (tiled.mapPath or defaultMapPath)(fileDir, tileset.image)
     local texture = loadSettings.loadTexture(texPath)
 
     local tilesetIndex = assert( tfind(map.tilesets, tileset) )
@@ -335,7 +345,7 @@ end
 
 ---Load a lua-exported map from a given path
 ---@param mapPath string The path to the lua-exported map.
----@param loadSettings {loadTexture:fun(path:string):love.Image}? Settings to use when loading the map
+---@param loadSettings pklove.tiled.LoadSettings? Settings to use when loading the map
 ---@return pklove.tiled.Map
 function tiled.loadMap(mapPath, loadSettings)
     if loadSettings == nil then
@@ -365,10 +375,11 @@ function tiled.loadMap(mapPath, loadSettings)
     map.textures = {}
 
     -- load the tilesets
+    local funcMapPath = tiled.mapPath or defaultMapPath
     local mapBaseDir = Path.getDirName(mapPath) --[[@as string]]
     for i, tilesetDecl in ipairs(map.tilesets) do
         if tilesetDecl.filename ~= nil then
-            local path = Path.join(mapBaseDir, tilesetDecl.filename)
+            local path = funcMapPath(mapBaseDir, tilesetDecl.filename)
             local tileset = love.filesystem.load(path)()
             tileset.firstgid = tilesetDecl.firstgid
             

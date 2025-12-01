@@ -6,6 +6,18 @@ local sceneman = require("sceneman")
 sceneman.scenePrefix = "scenes."
 sceneman.setCallbackMode("manual")
 
+local tiled = require("tiled")
+local tiled_path = require("tiled.path")
+function tiled.mapPath(cwd, path)
+    -- change extension from .tsx to .lua
+    if tiled_path.getExtension(path) == ".tsx" then
+        path = tiled_path.join(tiled_path.getDirName(path),
+                               tiled_path.getNameWithoutExtension(path) .. ".lua")
+    end
+
+    return tiled_path.normalize(tiled_path.join(cwd, path))
+end
+
 MOUSE_X = 0
 MOUSE_Y = 0
 Debug = {

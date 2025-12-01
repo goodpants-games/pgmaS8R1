@@ -5,10 +5,13 @@ import shutil
 import sys
 
 ASEPRITE = os.environ.get('ASEPRITE', 'aseprite')
+TILED = os.environ.get('TILED', 'tiled')
+
+TMX_BASE_DIRECTORY = os.path.join(os.curdir, 'assets/tiled/maps')
+TSX_BASE_DIRECTORY = os.path.join(os.curdir, 'assets/tiled/tilesets')
 ASE_INPUTS = os.path.join(os.curdir, 'assets/ase')
 ASE_OUTPUTS = os.path.join(os.curdir, 'res/sprites')
 
-TILED = os.environ.get('TILED', 'tiled')
 
 def needs_update(src_path: str, dst_path: str) -> bool:
     # first, determine if out_path is out of date
@@ -25,32 +28,61 @@ def needs_update(src_path: str, dst_path: str) -> bool:
 def process_tmx(src_path: str) -> bool:
     (filename, _) = os.path.splitext(os.path.basename(src_path))
     intermediate_path = os.path.join(os.path.dirname(src_path), filename + '.lua')
-    dst_path = os.path.join('root/res/maps', filename + '.lua')
+    dst_path = os.path.join('root/res/maps/',
+                            os.path.relpath(os.path.dirname(src_path), TMX_BASE_DIRECTORY),
+                            filename + '.lua')
 
     if not needs_update(src_path, dst_path): return True
 
+    src_path = os.path.normpath(src_path)
+    intermediate_path = os.path.normpath(intermediate_path)
+
     print(f'[TMX] {src_path} => {dst_path}')
-    tiled = subprocess.run([TILED, '--export-map', 'lua', os.path.normpath(src_path), os.path.normpath(intermediate_path)])
+    tiled = subprocess.run([TILED, '--export-map', 'lua', src_path, intermediate_path])
     if tiled.returncode != 0:
         return False
     
     os.replace(intermediate_path, dst_path)
-
     return True
 
-def scan_tileset_directory() -> bool:
-    dirpath = 'assets/tiled/tilesets'
-    for basename in os.listdir(dirpath):
-        src_path = os.path.join(dirpath, basename)
-        dst_path = os.path.join('root/res/tilesets', basename)
+def process_tsx(src_path: str) -> bool:
+    (filename, _) = os.path.splitext(os.path.basename(src_path))
+    intermediate_path = os.path.join(os.path.dirname(src_path), filename + '.lua')
+    dst_path = os.path.join('root/res/tilesets/',
+                            os.path.relpath(os.path.dirname(src_path), TSX_BASE_DIRECTORY),
+                            filename + '.lua')
 
-        if needs_update(src_path, dst_path):
-            shutil.copy(src_path, dst_path)
+    if not needs_update(src_path, dst_path): return True
+
+    src_path = os.path.normpath(src_path)
+    intermediate_path = os.path.normpath(intermediate_path)
+
+    print(f'[TSX] {src_path} => {dst_path}')
+    tiled = subprocess.run([TILED, '--export-tileset', 'lua', src_path, intermediate_path])
+    if tiled.returncode != 0:
+        return False
+    
+    os.replace(intermediate_path, dst_path)
+    return True
+
+def scan_tileset_directory(dirpath: str) -> bool:
+    for basename in os.listdir(dirpath):
+        path = os.path.join(dirpath, basename)
+        (_, fileext) = os.path.splitext(basename)
+
+        if fileext == '.png':
+            dst_path = os.path.join('root/res/tilesets',
+                                    os.path.relpath(path, TSX_BASE_DIRECTORY))
+
+            if needs_update(path, dst_path):
+                shutil.copy(path, dst_path)
+        
+        elif fileext == '.tsx':
+            process_tsx(path)
     
     return True
 
-def scan_tiled_directory() -> bool:
-    dirpath = 'assets/tiled/maps'
+def scan_tiled_directory(dirpath: str) -> bool:
     for basename in os.listdir(dirpath):
         path = os.path.normpath(os.path.join(dirpath, basename))
         (filename, fileext) = os.path.splitext(basename)
@@ -80,5 +112,5 @@ def scan_tiled_directory() -> bool:
 #     return success
             
 if __name__ == '__main__':
-    if not (scan_tiled_directory() and scan_tileset_directory()):
+    if not (scan_tiled_directory(TMX_BASE_DIRECTORY) and scan_tileset_directory(TSX_BASE_DIRECTORY)):
         sys.exit(1)    
