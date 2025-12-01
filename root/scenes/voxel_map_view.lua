@@ -338,7 +338,7 @@ function scene.load()
     self.model = r3d.model(mesh)
     self.model2 = r3d.model(mesh)
 
-    self.model2:set_position(5, 0, 0)
+    self.model2:set_position(5, 0, -1)
 
     self.world:add_model(self.model)
     self.world:add_model(self.model2)
@@ -362,10 +362,10 @@ end
 function scene.draw()
     local rot = -MOUSE_Y / 100
 
-    self.world.cam.transform =
+    -- self.world.cam.transform =
         -- mat4.rotation_z(nil, rot) *
-        mat4.translation(nil, self.cam_x, self.cam_y, 0.0)
-    -- self.world.cam:set_position(self.cam_x, self.cam_y, 0.0)
+        -- mat4.translation(nil, self.cam_x, self.cam_y, 0.0)
+    self.world.cam:set_position(self.cam_x, self.cam_y, 0.0)
     self.world.cam.frustum_width = DISPLAY_WIDTH / 16
     self.world.cam.frustum_height = DISPLAY_HEIGHT / 16
 

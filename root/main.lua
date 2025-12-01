@@ -67,7 +67,7 @@ end
 function love.draw()
     Lg.setCanvas({ display_canvas, depth = true })
     local bg_r, bg_g, bg_b, bg_a = Lg.getBackgroundColor()
-    Lg.clear(bg_r, bg_g, bg_b, bg_a, false, 1.0)
+    Lg.clear(bg_r, bg_g, bg_b, bg_a)
     Lg.setFont(font)
 
     sceneman.draw()

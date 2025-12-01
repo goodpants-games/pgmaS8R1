@@ -1,4 +1,5 @@
 local mat4 = require("r3d.mat4")
+local mat3 = require("r3d.mat3")
 local Object = require("r3d.object")
 
 ---@class r3d.World
@@ -56,7 +57,7 @@ function World:new()
 
     ---@private
     ---@type number[]
-    self._tmp_mat3 = { 1, 0, 0, 0, 1, 0, 0, 0, 1 }
+    self._tmp_mat3 = mat3.new()
 
     ---@private
     ---@type number[]
@@ -88,6 +89,15 @@ function World:_pop_mat(count)
 end
 
 ---@private
+---@param pos integer
+function World:_restore_mat_stack(pos)
+    local c = self._tmp_mat_i - pos
+    if c > 0 then
+        self:_pop_mat(c)
+    end
+end
+
+---@private
 ---@param r number
 ---@param g number
 ---@param b number
@@ -109,11 +119,13 @@ end
 ---@overload fun(self:r3d.World, vec:{xyz:number, y:number, z:number}, mat:mat3?):number[]
 function World:_pack_vec(x, y, z, mat)
     if type(x) == "table" then
+        ---@diagnostic disable-next-line
         mat = y
         x, y, z = x.x, x.y, x.z
     end
 
     if mat then
+        ---@diagnostic disable-next-line
         x, y, z = mat:mul_vec(x, y, z)
     end
 
@@ -132,32 +144,43 @@ function World:draw()
     Lg.setShader(shader)
 
     local projection =
-        mat4.oblique(nil, 0, self.cam.frustum_width, 0, self.cam.frustum_height, 0, 5)
-    
+        mat4.oblique(self:_push_mat(), 0, self.cam.frustum_width, 0, self.cam.frustum_height, -5, 5)
     shader:send("u_mat_projection", projection)
+    self:_pop_mat()
 
     local view_mat =
-        self.cam.transform:inverse()
-        * mat4.translation(nil, self.cam.frustum_width / 2, self.cam.frustum_height / 2, 0)
-    local view_normal = view_mat:inverse():transpose():to_mat3()
+        self.cam.transform:inverse(self:_push_mat())
+        * mat4.translation(self:_push_mat(), self.cam.frustum_width / 2, self.cam.frustum_height / 2, 0)
+
+    local sp = self._tmp_mat_i
+    local view_normal = view_mat:inverse(self:_push_mat())
+                                :transpose(self:_push_mat())
+                                :to_mat3(self._tmp_mat3)
     
     shader:send("u_light_ambient_color", self:_pack_color(self.ambient))
     shader:send("u_light_sun_color", self:_pack_color(self.sun))
     shader:send("u_light_sun_direction", self:_pack_vec(self.sun, view_normal))
     
+    self:_restore_mat_stack(sp)
 
     for _, model in ipairs(self.models) do
-        local mv = model.transform * view_mat
+        sp = self._tmp_mat_i
+
+        -- local mv = model.transform * view_mat
+        local mv = model.transform:mul(view_mat, self:_push_mat())
         shader:send("u_mat_modelview", mv)
 
-        local mv_it = mv:inverse()
-                        :transpose()
+        local mv_it = mv:inverse(self:_push_mat())
+                        :transpose(self:_push_mat())
 
         shader:send("u_mat_modelview_norm", mv_it:to_mat3(self._tmp_mat3))
 
         Lg.draw(model.mesh)
+
+        self:_restore_mat_stack(sp)
     end
 
+    self:_pop_mat(2)
     assert(self._tmp_mat_i == 1)
     Lg.pop()
 end
