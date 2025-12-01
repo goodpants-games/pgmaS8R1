@@ -1,45 +1,10 @@
 local scene = require("sceneman").scene()
 local tiled = require("tiled")
 local Input = require("input")
-local mat4 = require("util.mat4")
+local mat4 = require("r3d.mat4")
+local r3d = require("r3d")
 
 local self
-
-local V3D_VS = [[
-attribute vec3 VertexNormal;
-uniform mat4 u_projection;
-uniform mat4 u_modelview;
-
-varying vec3 v_normal;
-
-vec4 position(mat4 transform_projection, vec4 vertex_position)
-{
-    v_normal = VertexNormal;
-    return u_projection * u_modelview * vec4(vertex_position.xyz, 1.0);
-}
-]]
-
-local V3D_FS = [[
-varying vec3 v_normal;
-
-vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
-{
-    vec3 sun_influence =
-        vec3(1.0, 1.0, 1.0) * max(0.0, dot(v_normal, -normalize(vec3(0.4, -0.8, -1.0))));
-    vec3 ambient_influence = vec3(0.1, 0.1, 0.1);
-
-    vec4 texturecolor = Texel(tex, texture_coords);
-    texturecolor.rgb *= ambient_influence + sun_influence;
-    return texturecolor * color;
-}
-]]
-
-local v3d_format = {
-    {"VertexPosition", "float", 3},
-    {"VertexTexCoord", "float", 2},
-    {"VertexNormal", "float", 3},
-    {"VertexColor", "float", 4}
-}
 
 local function tappend(t, ...)
     local tinsert = table.insert
@@ -302,25 +267,25 @@ local function create_mesh(voxel)
         end
     end
 
-    local mesh = Lg.newMesh(v3d_format, vertices, "triangles", "static")
+    local mesh = r3d.createMesh(vertices, "triangles", "static")
     mesh:setVertexMap(indices)
 
-    local out = io.open("../test.obj", "w")
-    assert(out, "could not open test.obj")
-
-    for _, vertex in ipairs(vertices) do
-        out:write(("v %f %f %f\n"):format(vertex[1], vertex[2], vertex[3]))
-        out:write(("vt %f %f\n"):format(vertex[4], vertex[5]))
-    end
-
-    for i=1, #indices, 3 do
-        local a, b, c = indices[i], indices[i+1], indices[i+2]
-        out:write(("f %i/%i %i/%i %i/%i\n"):format(a,a, b,b, c,c))
-    end
-
-    out:close()
-
     return mesh
+
+    -- local out = io.open("../test.obj", "w")
+    -- assert(out, "could not open test.obj")
+
+    -- for _, vertex in ipairs(vertices) do
+    --     out:write(("v %f %f %f\n"):format(vertex[1], vertex[2], vertex[3]))
+    --     out:write(("vt %f %f\n"):format(vertex[4], vertex[5]))
+    -- end
+
+    -- for i=1, #indices, 3 do
+    --     local a, b, c = indices[i], indices[i+1], indices[i+2]
+    --     out:write(("f %i/%i %i/%i %i/%i\n"):format(a,a, b,b, c,c))
+    -- end
+
+    -- out:close()
 end
 
 function scene.load()
@@ -363,19 +328,26 @@ function scene.load()
         ::continue::
     end
 
-    self.mesh = create_mesh({ w = vox_w, h = vox_h, data = vox_data })
-    self.shader = Lg.newShader(V3D_FS, V3D_VS)
+    self.world = r3d.world()
 
+    local mesh = create_mesh({ w = vox_w, h = vox_h, data = vox_data })
     local tex = Lg.newImage("res/test_tex.png")
-    self.mesh:setTexture(tex)
+    mesh:setTexture(tex)
     tex:release()
+
+    self.model = r3d.model(mesh)
+    self.model2 = r3d.model(mesh)
+
+    self.model2:set_position(5, 0, 0)
+
+    self.world:add_model(self.model)
+    self.world:add_model(self.model2)
 end
 
 function scene.unload()
     assert(self)
-    self.map:release()
-    self.mesh:release()
-    self.shader:release()
+    self.model:release()
+    self.world:release()
     self = nil
 end
 
@@ -388,30 +360,24 @@ function scene.update(dt)
 end
 
 function scene.draw()
-    Lg.push("all")
-    Lg.setShader(self.shader)
-    Lg.setMeshCullMode("back")
-    Lg.setDepthMode("less", true)
+    local rot = -MOUSE_Y / 100
 
-    local view_mat = mat4.translation(-self.cam_x, -self.cam_y, 0.0)
-    local model_mat = mat4.rotation_z(-MOUSE_Y / DISPLAY_HEIGHT * (math.pi / 2))
+    self.world.cam.transform =
+        -- mat4.rotation_z(nil, rot) *
+        mat4.translation(nil, self.cam_x, self.cam_y, 0.0)
+    -- self.world.cam:set_position(self.cam_x, self.cam_y, 0.0)
+    self.world.cam.frustum_width = DISPLAY_WIDTH / 16
+    self.world.cam.frustum_height = DISPLAY_HEIGHT / 16
 
-    local view_x = self.cam_x
-    local view_y = self.cam_y
+    self.model.transform:rotation_z(-MOUSE_Y / 100)
+    self.world:draw()
 
-    -- local f_left = view_x
-    -- local f_right = view_x + DISPLAY_WIDTH / 16
-    -- local f_top = view_y
-    -- local f_bottom = view_y + DISPLAY_HEIGHT / 16
-    local frustum_width = DISPLAY_WIDTH / 16
-    local frustum_height = DISPLAY_HEIGHT / 16
-    local z_min = 0.0
-    local z_max = 4.0
+    -- sun direction: vec3(0.4, -0.8, -1.0)
 
-    local projection = mat4.oblique(0, frustum_width, 0, frustum_height, z_min, z_max)
-    -- projection = mat4.rotation_z(love.timer.getTime()) * projection
-    self.shader:send("u_projection", projection)
-    self.shader:send("u_modelview", model_mat * view_mat)
+    -- local projection = mat4.oblique(0, frustum_width, 0, frustum_height, z_min, z_max)
+    -- -- projection = mat4.rotation_z(love.timer.getTime()) * projection
+    -- self.shader:send("u_projection", projection)
+    -- self.shader:send("u_modelview", model_mat * view_mat)
     
     -- local sx = (f_right - f_left) / 2.0
     -- local sy = (f_bottom - f_top) / 2.0
@@ -436,11 +402,11 @@ function scene.draw()
     --     -- 0,      0,      0,       0,
     --     0,      0,      0,       1
     -- })
-    Lg.draw(self.mesh)
+    -- Lg.draw(self.mesh)
 
     -- (-1) * (-1 + (b) / (b - a)) + 1.0
     
-    Lg.pop()
+    -- Lg.pop()
 end
 
 return scene
