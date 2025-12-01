@@ -70,19 +70,24 @@ def process_tsx(src_path: str) -> bool:
 def scan_tileset_directory(dirpath: str) -> bool:
     for basename in os.listdir(dirpath):
         path = os.path.join(dirpath, basename)
-        (_, fileext) = os.path.splitext(basename)
 
-        if fileext == '.png':
-            dst_path = os.path.join('root/res/tilesets',
-                                    os.path.relpath(path, TSX_BASE_DIRECTORY))
-            dst_path = os.path.normpath(dst_path)
-
-            if needs_update(path, dst_path):
-                os.makedirs(os.path.dirname(dst_path), exist_ok=True)
-                shutil.copy(path, dst_path)
+        if os.path.isdir(path) and basename != 'editoronly':
+            scan_tileset_directory(dirpath)
         
-        elif fileext == '.tsx':
-            process_tsx(path)
+        else:
+            (_, fileext) = os.path.splitext(basename)
+
+            if fileext == '.png':
+                dst_path = os.path.join('root/res/tilesets',
+                                        os.path.relpath(path, TSX_BASE_DIRECTORY))
+                dst_path = os.path.normpath(dst_path)
+
+                if needs_update(path, dst_path):
+                    os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+                    shutil.copy(path, dst_path)
+            
+            elif fileext == '.tsx':
+                process_tsx(path)
     
     return True
 

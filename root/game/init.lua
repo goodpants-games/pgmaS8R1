@@ -186,4 +186,19 @@ function Game:draw()
     Lg.pop()
 end
 
+function Game:make_3d_model()
+    ---@type number
+    local heightmap = {}
+    local tinsert = table.insert
+
+    local i = 1
+    for y=0, self.map_height - 1 do
+        for x=0, self.map_width - 1 do
+            local col = self:get_col(x, y)
+
+            i=i+1
+        end
+    end
+end
+
 return Game

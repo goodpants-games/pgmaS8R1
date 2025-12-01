@@ -19,7 +19,7 @@ function love.load(args)
         end
     end
 
-    sceneman.switchScene("game")
+    sceneman.switchScene("voxel_map_view")
 end
 
 local _paused_sources
@@ -35,7 +35,7 @@ end
 
 function love.keypressed(key)
     if key == "escape" then
-        sceneman.switchScene("menu")
+        sceneman.switchScene("game")
     else
         sceneman.dispatch("keypressed", key)
     end
@@ -65,8 +65,9 @@ function love.update(dt)
 end
 
 function love.draw()
-    Lg.setCanvas(display_canvas)
-    Lg.clear(Lg.getBackgroundColor())
+    Lg.setCanvas({ display_canvas, depth = true })
+    local bg_r, bg_g, bg_b, bg_a = Lg.getBackgroundColor()
+    Lg.clear(bg_r, bg_g, bg_b, bg_a, false, 1.0)
     Lg.setFont(font)
 
     sceneman.draw()
