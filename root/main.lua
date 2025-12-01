@@ -52,7 +52,11 @@ local function update_display_fit()
     -- print(display_ox, display_oy, display_scale)
 end
 
+local update_frametime = 0.0
+
 function love.update(dt)
+    local start = love.timer.getTime()
+
     batteries.manual_gc(3e-3)
     Debug.draw.enabled = Debug.enabled
 
@@ -62,9 +66,13 @@ function love.update(dt)
     
     Input.update()
     sceneman.update(dt)
+
+    update_frametime = love.timer.getTime() - start
 end
 
 function love.draw()
+    local draw_ts = love.timer.getTime()
+
     Lg.setCanvas({ display_canvas, depth = true })
     local bg_r, bg_g, bg_b, bg_a = Lg.getBackgroundColor()
     Lg.clear(bg_r, bg_g, bg_b, bg_a)
@@ -73,10 +81,14 @@ function love.draw()
     sceneman.draw()
     Debug.draw:flush()
 
+    local draw_frametime = love.timer.getTime() - draw_ts
+
     -- debug text
     Lg.setColor(1, 1, 1)
-    Lg.print(("%.1f Kb"):format(collectgarbage("count")), 10, 10)
-
+    Lg.print(("%.1f Kb"):format(collectgarbage("count")), 1, 1)
+    Lg.print(("update: %.1f ms"):format(update_frametime * 1000), 1, 11)
+    Lg.print(("draw: %.1f ms"):format(draw_frametime * 1000), 1, 21)
+    
     -- draw display onto window
     Lg.setCanvas()
     Lg.clear(0, 0, 0, 1)
