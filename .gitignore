@@ -2,4 +2,6 @@
 desktop.ini
 *.tiled-session
 
-/exports
+/exports/
+/root/res/maps/
+/root/res/tilesets/

@@ -42,6 +42,7 @@ def process_tmx(src_path: str) -> bool:
     if tiled.returncode != 0:
         return False
     
+    os.makedirs(os.path.dirname(dst_path), exist_ok=True)
     os.replace(intermediate_path, dst_path)
     return True
 
@@ -62,6 +63,7 @@ def process_tsx(src_path: str) -> bool:
     if tiled.returncode != 0:
         return False
     
+    os.makedirs(os.path.dirname(dst_path), exist_ok=True)
     os.replace(intermediate_path, dst_path)
     return True
 
@@ -73,8 +75,10 @@ def scan_tileset_directory(dirpath: str) -> bool:
         if fileext == '.png':
             dst_path = os.path.join('root/res/tilesets',
                                     os.path.relpath(path, TSX_BASE_DIRECTORY))
+            dst_path = os.path.normpath(dst_path)
 
             if needs_update(path, dst_path):
+                os.makedirs(os.path.dirname(dst_path), exist_ok=True)
                 shutil.copy(path, dst_path)
         
         elif fileext == '.tsx':
@@ -86,7 +90,6 @@ def scan_tiled_directory(dirpath: str) -> bool:
     for basename in os.listdir(dirpath):
         path = os.path.normpath(os.path.join(dirpath, basename))
         (filename, fileext) = os.path.splitext(basename)
-        # print(path, filename, fileext)
 
         if fileext == ".tmx":
             s = process_tmx(path)
