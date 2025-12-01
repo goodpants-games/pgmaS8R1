@@ -746,10 +746,12 @@ end
 
 ---Releases resources associated with rendering this tile layer.
 function TileLayer:release()
-    for _, batch in ipairs(self._drawBatches) do
-        batch:release()
+    if self._drawBatches then
+        for _, batch in ipairs(self._drawBatches) do
+            batch:release()
+        end
+        self._drawBatches = nil
     end
-    self._drawBatches = nil
 end
 
 ---Get a tile.
