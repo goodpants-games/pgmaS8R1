@@ -1,82 +1,13 @@
-require("envsetup")
-Lg.setDefaultFilter("nearest")
+require("postconf")
 
 local Input = require("input")
 local sceneman = require("sceneman")
-sceneman.scenePrefix = "scenes."
-sceneman.setCallbackMode("manual")
-
-local tiled = require("tiled")
-local tiled_path = require("tiled.path")
-function tiled.mapPath(cwd, path)
-    -- change extension from .tsx to .lua
-    if tiled_path.getExtension(path) == ".tsx" then
-        path = tiled_path.join(tiled_path.getDirName(path),
-                               tiled_path.getNameWithoutExtension(path) .. ".lua")
-    end
-
-    return tiled_path.normalize(tiled_path.join(cwd, path))
-end
-
-MOUSE_X = 0
-MOUSE_Y = 0
-Debug = {
-    enabled = false,
-    draw = {}
-}
 
 local display_canvas = Lg.newCanvas(DISPLAY_WIDTH, DISPLAY_HEIGHT, { dpiscale = 1.0 })
 
 local display_ox = 0.0
 local display_oy = 0.0
 local display_scale = 1.0
-
-local debug_draw_list = {}
-
-function Debug.draw.color(r, g, b, a)
-    if not Debug.enabled then return end
-    table.insert(debug_draw_list, function()
-        Lg.setColor(r, g, b, a)
-    end)
-end
-
-function Debug.draw.push()
-    if not Debug.enabled then return end
-    table.insert(debug_draw_list, Lg.push)
-end
-
-function Debug.draw.pop()
-    if not Debug.enabled then return end
-    table.insert(debug_draw_list, Lg.pop)
-end
-
-function Debug.draw.translate(x, y)
-    if not Debug.enabled then return end
-    table.insert(debug_draw_list, function()
-        Lg.translate(x, y)
-    end)
-end
-
-function Debug.draw.point(x, y)
-    if not Debug.enabled then return end
-    table.insert(debug_draw_list, function()
-        Lg.points(x + 0.5, y + 0.5)
-    end)
-end
-
-function Debug.draw.rect_lines(x, y, w, h)
-    if not Debug.enabled then return end
-    table.insert(debug_draw_list, function()
-        Lg.rectangle("line", x + 0.5, y + 0.5, w, h)
-    end)
-end
-
-function Debug.draw.line(x0, y0, x1, y1)
-    if not Debug.enabled then return end
-    table.insert(debug_draw_list, function()
-        Lg.line(x0 + 0.5, y0 + 0.5, x1 + 0.5, y1 + 0.5)
-    end)
-end
 
 local font = Lg.newFont("res/fonts/ProggyClean.ttf", 16, "none", 1.0)
 
@@ -123,6 +54,7 @@ end
 
 function love.update(dt)
     batteries.manual_gc(3e-3)
+    Debug.draw.enabled = Debug.enabled
 
     update_display_fit()
     MOUSE_X = (love.mouse.getX() - display_ox) / display_scale
@@ -138,16 +70,7 @@ function love.draw()
     Lg.setFont(font)
 
     sceneman.draw()
-
-    -- commit debug draw list
-    Lg.push()
-    Lg.origin()
-    Lg.setColor(1, 1, 1)
-    for _, v in ipairs(debug_draw_list) do
-        v()
-    end
-    table.clear(debug_draw_list)
-    Lg.pop()
+    Debug.draw:flush()
 
     -- debug text
     Lg.setColor(1, 1, 1)

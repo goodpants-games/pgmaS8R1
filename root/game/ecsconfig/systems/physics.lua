@@ -114,8 +114,8 @@ local function resolve_tilemap_collisions(ent, game)
                             cell_min_dist = dist
                             col_pn, col_nx, col_ny = pn, nx, ny
 
-                            Debug.draw.color(1, 1, 1)
-                            Debug.draw.rect_lines(colx - colw / 2.0,
+                            Debug.draw:color(1, 1, 1)
+                            Debug.draw:rect_lines(colx - colw / 2.0,
                                                   coly - colh / 2.0,
                                                   colw, colh)
                         end
@@ -132,8 +132,8 @@ local function resolve_tilemap_collisions(ent, game)
         end
 
         if col_pn then
-            Debug.draw.color(1, 0, 0)
-            Debug.draw.rect_lines(cx * tw, cy * th, tw, th)
+            Debug.draw:color(1, 0, 0)
+            Debug.draw:rect_lines(cx * tw, cy * th, tw, th)
             -- -- print("intersection!")
             -- local colx, coly, colw, colh
             -- if cell_value == 1 then

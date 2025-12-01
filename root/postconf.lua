@@ -41,3 +41,30 @@ end
 
 require("batteries"):export()
 Lg = love.graphics
+
+Lg.setDefaultFilter("nearest")
+
+local sceneman = require("sceneman")
+sceneman.scenePrefix = "scenes."
+sceneman.setCallbackMode("manual")
+
+local tiled = require("tiled")
+local tpath = require("tiled.path")
+function tiled.mapPath(cwd, path)
+    -- change extension from .tsx to .lua
+    if tpath.getExtension(path) == ".tsx" then
+        path = tpath.join(tpath.getDirName(path),
+                          tpath.getNameWithoutExtension(path) .. ".lua")
+    end
+
+    return tpath.normalize(tpath.join(cwd, path))
+end
+
+MOUSE_X = 0
+MOUSE_Y = 0
+
+Debug = {
+    enabled = false,
+}
+
+require("dbgdraw")

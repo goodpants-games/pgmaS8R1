@@ -135,8 +135,8 @@ function Game:tick()
 end
 
 function Game:update(dt)
-    Debug.draw.push()
-    Debug.draw.translate(math.floor(-self.cam_x + DISPLAY_WIDTH / 2.0), math.floor(-self.cam_y + DISPLAY_HEIGHT / 2.0))
+    Debug.draw:push()
+    Debug.draw:translate(math.floor(-self.cam_x + DISPLAY_WIDTH / 2.0), math.floor(-self.cam_y + DISPLAY_HEIGHT / 2.0))
 
     self.world:emit("update", dt)
 
@@ -172,7 +172,7 @@ function Game:update(dt)
         iter=iter+1
     end
 
-    Debug.draw.pop()
+    Debug.draw:pop()
 end
 
 function Game:draw()
