@@ -52,6 +52,21 @@ function mat4.mul(a, b, res)
     return res
 end
 
+---@param x number
+---@param y number
+---@param z number
+---@param w number?
+---@return number x, number y, number w, number z
+function mat4:mul_vec(x, y, z, w)
+    w = w or 1.0
+
+    return
+        self[ 1] * x + self[ 2] * y + self[ 3] * z + self[ 4] * w,
+        self[ 5] * x + self[ 6] * y + self[ 7] * z + self[ 8] * w,
+        self[ 9] * x + self[10] * y + self[11] * z + self[12] * w,
+        self[13] * x + self[14] * y + self[15] * z + self[16] * w
+end
+
 mat4.__mul = mat4.mul
 
 ---@param dst mat4?
@@ -245,27 +260,21 @@ end
 ---@param right number
 ---@param top number
 ---@param bottom number
----@param zmin number
----@param zmax number
+---@param near number Near plane offset.
+---@param far number Far plane offset.
 ---@return mat4
-function mat4.oblique(mat, left, right, top, bottom, zmin, zmax)
+function mat4.oblique(mat, left, right, top, bottom, near, far)
     mat = mat or mat4.new()
 
     local sx = (right - left) / 2.0
     local sy = (bottom - top) / 2.0
+    
+    local bn = -1 + 2.0 * far / (top - bottom)
+    local bf = 1 - 2.0 * near / (bottom - top)
+    local zf = -2.0 / (bf - bn)
 
-    local cza = -1 - (2.0 * zmin) / (top - bottom)
-    local czb = -1 + (2.0 * zmax) / (bottom - top)
-    local czm = (czb - 1.0) / (1.0 - cza)
-
-    local zf = czm * 2.0 / (bottom - top)
-    local zc = czm * ((-2.0 * top) / (bottom - top) - cza - 1.0) + 1.0
-
-    -- print("b", f_top, f_bottom)
-    -- print("m", zf, zc)
-
-    -- assert(math.abs((f_top * zf + zc) - (1.0)) < 1e-5)
-    -- assert(math.abs((f_bottom * zf + zc) - (-1.0)) < 1e-5)
+    local zyc = zf * (2.0 / (bottom - top))
+    local zwc = zf * (-2.0 * top / (bottom - top) - 1.0 - bn) + 1.0
 
         mat[ 1], mat[ 2], mat[ 3], mat[ 4],
         mat[ 5], mat[ 6], mat[ 7], mat[ 8],
@@ -274,7 +283,7 @@ function mat4.oblique(mat, left, right, top, bottom, zmin, zmax)
     = 
         1 / sx, 0,      0,       -1 - left / sx,
         0,      1 / sy, -1 / sy, -1 - top / sy,
-        0,      zf,     0,       zc,
+        0,      zyc,    0,       zwc,
         0,      0,      0,       1
     
     return mat

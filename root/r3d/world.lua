@@ -176,7 +176,7 @@ function World:draw()
 
             shader:send("u_mat_modelview_norm", mv_it:to_mat3(self._tmp_mat3))
         end
-        
+
         Lg.draw(model.mesh)
 
         self:_restore_mat_stack(sp)
