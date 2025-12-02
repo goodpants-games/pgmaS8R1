@@ -347,30 +347,34 @@ function map_loader.create_mesh(map)
                 -- top
                 if get_voxel(x, y, z + 1) == 0 then
                     local u0, v0, u1, v1 = calc_tex_uv(x, y, z, false)
+                    local nz = 1
+                    if z >= 1 then
+                        nz = -1
+                    end
 
                     tappend(vertices,
                         {
                             x + 1, y + 1, z + 1,
                             u1, v0,
-                            0, 0, 1,
+                            0, 0, nz,
                             1, 1, 1, 1
                         },
                         {
                             x, y + 1, z + 1,
                             u0, v0,
-                            0, 0, 1,
+                            0, 0, nz,
                             1, 1, 1, 1
                         },
                         {
                             x, y, z + 1,
                             u0, v1,
-                            0, 0, 1,
+                            0, 0, nz,
                             1, 1, 1, 1
                         },
                         {
                             x + 1, y, z + 1,
                             u1, v1,
-                            0, 0, 1,
+                            0, 0, nz,
                             1, 1, 1, 1
                         }
                     )

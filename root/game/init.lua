@@ -236,10 +236,10 @@ function Game:draw()
     local cam_x = math.round(self.cam_x)
     local cam_y = math.round(self.cam_y)
 
-    -- r3d_world.cam:set_position(cam_x, cam_y, 0.0)
-    r3d_world.cam.transform =
-        mat4.rotation_z(nil, MOUSE_Y / 100) *
-        mat4.translation(nil, cam_x, cam_y, 0.0)
+    r3d_world.cam:set_position(cam_x, cam_y, 0.0)
+    -- r3d_world.cam.transform =
+    --     mat4.rotation_z(nil, MOUSE_Y / 100) *
+    --     mat4.translation(nil, cam_x, cam_y, 0.0)
 
     r3d_world.cam.frustum_width = DISPLAY_WIDTH
     r3d_world.cam.frustum_height = DISPLAY_HEIGHT
@@ -248,9 +248,9 @@ function Game:draw()
     r3d_world.sun.g = 0
     r3d_world.sun.b = 0
 
-    r3d_world.ambient.r = 0.01
-    r3d_world.ambient.g = 0.01
-    r3d_world.ambient.b = 0.01
+    r3d_world.ambient.r = 0.04
+    r3d_world.ambient.g = 0.04
+    r3d_world.ambient.b = 0.04
 
     self.r3d_draw_batch:clear()
 

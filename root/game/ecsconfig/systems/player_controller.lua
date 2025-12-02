@@ -35,7 +35,11 @@ function system:tick()
     end
 
     if light and light.type == "spot" then
-        light.spot_rz = actor.look_angle
+        local dx = MOUSE_X - DISPLAY_WIDTH / 2
+        local dy = MOUSE_Y - DISPLAY_HEIGHT / 2
+        local ang = math.atan2(dy, dx)
+
+        light.spot_rz = ang
     end
 end
 

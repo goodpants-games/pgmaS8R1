@@ -1,5 +1,5 @@
-#ifndef R3D_LIGHTING
-#define R3D_LIGHTING
+#ifndef _r3d_lighting_
+#define _r3d_lighting_
 
 uniform vec3 u_light_ambient_color;
 uniform vec3 u_light_sun_color;

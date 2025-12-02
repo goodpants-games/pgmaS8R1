@@ -33,13 +33,13 @@ local function shader_preproc(path)
 
     local lines = {
         "#define SPOTLIGHT_COUNT " .. SPOTLIGHT_COUNT,
-        -- "#line 0 0"
-        "#include <" .. path .. ">"
     }
 
-    -- for line in love.filesystem.lines(path) do
-    --     table.insert(lines, line)
-    -- end
+    if love.filesystem.getInfo(path) then
+        lines[#lines+1] = "#include <" .. path .. ">"
+    else
+        lines[#lines+1] = path
+    end
 
     return table.concat(lines, "\n")
 end
@@ -64,6 +64,32 @@ local function shader_try_send(shader, name, ...)
         shader:send(name, ...)
     end
 end
+
+local SHADER_SOURCE_SHADED = [[
+#include <res/shaders/r3d/lighting.glsl>
+#include <res/shaders/r3d/frag.glsl>
+
+vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
+{
+    vec3 light_sum = r3d_calc_lighting(v_normal, v_view_pos);
+    vec4 texturecolor = Texel(tex, texture_coords);
+    texturecolor.rgb *= light_sum;
+    return texturecolor * color;
+}
+]]
+
+local SHADER_SOURCE_SHADED_ALPHA_INFLUENCE = [[
+#include <res/shaders/r3d/lighting.glsl>
+#include <res/shaders/r3d/frag.glsl>
+
+vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
+{
+    vec3 light_sum = r3d_calc_lighting(v_normal, v_view_pos);
+    vec4 texturecolor = Texel(tex, texture_coords);
+    texturecolor.rgb *= light_sum * texturecolor.a;
+    return vec4(texturecolor.rgb, 1.0) * color;
+}
+]]
 
 function World:new()
     self.sun = {
@@ -90,10 +116,14 @@ function World:new()
 
     ---@type {[string]: love.Shader}
     self.shaders = {}
-    self.shaders.shaded = new_shader("res/shaders/r3d/r3d_shaded.frag.glsl",
-                                     "res/shaders/r3d/r3d.vert.glsl")
-    self.shaders.basic = new_shader(nil,
-                                    "res/shaders/r3d/r3d.vert.glsl")
+
+    local vertex_code = "res/shaders/r3d/r3d.vert.glsl"
+    self.shaders.shaded =
+        new_shader(SHADER_SOURCE_SHADED, vertex_code)
+    self.shaders.shaded_alpha_influence =
+        new_shader(SHADER_SOURCE_SHADED_ALPHA_INFLUENCE, vertex_code)
+    self.shaders.basic =
+        new_shader(nil, vertex_code)
 
     ---@private
     ---@type mat4[]
@@ -206,7 +236,7 @@ end
 function World:_draw_object(obj, view_mat)
     local shader
     if obj.use_shading then
-        shader = self.shaders.shaded
+        shader = self.shaders.shaded_alpha_influence
     else
         shader = self.shaders.basic
     end
