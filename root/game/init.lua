@@ -52,8 +52,8 @@ function Game:new()
     -- get collision data
     self._colmap = {}
 
-    if map.data[1] then
-        local col_layer = map.data[1]
+    if map.data[2] then
+        local col_layer = map.data[2]
         local i = 1
         for y=0, h-1 do
             for x=0, w-1 do
@@ -89,7 +89,7 @@ function Game:new()
     end
     self._map_model = r3d.model(map_mesh)
     self._map_model:set_scale(16, 16, 16)
-    self._map_model.use_shading = false
+    self._map_model:set_position(0, 0, -16)
 
     -- create r3d world
     self.r3d_world = r3d.world()
@@ -238,11 +238,19 @@ function Game:draw()
 
     -- r3d_world.cam:set_position(cam_x, cam_y, 0.0)
     r3d_world.cam.transform =
-        mat4.rotation_z(nil, MOUSE_Y / -100) *
+        mat4.rotation_z(nil, MOUSE_Y / 100) *
         mat4.translation(nil, cam_x, cam_y, 0.0)
 
     r3d_world.cam.frustum_width = DISPLAY_WIDTH
     r3d_world.cam.frustum_height = DISPLAY_HEIGHT
+    
+    r3d_world.sun.r = 0
+    r3d_world.sun.g = 0
+    r3d_world.sun.b = 0
+
+    r3d_world.ambient.r = 0.01
+    r3d_world.ambient.g = 0.01
+    r3d_world.ambient.b = 0.01
 
     self.r3d_draw_batch:clear()
 

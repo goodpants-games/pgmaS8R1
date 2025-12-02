@@ -282,8 +282,8 @@ function World:draw()
                 local u_pos       = self._u_spotlights.pos[spotlight_i]
                 local u_dir_ang   = self._u_spotlights.dir_angle[spotlight_i]
                 local u_color_pow = self._u_spotlights.color_pow[spotlight_i]
-
-                u_pos[1], u_pos[2], u_pos[3] = px, py, pz
+                
+                u_pos[1], u_pos[2], u_pos[3] = view_mat:mul_vec(px, py, pz)
                 u_dir_ang[1], u_dir_ang[2], u_dir_ang[3] = view_normal:mul_vec(dx, dy, dz)
                 u_dir_ang[4] = obj.angle
                 u_color_pow[1], u_color_pow[2], u_color_pow[3] = obj.r, obj.g, obj.b

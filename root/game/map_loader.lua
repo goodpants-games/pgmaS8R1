@@ -46,6 +46,14 @@ function map_loader.create_mesh(map)
             edge_bl_corner_in     = 3,
             edge_bl_corner_out    = 4,
             top                   = 0,
+        },
+        [2] = {
+            side                  = 6,
+            edge_bottom           = 6,
+            edge_left             = 6,
+            edge_bl_corner_in     = 6,
+            edge_bl_corner_out    = 6,
+            top                   = 6,
         }
     }
 

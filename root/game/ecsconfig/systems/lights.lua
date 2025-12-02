@@ -54,9 +54,11 @@ local function sync_light(world, light, info, pos)
         light.angle = info.spot_angle
 
         light.transform =
-            mat4.translation(nil, px, py, pz) *
-            mat4.rotation_x(nil, info.spot_rx)
+            -- mat4.rotation_x(nil, info.spot_rx)
             mat4.rotation_z(nil, info.spot_rz)
+            * mat4.translation(nil, px, py, pz)
+        
+        print(light:get_light_direction())
     else
         light.transform:identity()
         light:set_position(px, py, pz)

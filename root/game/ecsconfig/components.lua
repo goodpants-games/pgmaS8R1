@@ -51,9 +51,9 @@ Concord.component("light", function(cmp, type)
     cmp.enabled = true
     cmp.type = type
 
-    cmp.spot_angle = math.rad(60)
+    cmp.spot_angle = math.rad(45)
     cmp.spot_rz = 0.0
     cmp.spot_rx = 0.0
 
-    cmp.z_offset = 0.0
+    cmp.z_offset = 8.0
 end)

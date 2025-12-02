@@ -14,6 +14,7 @@ function system:tick()
     local game = self:getWorld().game --[[@as Game]]
     local position = ent.position
     local actor = ent.actor
+    local light = ent.light
 
     if position then
         game.cam_x = position.x
@@ -31,6 +32,10 @@ function system:tick()
         else
             actor.look_angle = math.lerp_angle(actor.look_angle, ang, 0.2)
         end
+    end
+
+    if light and light.type == "spot" then
+        light.spot_rz = actor.look_angle
     end
 end
 
