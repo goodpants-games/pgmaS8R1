@@ -31,6 +31,139 @@ local function create_mesh(voxel)
         return voxel.data[z+1][y * voxel.w + x + 1]
     end
 
+    local tile_data = {
+        [1] = {
+            side                  = 5,
+            edge_bottom           = 1,
+            edge_left             = 2,
+            edge_bl_corner_in     = 3,
+            edge_bl_corner_out    = 4,
+            top                   = 0,
+        }
+    }
+
+    local function calc_tex_id(x, y, z, is_side)
+        local tid = get_voxel(x, y, z)
+        if tid == 0 then return end
+
+        local tinfo = tile_data[tid]
+        if not tinfo then return end
+
+        if is_side then
+            return tinfo.side
+        end
+
+        -- true if open, false if closed
+        local r = get_voxel(x+1, y, z) ~= tid
+        local l = get_voxel(x-1, y, z) ~= tid
+        local u = get_voxel(x, y-1, z) ~= tid
+        local d = get_voxel(x, y+1, z) ~= tid
+        local br = get_voxel(x+1, y+1, z) ~= tid
+        local bl = get_voxel(x-1, y+1, z) ~= tid
+        local tl = get_voxel(x-1, y-1, z) ~= tid
+        local tr = get_voxel(x+1, y-1, z) ~= tid
+
+        local count = 0
+        if r then count=count+1 end
+        if l then count=count+1 end
+        if u then count=count+1 end
+        if d then count=count+1 end
+
+        local dcount = 0
+        if tr then dcount=dcount+1 end
+        if tl then dcount=dcount+1 end
+        if br then dcount=dcount+1 end
+        if bl then dcount=dcount+1 end
+
+        if count == 0 then
+            if tr then
+                return tinfo.edge_bl_corner_in, "xy"
+            end
+
+            if tl then
+                return tinfo.edge_bl_corner_in, "y"
+            end
+
+            if bl then
+                return tinfo.edge_bl_corner_in
+            end
+
+            if br then
+                return tinfo.edge_bl_corner_in, "x"
+            end
+
+            return tinfo.top
+        elseif count == 1 then
+            if r then
+                return tinfo.edge_left, "x"
+            end
+
+            if u then
+                return tinfo.edge_bottom, "y"
+            end
+
+            if l then
+                return tinfo.edge_left
+            end
+
+            if d then
+                return tinfo.edge_bottom
+            end
+        elseif count == 2 then
+            if u and r then
+                return tinfo.edge_bl_corner_out, "xy"
+            end
+
+            if r and d then
+                return tinfo.edge_bl_corner_out, "x"
+            end
+
+            if d and l then
+                return tinfo.edge_bl_corner_out
+            end
+
+            if l and u then
+                return tinfo.edge_bl_corner_out, "y"
+            end
+        else
+            goto unknown
+        end
+
+        ::unknown::
+        return tinfo.top
+        -- if r and not l and not u and not d then
+        --     return tinfo.edge_left, "x"
+        -- end
+    end
+
+    local function calc_tex_uv(x, y, z, is_side)
+        local id, flip = calc_tex_id(x, y, z, is_side)
+
+        local cols = 16
+        local rows = 16
+        local tw = 1.0 / cols
+        local th = 1.0 / rows
+
+        local tx = id % cols * tw
+        local ty = math.floor(id / cols) * th
+
+        local u0, v0 = tx, ty
+        local u1, v1 = tx + tw, ty + th
+
+        if flip then
+            if string.find(flip, "x", 1, true) then
+                u0, u1 = u1, u0
+            end
+
+            if string.find(flip, "y", 1, true) then
+                v0, v1 = v1, v0
+            end
+        end
+
+        v1, v0 = v0, v1
+        return u0, v0, u1, v1
+    end
+
     local vi = 1
     for z=0, voxel_depth-1 do
         local i=1
@@ -42,28 +175,30 @@ local function create_mesh(voxel)
 
                 -- right
                 if get_voxel(x + 1, y, z) == 0 then
+                    local u0, v0, u1, v1 = calc_tex_uv(x, y, z, true)
+
                     tappend(vertices,
                         {
                             x + 1, y, z,
-                            1, 0,
+                            u1, v0,
                             1, 0, 0,
                             1, 1, 1, 1
                         },
                         {
                             x + 1, y + 1, z,
-                            0, 0,
+                            u0, v0,
                             1, 0, 0,
                             1, 1, 1, 1
                         },
                         {
                             x + 1, y + 1, z + 1,
-                            0, 1,
+                            u0, v1,
                             1, 0, 0,
                             1, 1, 1, 1
                         },
                         {
                             x + 1, y, z + 1,
-                            1, 1,
+                            u1, v1,
                             1, 0, 0,
                             1, 1, 1, 1
                         }
@@ -79,28 +214,30 @@ local function create_mesh(voxel)
 
                 -- left
                 if get_voxel(x - 1, y, z) == 0 then
+                    local u0, v0, u1, v1 = calc_tex_uv(x, y, z, true)
+                    
                     tappend(vertices,
                         {
                             x, y + 1, z,
-                            1, 0,
+                            u1, v0,
                             -1, 0, 0,
                             1, 1, 1, 1
                         },
                         {
                             x, y, z,
-                            0, 0,
+                            u0, v0,
                             -1, 0, 0,
                             1, 1, 1, 1
                         },
                         {
                             x, y, z + 1,
-                            0, 1,
+                            u0, v1,
                             -1, 0, 0,
                             1, 1, 1, 1
                         },
                         {
                             x, y + 1, z + 1,
-                            1, 1,
+                            u1, v1,
                             -1, 0, 0,
                             1, 1, 1, 1
                         }
@@ -116,28 +253,30 @@ local function create_mesh(voxel)
 
                 -- front
                 if get_voxel(x, y + 1, z) == 0 then
+                    local u0, v0, u1, v1 = calc_tex_uv(x, y, z, true)
+
                     tappend(vertices,
                         {
                             x + 1, y + 1, z,
-                            1, 0,
+                            u1, v0,
                             0, 1, 0,
                             1, 1, 1, 1
                         },
                         {
                             x, y + 1, z,
-                            0, 0,
+                            u0, v0,
                             0, 1, 0,
                             1, 1, 1, 1
                         },
                         {
                             x, y + 1, z + 1,
-                            0, 1,
+                            u0, v1,
                             0, 1, 0,
                             1, 1, 1, 1
                         },
                         {
                             x + 1, y + 1, z + 1,
-                            1, 1,
+                            u1, v1,
                             0, 1, 0,
                             1, 1, 1, 1
                         }
@@ -153,28 +292,30 @@ local function create_mesh(voxel)
 
                 -- back
                 if get_voxel(x, y - 1, z) == 0 then
+                    local u0, v0, u1, v1 = calc_tex_uv(x, y, z, true)
+
                     tappend(vertices,
                         {
                             x, y, z,
-                            1, 0,
+                            u1, v0,
                             0, -1, 0,
                             1, 1, 1, 1
                         },
                         {
                             x + 1, y, z,
-                            0, 0,
+                            u0, v0,
                             0, -1, 0,
                             1, 1, 1, 1
                         },
                         {
                             x + 1, y, z + 1,
-                            0, 1,
+                            u0, v1,
                             0, -1, 0,
                             1, 1, 1, 1
                         },
                         {
                             x, y, z + 1,
-                            1, 1,
+                            u1, v1,
                             0, -1, 0,
                             1, 1, 1, 1
                         }
@@ -190,28 +331,30 @@ local function create_mesh(voxel)
 
                 -- top
                 if get_voxel(x, y, z + 1) == 0 then
+                    local u0, v0, u1, v1 = calc_tex_uv(x, y, z, false)
+
                     tappend(vertices,
                         {
                             x + 1, y + 1, z + 1,
-                            1, 0,
+                            u1, v0,
                             0, 0, 1,
                             1, 1, 1, 1
                         },
                         {
                             x, y + 1, z + 1,
-                            0, 0,
+                            u0, v0,
                             0, 0, 1,
                             1, 1, 1, 1
                         },
                         {
                             x, y, z + 1,
-                            0, 1,
+                            u0, v1,
                             0, 0, 1,
                             1, 1, 1, 1
                         },
                         {
                             x + 1, y, z + 1,
-                            1, 1,
+                            u1, v1,
                             0, 0, 1,
                             1, 1, 1, 1
                         }
@@ -331,7 +474,7 @@ function scene.load()
     self.world = r3d.world()
 
     local mesh = create_mesh({ w = vox_w, h = vox_h, data = vox_data })
-    local tex = Lg.newImage("res/test_tex.png")
+    local tex = Lg.newImage("res/tilesets/test_tileset.png")
     mesh:setTexture(tex)
     tex:release()
 
@@ -343,6 +486,7 @@ function scene.load()
     self.batch = r3d.batch()
     self.batch.opaque = false
     self.batch.use_shading = false
+    self.batch.double_sided = true
 
     self.model:set_scale(16, 16, 16)
     -- self.model2:set_position(5, 0, -4)
@@ -368,11 +512,13 @@ function scene.update(dt)
 end
 
 function scene.draw()
-    local rot = -MOUSE_Y / 100
+    local cam_x = math.floor(self.cam_x)
+    local cam_y = math.floor(self.cam_y)
 
     self.world.cam.transform =
         -- mat4.scale(nil, 1.0, 1.0, 1.0) *
-        mat4.translation(nil, self.cam_x, self.cam_y, 0.0)
+        mat4.rotation_z(nil, -MOUSE_Y / 100) *
+        mat4.translation(nil, cam_x, cam_y, 0.0)
     
     -- self.world.cam:set_position(self.cam_x, self.cam_y, 0.0)
     self.world.cam.frustum_width = DISPLAY_WIDTH
@@ -380,28 +526,28 @@ function scene.draw()
 
     self.model.transform =
         mat4.scale(nil, 16.0, 16.0, 16.0)
-        * mat4.rotation_z(nil, -MOUSE_Y / 100)
+        -- * mat4.rotation_z(nil, -MOUSE_Y / 100)
     
     self.batch:clear()
 
     self.batch:add_image(self.test_tex,
         mat4.identity()
-        :translation(self.cam_x, self.cam_y, math.sin(love.timer.getTime()) * 32.0)
+        :translation(cam_x, cam_y, math.sin(love.timer.getTime()) * 32.0)
         :rotation_x(math.pi / 2))
 
     self.batch:add_image(self.test_tex,
         mat4.identity()
-        :translation(self.cam_x + 20, self.cam_y, math.sin(love.timer.getTime()) * 32.0)
+        :translation(cam_x + 20, cam_y, math.sin(love.timer.getTime()) * 32.0)
         :rotation_x(math.pi / 2))
 
     self.batch:add_image(self.test_tex2,
         mat4.identity()
-        :translation(self.cam_x + 20, self.cam_y + 20, math.sin(love.timer.getTime()) * 32.0)
+        :translation(cam_x + 20, cam_y + 20, math.sin(love.timer.getTime()) * 32.0)
         :rotation_x(math.pi / 2))
 
     self.batch:add_image(self.test_tex2,
         mat4.identity()
-        :translation(self.cam_x, self.cam_y + 20, math.sin(love.timer.getTime()) * 32.0)
+        :translation(cam_x, cam_y + 20, math.sin(love.timer.getTime()) * 32.0)
         :rotation_x(math.pi / 2))
     
     self.world:draw()
