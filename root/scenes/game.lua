@@ -15,6 +15,9 @@ local function create_actor(x, y)
         :give("light", "spot")
     
     ent.sprite.oy = 9
+    ent.light.power = 5.0
+    ent.light.linear = 0.007
+    ent.light.quadratic = 0.0002
     
     return ent
 end

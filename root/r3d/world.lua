@@ -113,17 +113,19 @@ function World:new()
     self._tmp_vec3 = { 0, 0, 0 }
 
     ---@private
-    ---@type {pos:number[][], dir_angle:number[][], color_pow:number[][]}
+    ---@type {pos:number[][], dir_angle:number[][], color_pow:number[][], control:number[][]}
     self._u_spotlights = {
         pos = {},
         dir_angle = {},
-        color_pow = {}
+        color_pow = {},
+        control = {}
     }
 
     for i=1, SPOTLIGHT_COUNT do
         self._u_spotlights.pos[i] = { 0.0, 0.0, 0.0 }
         self._u_spotlights.dir_angle[i] = { 0.0, 0.0, 0.0, 0.0 }
         self._u_spotlights.color_pow[i] = { 0.0, 0.0, 0.0, 0.0 }
+        self._u_spotlights.control[i] = { 0.0, 0.0, 0.0, 0.0 }
     end
 end
 
@@ -282,12 +284,17 @@ function World:draw()
                 local u_pos       = self._u_spotlights.pos[spotlight_i]
                 local u_dir_ang   = self._u_spotlights.dir_angle[spotlight_i]
                 local u_color_pow = self._u_spotlights.color_pow[spotlight_i]
+                local u_control   = self._u_spotlights.control[spotlight_i]
                 
                 u_pos[1], u_pos[2], u_pos[3] = view_mat:mul_vec(px, py, pz)
+
                 u_dir_ang[1], u_dir_ang[2], u_dir_ang[3] = view_normal:mul_vec(dx, dy, dz)
                 u_dir_ang[4] = obj.angle
+
                 u_color_pow[1], u_color_pow[2], u_color_pow[3] = obj.r, obj.g, obj.b
                 u_color_pow[4] = obj.power
+
+                u_control[1], u_control[2], u_control[3] = obj.constant, obj.linear, obj.quadratic
 
                 spotlight_i = spotlight_i + 1
             end
@@ -300,10 +307,12 @@ function World:draw()
             local u_pos       = self._u_spotlights.pos[i]
             local u_dir_ang   = self._u_spotlights.dir_angle[i]
             local u_color_pow = self._u_spotlights.color_pow[i]
+            local u_control   = self._u_spotlights.control[i]
 
             u_pos[1], u_pos[2], u_pos[3] = 0, 0, 0
             u_dir_ang[1], u_dir_ang[2], u_dir_ang[3], u_dir_ang[4] = 0, 0, 0, 0
             u_color_pow[1], u_color_pow[2], u_color_pow[3], u_color_pow[4] = 0, 0, 0, 0
+            u_control[1], u_control[2], u_control[3], u_control[4] = 1, 0, 0, 0
         end
     end
 
@@ -316,6 +325,7 @@ function World:draw()
         shader_try_send(shader, "u_light_spot_pos", unpack(self._u_spotlights.pos))
         shader_try_send(shader, "u_light_spot_dir_angle", unpack(self._u_spotlights.dir_angle))
         shader_try_send(shader, "u_light_spot_color_pow", unpack(self._u_spotlights.color_pow))
+        shader_try_send(shader, "u_light_spot_control", unpack(self._u_spotlights.control))
     end
     
     self:_restore_mat_stack(sp)

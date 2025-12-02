@@ -11,6 +11,10 @@ function Light:new()
     self.b = 1.0
     self.power = 1.0
     self.enabled = true
+
+    self.constant = 1.0
+    self.linear = 0.022
+    self.quadratic = 0.0019
 end
 
 ---@class r3d.SpotLight: r3d.Light

@@ -46,6 +46,9 @@ local function sync_light(world, light, info, pos)
     light.b = info.b
     light.power = info.power
     light.enabled = info.enabled
+    light.constant = info.constant
+    light.linear = info.linear
+    light.quadratic = info.quadratic
 
     local px, py, pz = pos.x, pos.y, info.z_offset
 
