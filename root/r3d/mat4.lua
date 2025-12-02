@@ -254,6 +254,23 @@ function mat4.translation(mat, x, y, z)
     return mat
 end
 
+---@param mat mat4?
+---@param x number
+---@param y number
+---@param z number?
+---@param w number?
+---@return mat4
+function mat4.scale(mat, x, y, z, w)
+    mat = mat or mat4.new()
+
+    mat:set(0, 0, x)
+    mat:set(1, 1, y)
+    mat:set(2, 2, z or 1.0)
+    mat:set(3, 3, w or 1.0)
+
+    return mat
+end
+
 ---Create an oblique projection matrix. Z is the up axis.
 ---@param mat mat4?
 ---@param left number

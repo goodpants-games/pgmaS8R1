@@ -1,6 +1,6 @@
----@class r3d.Model: r3d.Object
+---@class r3d.Model: r3d.Drawable
 ---@overload fun(mesh:love.Mesh):r3d.Model
-local Model = batteries.class({ name = "r3d.Model", extends = require("r3d.object") })
+local Model = batteries.class({ name = "r3d.Model", extends = require("r3d.drawable") })
 local mat4 = require("r3d.mat4")
 
 ---@param mesh love.Mesh
@@ -13,6 +13,10 @@ end
 function Model:release()
     self.mesh:release()
     self.mesh = nil
+end
+
+function Model:draw()
+    Lg.draw(self.mesh)
 end
 
 return Model

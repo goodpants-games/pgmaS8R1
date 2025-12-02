@@ -6,17 +6,7 @@ local r3d = {}
 
 r3d.world = require("r3d.world")
 r3d.model = require("r3d.model")
-r3d.mesh_format = {
-    {"VertexPosition", "float", 3},
-    {"VertexTexCoord", "float", 2},
-    {"a_normal", "float", 3},
-    {"VertexColor", "float", 4}
-}
-
----@overload fun(vertices:number[][], mode:love.MeshDrawMode, usage:love.SpriteBatchUsage):love.Mesh
----@overload fun(vertexcount:integer, mode:love.MeshDrawMode, usage:love.SpriteBatchUsage):love.Mesh
-function r3d.createMesh(...)
-    return Lg.newMesh(r3d.mesh_format, ...)
-end
+r3d.mesh = require("r3d.mesh")
+r3d.batch = require("r3d.batch")
 
 return r3d

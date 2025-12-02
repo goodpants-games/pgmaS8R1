@@ -267,7 +267,7 @@ local function create_mesh(voxel)
         end
     end
 
-    local mesh = r3d.createMesh(vertices, "triangles", "static")
+    local mesh = r3d.mesh.new(vertices, "triangles", "static")
     mesh:setVertexMap(indices)
 
     return mesh
@@ -335,13 +335,21 @@ function scene.load()
     mesh:setTexture(tex)
     tex:release()
 
+    self.test_tex = Lg.newImage("res/robot.png")
+    self.test_tex2 = Lg.newImage("res/swatPixelart.png")
+
     self.model = r3d.model(mesh)
     self.model2 = r3d.model(mesh)
+    self.batch = r3d.batch()
+    self.batch.opaque = false
+    self.batch.use_shading = false
 
-    self.model2:set_position(5, 0, -1)
+    self.model:set_scale(16, 16, 16)
+    -- self.model2:set_position(5, 0, -4)
 
-    self.world:add_model(self.model)
-    self.world:add_model(self.model2)
+    self.world:add_object(self.model)
+    self.world:add_object(self.model2)
+    self.world:add_object(self.batch)
 end
 
 function scene.unload()
@@ -352,7 +360,7 @@ function scene.unload()
 end
 
 function scene.update(dt)
-    local pan_speed = 10.0
+    local pan_speed = 160.0
     local mx, my = Input.players[1]:get("move")
 
     self.cam_x = self.cam_x + mx * pan_speed * dt
@@ -362,14 +370,40 @@ end
 function scene.draw()
     local rot = -MOUSE_Y / 100
 
-    -- self.world.cam.transform =
-        -- mat4.rotation_z(nil, rot) *
-        -- mat4.translation(nil, self.cam_x, self.cam_y, 0.0)
-    self.world.cam:set_position(self.cam_x, self.cam_y, 0.0)
-    self.world.cam.frustum_width = DISPLAY_WIDTH / 16
-    self.world.cam.frustum_height = DISPLAY_HEIGHT / 16
+    self.world.cam.transform =
+        -- mat4.scale(nil, 1.0, 1.0, 1.0) *
+        mat4.translation(nil, self.cam_x, self.cam_y, 0.0)
+    
+    -- self.world.cam:set_position(self.cam_x, self.cam_y, 0.0)
+    self.world.cam.frustum_width = DISPLAY_WIDTH
+    self.world.cam.frustum_height = DISPLAY_HEIGHT
 
-    self.model.transform:rotation_z(-MOUSE_Y / 100)
+    self.model.transform =
+        mat4.scale(nil, 16.0, 16.0, 16.0)
+        * mat4.rotation_z(nil, -MOUSE_Y / 100)
+    
+    self.batch:clear()
+
+    self.batch:add_image(self.test_tex,
+        mat4.identity()
+        :translation(self.cam_x, self.cam_y, math.sin(love.timer.getTime()) * 32.0)
+        :rotation_x(math.pi / 2))
+
+    self.batch:add_image(self.test_tex,
+        mat4.identity()
+        :translation(self.cam_x + 20, self.cam_y, math.sin(love.timer.getTime()) * 32.0)
+        :rotation_x(math.pi / 2))
+
+    self.batch:add_image(self.test_tex2,
+        mat4.identity()
+        :translation(self.cam_x + 20, self.cam_y + 20, math.sin(love.timer.getTime()) * 32.0)
+        :rotation_x(math.pi / 2))
+
+    self.batch:add_image(self.test_tex2,
+        mat4.identity()
+        :translation(self.cam_x, self.cam_y + 20, math.sin(love.timer.getTime()) * 32.0)
+        :rotation_x(math.pi / 2))
+    
     self.world:draw()
 
     -- sun direction: vec3(0.4, -0.8, -1.0)

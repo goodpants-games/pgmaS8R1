@@ -1,8 +1,8 @@
-varying vec3 v_normal;
-
 uniform vec3 u_light_ambient_color;
 uniform vec3 u_light_sun_color;
 uniform vec3 u_light_sun_direction;
+
+varying vec3 v_normal;
 
 vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
 {
