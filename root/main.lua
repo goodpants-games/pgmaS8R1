@@ -1,3 +1,4 @@
+require("shader_loader_override")
 require("postconf")
 
 local Input = require("input")

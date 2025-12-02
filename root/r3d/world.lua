@@ -31,15 +31,15 @@ local function shader_preproc(path)
         return nil
     end
 
-    local file, err = love.filesystem.read(path)
-    if not file then
-        error(("error loading %s: %s"):format(path, err))
-    end
-
     local lines = {
         "#define SPOTLIGHT_COUNT " .. SPOTLIGHT_COUNT,
-        file
+        -- "#line 0 0"
+        "#include <" .. path .. ">"
     }
+
+    -- for line in love.filesystem.lines(path) do
+    --     table.insert(lines, line)
+    -- end
 
     return table.concat(lines, "\n")
 end
