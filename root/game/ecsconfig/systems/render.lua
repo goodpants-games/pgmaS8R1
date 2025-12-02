@@ -39,6 +39,7 @@ function render_system:init(world)
     print("render system initialized")
     self.render_list = {}
     self.known_entities = {}
+    self.texture_cache = {}
 end
 
 local function sprite_y_search(entity, ypos)
@@ -113,10 +114,19 @@ function render_system:draw()
             rot = entity.rotation.ang
         end
 
+        local img = sprite.img
+        if type(img) == "string" then
+            img = self.texture_cache[sprite.img]
+            if not img then
+                img = Lg.newImage(sprite.img)
+                self.texture_cache[sprite.img] = img
+            end
+        end
+
         local px, py = math.round(pos.x), math.round(pos.y)
         local sx, sy = sprite.sx, sprite.sy
-        local ox = math.round(sprite.img:getWidth() / 2 + sprite.ox)
-        local oy = math.round(sprite.img:getHeight() / 2 + sprite.oy)
+        local ox = math.round(img:getWidth() / 2 + sprite.ox)
+        local oy = math.round(img:getHeight() / 2 + sprite.oy)
 
         -- TODO: respect entity rotation
         transform0:identity()
@@ -129,10 +139,10 @@ function render_system:draw()
 
         transform1:set(0, 3, px - ox)
         transform1:set(1, 3, py)
-        transform1:set(2, 3, sprite.img:getHeight())
+        transform1:set(2, 3, img:getHeight())
 
         draw_batch:set_color(sprite.r, sprite.g, sprite.b)
-        draw_batch:add_image(sprite.img, transform1)
+        draw_batch:add_image(img, transform1)
     end
 
     if Debug.enabled then

@@ -11,7 +11,7 @@ local function create_actor(x, y)
         :give("velocity", 0, 0)
         :give("collision", 13, 8)
         :give("actor")
-        :give("sprite", Lg.newImage("res/robot.png"))
+        :give("sprite", "res/robot.png")
     ent.sprite.oy = 9
     
     return ent
