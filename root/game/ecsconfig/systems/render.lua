@@ -6,6 +6,49 @@ local render_system = Concord.system({
     dbgdraw_pool = {"position", "collision"}
 })
 
+---Perform a binary search on an array.
+---If the element was found, it returns true and the index of the element. If
+---not, it returns false and the index where the element was expected to be.
+---@param t any[]
+---@param f fun(v,...):integer
+---@param min integer?
+---@param max integer?
+---@param ... any
+---@return boolean s, integer idx
+local function binary_search(t, f, min, max, ...)
+    min = min or 1
+    max = max or #t
+
+    if min > max then
+        return false, min
+    end
+
+    local center = math.floor((max + min - 2) / 2) + 1
+    local eval = f(t[center], ...)
+    
+    if eval == 0 then
+        return true, center
+    elseif eval < 0 then
+        return binary_search(t, f, center + 1, max, ...) 
+    else
+        return binary_search(t, f, min, center - 1, ...)
+    end
+end
+
+function render_system:init(world)
+    print("render system initialized")
+    self.render_list = {}
+    self.known_entities = {}
+end
+
+local function sprite_y_search(entity, ypos)
+    return entity.position.y - ypos
+end
+
+local function sprite_y_sort(a, b)
+    return a.position.y < b.position.y
+end
+
 function render_system:draw()
     ---@type r3d.Batch
     local draw_batch = self:getWorld().game.r3d_draw_batch
@@ -13,10 +56,55 @@ function render_system:draw()
     local transform0 = mat4.new()
     local rot_matrix = mat4.new()
     local transform1 = mat4.new()
-
     rot_matrix:rotation_x(math.pi / 2)
 
+    local existing = {}
+    local newly_added = 0
+    local newly_removed = 0
+
+    -- im assuming the lua-based sort will be faster than the C sort only in
+    -- luaJIT, from what i know of how the tracing JIT works.
+    if jit then
+        table.insertion_sort(self.render_list, sprite_y_sort)
+    else
+        table.sort(self.render_list, sprite_y_sort)
+    end
+
+    -- find new entities
     for _, entity in ipairs(self.pool) do
+        local pos = entity.position
+
+        if not self.known_entities[entity] then
+            local s, idx = binary_search(self.render_list, sprite_y_search, nil, nil, pos.y)
+            -- assert(not s)
+            table.insert(self.render_list, idx, entity)
+            newly_added = newly_added + 1
+
+            self.known_entities[entity] = true
+        end
+
+        existing[entity] = true
+    end
+
+    -- remove entities that no longer exist
+    for i=#self.render_list, 1, -1 do
+        local entity = self.render_list[i]
+        if not existing[entity] then
+            self.known_entities[entity] = nil
+            table.remove(self.render_list, i)
+            newly_removed = newly_removed + 1
+        end
+    end
+
+    if newly_added > 0 then
+        print(newly_added .. " new entities")
+    end
+
+    if newly_removed > 0 then
+        print(newly_removed .. " removed entities")
+    end
+
+    for _, entity in ipairs(self.render_list) do
         local pos = entity.position
         local rot = 0
         local sprite = entity.sprite
@@ -25,11 +113,12 @@ function render_system:draw()
             rot = entity.rotation.ang
         end
 
-        local px, py = math.floor(pos.x), math.floor(pos.y)
+        local px, py = math.round(pos.x), math.round(pos.y)
         local sx, sy = sprite.sx, sprite.sy
-        local ox = math.floor(sprite.img:getWidth() / 2 + sprite.ox)
-        local oy = math.floor(sprite.img:getHeight() / 2 + sprite.oy)
+        local ox = math.round(sprite.img:getWidth() / 2 + sprite.ox)
+        local oy = math.round(sprite.img:getHeight() / 2 + sprite.oy)
 
+        -- TODO: respect entity rotation
         transform0:identity()
         transform0:set(0, 3, -ox)
         transform0:set(2, 3, -oy)

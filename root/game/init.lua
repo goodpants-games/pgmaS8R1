@@ -157,7 +157,7 @@ function Game:release()
     self._map_model:release()
 end
 
-function Game:newEntity()
+function Game:new_entity()
     return Concord.entity(self.ecs_world)
 end
 
@@ -232,8 +232,8 @@ function Game:draw()
     local mat4 = require("r3d.mat4")
 
     local r3d_world = self.r3d_world
-    local cam_x = math.floor(self.cam_x)
-    local cam_y = math.floor(self.cam_y)
+    local cam_x = math.round(self.cam_x)
+    local cam_y = math.round(self.cam_y)
 
     -- r3d_world.cam:set_position(cam_x, cam_y, 0.0)
     r3d_world.cam.transform =

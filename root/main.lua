@@ -57,7 +57,7 @@ local update_frametime = 0.0
 function love.update(dt)
     local start = love.timer.getTime()
 
-    batteries.manual_gc(3e-3)
+    batteries.manual_gc(1e-3)
     Debug.draw.enabled = Debug.enabled
 
     update_display_fit()
