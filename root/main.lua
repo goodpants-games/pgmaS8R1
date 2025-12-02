@@ -19,7 +19,7 @@ function love.load(args)
         end
     end
 
-    sceneman.switchScene("voxel_map_view")
+    sceneman.switchScene("game")
 end
 
 local _paused_sources
@@ -35,7 +35,7 @@ end
 
 function love.keypressed(key)
     if key == "escape" then
-        sceneman.switchScene("game")
+        sceneman.switchScene("voxel_map_view")
     else
         sceneman.dispatch("keypressed", key)
     end

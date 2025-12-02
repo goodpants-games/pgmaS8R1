@@ -68,8 +68,10 @@ function World:new()
 end
 
 function World:release()
-    for _, shader in pairs(self.shaders) do
-        shader:release()
+    if self.shaders then
+        for _, shader in pairs(self.shaders) do
+            shader:release()
+        end
     end
 
     self.shaders = nil
@@ -177,6 +179,7 @@ function World:draw()
     self._tmp_mat_i = 1
 
     Lg.push("all")
+    Lg.setColor(1, 1, 1)
 
     -- local shader = self.shaders.base
 

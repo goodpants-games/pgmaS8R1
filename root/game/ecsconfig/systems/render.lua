@@ -1,4 +1,5 @@
 local Concord = require("concord")
+local mat4 = require("r3d.mat4")
 
 local render_system = Concord.system({
     pool = {"position", "sprite"},
@@ -6,6 +7,15 @@ local render_system = Concord.system({
 })
 
 function render_system:draw()
+    ---@type r3d.Batch
+    local draw_batch = self:getWorld().game.r3d_draw_batch
+
+    local transform0 = mat4.new()
+    local rot_matrix = mat4.new()
+    local transform1 = mat4.new()
+
+    rot_matrix:rotation_x(math.pi / 2)
+
     for _, entity in ipairs(self.pool) do
         local pos = entity.position
         local rot = 0
@@ -15,11 +25,25 @@ function render_system:draw()
             rot = entity.rotation.ang
         end
 
-        Lg.setColor(sprite.r, sprite.g, sprite.b)
-        Lg.draw(sprite.img,
-                math.floor(pos.x), math.floor(pos.y), rot,
-                sprite.sx, sprite.sy,
-                math.floor(sprite.img:getWidth() / 2 + sprite.ox), math.floor(sprite.img:getHeight() / 2 + sprite.oy))
+        local px, py = math.floor(pos.x), math.floor(pos.y)
+        local sx, sy = sprite.sx, sprite.sy
+        local ox = math.floor(sprite.img:getWidth() / 2 + sprite.ox)
+        local oy = math.floor(sprite.img:getHeight() / 2 + sprite.oy)
+
+        transform0:identity()
+        transform0:set(0, 3, -ox)
+        transform0:set(2, 3, -oy)
+        transform0:set(0, 0, sx)
+        transform0:set(1, 1, sy)
+
+        rot_matrix:mul(transform0, transform1)
+
+        transform1:set(0, 3, px - ox)
+        transform1:set(1, 3, py)
+        transform1:set(2, 3, sprite.img:getHeight())
+
+        draw_batch:set_color(sprite.r, sprite.g, sprite.b)
+        draw_batch:add_image(sprite.img, transform1)
     end
 
     if Debug.enabled then

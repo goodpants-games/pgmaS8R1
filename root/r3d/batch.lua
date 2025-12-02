@@ -1,5 +1,5 @@
 ---@class r3d.Batch: r3d.Drawable
----@overload fun():r3d.Batch
+---@overload fun(vertex_count:integer?):r3d.Batch
 local Batch = batteries.class({ name = "r3d.Batch", extends = require("r3d.drawable") })
 local mat4 = require("r3d.mat4")
 local mat3 = require("r3d.mat3")
@@ -13,8 +13,10 @@ local function tappend(t, ...)
     end
 end
 
-function Batch:new()
+---@param vertex_count integer?
+function Batch:new(vertex_count)
     self:super() ---@diagnostic disable-line
+    vertex_count = vertex_count or 2048
 
     ---@type love.Mesh
     self.mesh = new_mesh(2048, "triangles", "stream")
@@ -41,6 +43,13 @@ function Batch:new()
 
     ---@private
     self._dirty = false
+end
+
+function Batch:release()
+    if self.mesh then
+        self.mesh:release()
+        self.mesh = nil
+    end
 end
 
 function Batch:clear()
@@ -77,6 +86,21 @@ function Batch:_flush()
         table.insert(self._draw_calls, self._last_tex)
         self._dirty = false
     end
+end
+
+---@param r number
+---@param g number
+---@param b number
+---@param a number?
+---@overload fun(color:number[])
+function Batch:set_color(r, g, b, a)
+    if type(r) == "table" then
+        r, g, b, a = r[1], r[2], r[3], r[4]
+    end
+    a = a or 1.0
+
+    local t = self._color
+    t[1], t[2], t[3], t[4] = r, g, b, a
 end
 
 ---@param img love.Texture
@@ -162,11 +186,6 @@ function Batch:add_image(img, quad, transform)
     else
         self:_add_image_uv(img, transform, 0.0, 0.0, 1.0, 1.0)
     end
-end
-
-function Batch:release()
-    self.mesh:release()
-    self.mesh = nil
 end
 
 function Batch:draw()

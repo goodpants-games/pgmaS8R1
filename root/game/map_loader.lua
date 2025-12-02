@@ -1,33 +1,41 @@
-local scene = require("sceneman").scene()
+local map_loader = {}
 local tiled = require("tiled")
-local Input = require("input")
-local mat4 = require("r3d.mat4")
 local r3d = require("r3d")
 
-local self
+---@class game.Map
+---@field w integer
+---@field h integer
+---@field tw integer
+---@field th integer
+---@field data integer[][]
+---@field tiled_map pklove.tiled.Map
+
+local tinsert = table.insert
 
 local function tappend(t, ...)
-    local tinsert = table.insert
     for i=1, select("#", ...) do
         local v = select(i, ...)
         tinsert(t, v)
     end
 end
 
----@param voxel {w:integer, h:integer, data:integer[][]}
-local function create_mesh(voxel)
+---@param map game.Map
+function map_loader.create_mesh(map)
+    assert(map.tw == 16)
+    assert(map.th == 16)
+    
     ---@type number[][]
     local vertices = {}
     ---@type integer[]
     local indices = {}
 
-    local voxel_depth = #voxel.data
+    local voxel_depth = #map.data
     local function get_voxel(x, y, z)
-        if x < 0 or y < 0 or z < 0 or x >= voxel.w or y >= voxel.h or z >= voxel_depth then
+        if x < 0 or y < 0 or z < 0 or x >= map.w or y >= map.h or z >= voxel_depth then
             return 0
         end
 
-        return voxel.data[z+1][y * voxel.w + x + 1]
+        return map.data[z+1][y * map.w + x + 1]
     end
 
     local tile_data = {
@@ -166,8 +174,8 @@ local function create_mesh(voxel)
     local vi = 1
     for z=0, voxel_depth-1 do
         local i=1
-        for y=0, voxel.h-1 do
-            for x=0, voxel.w-1 do
+        for y=0, map.h-1 do
+            for x=0, map.w-1 do
                 if get_voxel(x, y, z) == 0 then
                     goto continue
                 end
@@ -430,18 +438,18 @@ local function create_mesh(voxel)
     -- out:close()
 end
 
-function scene.load()
-    self = {}
-    local map = tiled.loadMap("res/maps/voxeltest.lua")
-    self.map = map
-    self.cam_x = 0
-    self.cam_y = 0
+---@param map_path string
+---@return game.Map
+function map_loader.load(map_path)
+    local map = tiled.loadMap(map_path)
 
-    local vox_w = self.map.width
-    local vox_h = self.map.height
+    local vox_w = map.width
+    local vox_h = map.height
+
+    ---@type {w:integer, h:integer, data:integer[][]}
     local vox_data = {}
 
-    for _, layer in ipairs(self.map.layers) do
+    for _, layer in ipairs(map.layers) do
         if layer.type ~= "tilelayer" then goto continue end
         ---@cast layer pklove.tiled.TileLayer
         
@@ -470,122 +478,18 @@ function scene.load()
         ::continue::
     end
 
-    self.world = r3d.world()
+    ---@type game.Map
+    local map_data = {
+        tiled_map = map,
+        w = vox_w,
+        h = vox_h,
+        tw = 16,
+        th = 16,
+        data = vox_data
+    }
 
-    local mesh = create_mesh({ w = vox_w, h = vox_h, data = vox_data })
-    local tex = Lg.newImage("res/tilesets/test_tileset.png")
-    mesh:setTexture(tex)
-    tex:release()
-
-    self.test_tex = Lg.newImage("res/robot.png")
-    self.test_tex2 = Lg.newImage("res/swatPixelart.png")
-
-    self.model = r3d.model(mesh)
-    self.model2 = r3d.model(mesh)
-    self.batch = r3d.batch()
-    self.batch.opaque = false
-    self.batch.use_shading = false
-    self.batch.double_sided = true
-
-    self.model:set_scale(16, 16, 16)
-    -- self.model2:set_position(5, 0, -4)
-
-    self.world:add_object(self.model)
-    self.world:add_object(self.model2)
-    self.world:add_object(self.batch)
+    return map_data
 end
 
-function scene.unload()
-    assert(self)
-    self.model:release()
-    self.world:release()
-    self = nil
-end
 
-function scene.update(dt)
-    local pan_speed = 160.0
-    local mx, my = Input.players[1]:get("move")
-
-    self.cam_x = self.cam_x + mx * pan_speed * dt
-    self.cam_y = self.cam_y + my * pan_speed * dt
-end
-
-function scene.draw()
-    local cam_x = math.floor(self.cam_x)
-    local cam_y = math.floor(self.cam_y)
-
-    self.world.cam.transform =
-        -- mat4.scale(nil, 1.0, 1.0, 1.0) *
-        mat4.rotation_z(nil, -MOUSE_Y / 100) *
-        mat4.translation(nil, cam_x, cam_y, 0.0)
-    
-    -- self.world.cam:set_position(self.cam_x, self.cam_y, 0.0)
-    self.world.cam.frustum_width = DISPLAY_WIDTH
-    self.world.cam.frustum_height = DISPLAY_HEIGHT
-
-    self.model.transform =
-        mat4.scale(nil, 16.0, 16.0, 16.0)
-        -- * mat4.rotation_z(nil, -MOUSE_Y / 100)
-    
-    self.batch:clear()
-
-    self.batch:add_image(self.test_tex,
-        mat4.identity()
-        :translation(cam_x, cam_y, math.sin(love.timer.getTime()) * 32.0)
-        :rotation_x(math.pi / 2))
-
-    self.batch:add_image(self.test_tex,
-        mat4.identity()
-        :translation(cam_x + 20, cam_y, math.sin(love.timer.getTime()) * 32.0)
-        :rotation_x(math.pi / 2))
-
-    self.batch:add_image(self.test_tex2,
-        mat4.identity()
-        :translation(cam_x + 20, cam_y + 20, math.sin(love.timer.getTime()) * 32.0)
-        :rotation_x(math.pi / 2))
-
-    self.batch:add_image(self.test_tex2,
-        mat4.identity()
-        :translation(cam_x, cam_y + 20, math.sin(love.timer.getTime()) * 32.0)
-        :rotation_x(math.pi / 2))
-    
-    self.world:draw()
-
-    -- sun direction: vec3(0.4, -0.8, -1.0)
-
-    -- local projection = mat4.oblique(0, frustum_width, 0, frustum_height, z_min, z_max)
-    -- -- projection = mat4.rotation_z(love.timer.getTime()) * projection
-    -- self.shader:send("u_projection", projection)
-    -- self.shader:send("u_modelview", model_mat * view_mat)
-    
-    -- local sx = (f_right - f_left) / 2.0
-    -- local sy = (f_bottom - f_top) / 2.0
-
-    -- local cza = -1 - (2.0 * z_min) / (f_top - f_bottom)
-    -- local czb = -1 + (2.0 * z_max) / (f_bottom - f_top)
-    -- local czm = (czb - 1.0) / (1.0 - cza)
-
-    -- local zf = czm * 2.0 / (f_bottom - f_top)
-    -- local zc = czm * ((-2.0 * f_top) / (f_bottom - f_top) - cza - 1.0) + 1.0
-
-    -- -- print("b", f_top, f_bottom)
-    -- -- print("m", zf, zc)
-
-    -- -- assert(math.abs((f_top * zf + zc) - (1.0)) < 1e-5)
-    -- -- assert(math.abs((f_bottom * zf + zc) - (-1.0)) < 1e-5)
-
-    -- self.shader:send("u_projection", {
-    --     1 / sx, 0,      0,       -1 - f_left / sx,
-    --     0,      1 / sy, -1 / sy,  -1 - f_top / sy,
-    --     0,      zf,     0,       zc,
-    --     -- 0,      0,      0,       0,
-    --     0,      0,      0,       1
-    -- })
-    -- Lg.draw(self.mesh)
-
-    -- (-1) * (-1 + (b) / (b - a)) + 1.0
-    
-    -- Lg.pop()
-end
-
-return scene
+return map_loader

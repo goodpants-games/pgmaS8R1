@@ -11,8 +11,10 @@ function Model:new(mesh)
 end
 
 function Model:release()
-    self.mesh:release()
-    self.mesh = nil
+    if self.mesh then
+        self.mesh:release()
+        self.mesh = nil
+    end
 end
 
 function Model:draw()
