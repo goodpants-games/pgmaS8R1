@@ -2,6 +2,10 @@ uniform vec3 u_light_ambient_color;
 uniform vec3 u_light_sun_color;
 uniform vec3 u_light_sun_direction;
 
+uniform vec3 u_light_spot_pos      [SPOTLIGHT_COUNT];
+uniform vec4 u_light_spot_dir_angle[SPOTLIGHT_COUNT]; // .xyz = dir, .w = angle
+uniform vec4 u_light_spot_color_pow[SPOTLIGHT_COUNT]; // .rgb = color, .a = power
+
 varying vec3 v_normal;
 
 vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)

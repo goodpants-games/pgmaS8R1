@@ -2,6 +2,11 @@ local mat4 = require("r3d.mat4")
 local mat3 = require("r3d.mat3")
 local Object = require("r3d.object")
 local Drawable = require("r3d.drawable")
+local Light = require("r3d.light").light
+local SpotLight = require("r3d.light").spotlight
+
+-- these are inserted as defines into the shader files
+local SPOTLIGHT_COUNT = 4
 
 ---@class r3d.World
 ---@overload fun():r3d.World
@@ -17,6 +22,47 @@ function Camera:new()
     self:super() ---@diagnostic disable-line
     self.frustum_width = 1
     self.frustum_height = 1
+end
+
+---@param path string
+---@return string?
+local function shader_preproc(path)
+    if path == nil then
+        return nil
+    end
+
+    local file, err = love.filesystem.read(path)
+    if not file then
+        error(("error loading %s: %s"):format(path, err))
+    end
+
+    local lines = {
+        "#define SPOTLIGHT_COUNT " .. SPOTLIGHT_COUNT,
+        file
+    }
+
+    return table.concat(lines, "\n")
+end
+
+---@param vertexcode string?
+---@param pixelcode string?
+---@return love.Shader
+local function new_shader(vertexcode, pixelcode)
+    return Lg.newShader(
+        ---@diagnostic disable-next-line
+        shader_preproc(vertexcode),
+        ---@diagnostic disable-next-line
+        shader_preproc(pixelcode)
+    )
+end
+
+---@param shader love.Shader
+---@param name string
+---@param ... any
+local function shader_try_send(shader, name, ...)
+    if shader:hasUniform(name) then
+        shader:send(name, ...)
+    end
 end
 
 function World:new()
@@ -44,10 +90,10 @@ function World:new()
 
     ---@type {[string]: love.Shader}
     self.shaders = {}
-    self.shaders.shaded = Lg.newShader("res/shaders/r3d/r3d_shaded.frag.glsl",
-                                       "res/shaders/r3d/r3d.vert.glsl")
-    self.shaders.basic = Lg.newShader(nil,
-                                      "res/shaders/r3d/r3d.vert.glsl")
+    self.shaders.shaded = new_shader("res/shaders/r3d/r3d_shaded.frag.glsl",
+                                     "res/shaders/r3d/r3d.vert.glsl")
+    self.shaders.basic = new_shader(nil,
+                                    "res/shaders/r3d/r3d.vert.glsl")
 
     ---@private
     ---@type mat4[]
@@ -65,6 +111,20 @@ function World:new()
     ---@private
     ---@type number[]
     self._tmp_vec3 = { 0, 0, 0 }
+
+    ---@private
+    ---@type {pos:number[][], dir_angle:number[][], color_pow:number[][]}
+    self._u_spotlights = {
+        pos = {},
+        dir_angle = {},
+        color_pow = {}
+    }
+
+    for i=1, SPOTLIGHT_COUNT do
+        self._u_spotlights.pos[i] = { 0.0, 0.0, 0.0 }
+        self._u_spotlights.dir_angle[i] = { 0.0, 0.0, 0.0, 0.0 }
+        self._u_spotlights.color_pow[i] = { 0.0, 0.0, 0.0, 0.0 }
+    end
 end
 
 function World:release()
@@ -201,9 +261,62 @@ function World:draw()
                                 :transpose(self:_push_mat())
                                 :to_mat3(self._tmp_mat3)
     
-    self.shaders.shaded:send("u_light_ambient_color", self:_pack_color(self.ambient))
-    self.shaders.shaded:send("u_light_sun_color", self:_pack_color(self.sun))
-    self.shaders.shaded:send("u_light_sun_direction", self:_pack_vec(self.sun, view_normal))
+    -- update spotlights
+    do
+        local spotlight_i = 1
+        for _, obj in ipairs(self.objects) do
+            -- ran out of slots
+            if spotlight_i > SPOTLIGHT_COUNT then
+                break
+            end
+
+            if obj:is(SpotLight) then
+                ---@cast obj r3d.SpotLight
+                if not obj.enabled then
+                    goto continue
+                end
+
+                local px, py, pz = obj:get_position()
+                local dx, dy, dz = obj:get_light_direction()
+
+                local u_pos       = self._u_spotlights.pos[spotlight_i]
+                local u_dir_ang   = self._u_spotlights.dir_angle[spotlight_i]
+                local u_color_pow = self._u_spotlights.color_pow[spotlight_i]
+
+                u_pos[1], u_pos[2], u_pos[3] = px, py, pz
+                u_dir_ang[1], u_dir_ang[2], u_dir_ang[3] = view_normal:mul_vec(dx, dy, dz)
+                u_dir_ang[4] = obj.angle
+                u_color_pow[1], u_color_pow[2], u_color_pow[3] = obj.r, obj.g, obj.b
+                u_color_pow[4] = obj.power
+
+                spotlight_i = spotlight_i + 1
+            end
+
+            ::continue::
+        end
+
+        -- zero out unused slots
+        for i=spotlight_i, SPOTLIGHT_COUNT do
+            local u_pos       = self._u_spotlights.pos[i]
+            local u_dir_ang   = self._u_spotlights.dir_angle[i]
+            local u_color_pow = self._u_spotlights.color_pow[i]
+
+            u_pos[1], u_pos[2], u_pos[3] = 0, 0, 0
+            u_dir_ang[1], u_dir_ang[2], u_dir_ang[3], u_dir_ang[4] = 0, 0, 0, 0
+            u_color_pow[1], u_color_pow[2], u_color_pow[3], u_color_pow[4] = 0, 0, 0, 0
+        end
+    end
+
+    -- send light information to shaders
+    for _, shader in pairs(self.shaders) do
+        shader_try_send(shader, "u_light_ambient_color", self:_pack_color(self.ambient))
+        shader_try_send(shader, "u_light_sun_color", self:_pack_color(self.sun))
+        shader_try_send(shader, "u_light_sun_direction", self:_pack_vec(self.sun, view_normal))
+
+        shader_try_send(shader, "u_light_spot_pos", unpack(self._u_spotlights.pos))
+        shader_try_send(shader, "u_light_spot_dir_angle", unpack(self._u_spotlights.dir_angle))
+        shader_try_send(shader, "u_light_spot_color_pow", unpack(self._u_spotlights.color_pow))
+    end
     
     self:_restore_mat_stack(sp)
 

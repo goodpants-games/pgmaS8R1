@@ -42,3 +42,18 @@ Concord.component("sprite", function(cmp, img)
     cmp.ox = 0
     cmp.oy = 0
 end)
+
+Concord.component("light", function(cmp, type)
+    cmp.r = 1.0
+    cmp.g = 1.0
+    cmp.b = 1.0
+    cmp.power = 1.0
+    cmp.enabled = true
+    cmp.type = type
+
+    cmp.spot_angle = math.rad(60)
+    cmp.spot_rz = 0.0
+    cmp.spot_rx = 0.0
+
+    cmp.z_offset = 0.0
+end)

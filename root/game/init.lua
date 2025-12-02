@@ -38,7 +38,8 @@ function Game:new()
         ecsconfig.systems.player_controller,
         ecsconfig.systems.actor,
         ecsconfig.systems.physics,
-        ecsconfig.systems.render)
+        ecsconfig.systems.render,
+        ecsconfig.systems.lights)
 
     local map = map_loader.load("res/maps/voxeltest.lua")
     self._map = map
