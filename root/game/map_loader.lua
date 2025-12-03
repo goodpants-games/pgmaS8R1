@@ -1,6 +1,7 @@
 local map_loader = {}
 local tiled = require("tiled")
 local r3d = require("r3d")
+local bit = require("bit")
 
 ---@class game.Map
 ---@field w integer
@@ -17,6 +18,229 @@ local function tappend(t, ...)
         local v = select(i, ...)
         tinsert(t, v)
     end
+end
+
+local bor = bit.bor
+local band = bit.band
+
+local ADJBIT_R  = 0x1
+local ADJBIT_U  = 0x2
+local ADJBIT_L  = 0x4
+local ADJBIT_D  = 0x8
+local ADJBIT_TR = 0x10
+local ADJBIT_TL = 0x20
+local ADJBIT_BL = 0x40
+local ADJBIT_BR = 0x80
+
+---@param out number[][]
+---@param r boolean
+---@param u boolean
+---@param l boolean
+---@param d boolean
+---@param tr boolean
+---@param tl boolean
+---@param bl boolean
+---@param br boolean
+---@param u0 number
+---@param v0 number
+---@param u1 number
+---@param v1 number
+local function edge_calc_rec(out, r,u,l,d, tr,tl,bl,br, u0,v0,u1,v1, depth)
+    assert(depth <= 2)
+    
+    -- open corner count
+    local otr,otl,obl,obr = tr,tl,bl,br
+    if not l then
+        otl = false
+        obl = false
+    end
+    
+    if not r then
+        otr = false
+        obr = false
+    end
+    
+    if not u then
+        otl = false
+        otr = false
+    end
+
+    if not d then
+        obl = false
+        obr = false
+    end
+
+    -- count edges and corners
+    local edge_count = 0
+    if r then edge_count=edge_count+1 end
+    if u then edge_count=edge_count+1 end
+    if l then edge_count=edge_count+1 end
+    if d then edge_count=edge_count+1 end
+    local corner_count = 0
+    if tr then corner_count=corner_count+1 end
+    if tl then corner_count=corner_count+1 end
+    if bl then corner_count=corner_count+1 end
+    if br then corner_count=corner_count+1 end
+    local open_corner_count = 0
+    if otr then open_corner_count=open_corner_count+1 end
+    if otl then open_corner_count=open_corner_count+1 end
+    if obl then open_corner_count=open_corner_count+1 end
+    if obr then open_corner_count=open_corner_count+1 end
+
+    local edge_dx = (r and 1 or 0) - (l and 1 or 0)
+    local edge_dy = (d and 1 or 0) - (u and 1 or 0)
+
+    -- straght edge (corners:0 edges:1)
+    -- (or inside)
+    -- only a quad is needed. normal for all vertices is wall direction
+    if (open_corner_count == 0 and edge_count == 1) or (edge_count == 0 and corner_count == 0) then
+        tappend(out,
+            { u0, v0, edge_dx, edge_dy },
+            { u0, v1, edge_dx, edge_dy },
+            { u1, v1, edge_dx, edge_dy },
+
+            { u1, v1, edge_dx, edge_dy },
+            { u1, v0, edge_dx, edge_dy },
+            { u0, v0, edge_dx, edge_dy }
+        )
+        return
+    end
+
+    -- outer corner: (corners: 1  edges: 2)
+    -- inner corner: (corners: 1  edges: 0)
+    -- split a quad into two triangles such that the split line touches the corner.
+    -- reference point is at the opposite corner of the open corner
+    -- calculate direction from reference point to quad edges
+    -- normal of triangle will be the largest axis of the direction
+    local inner_corner = corner_count == 1 and open_corner_count == 0
+    local outer_corner = open_corner_count == 1
+    if (inner_corner or outer_corner) and (edge_count == 2 or edge_count == 0) then
+        if inner_corner then
+            otr = tr
+            otl = tl
+            obl = bl
+            obr = br
+        end
+
+        if obr or otl then
+            local tri0x, tri0y -- left triangle normal x
+            local tri1x, tri1y -- right triangle normal y
+
+            if obr then
+                tri0x, tri0y = 0.0, 1.0
+                tri1x, tri1y = 1.0, 0.0
+            else
+                tri0x, tri0y = -1.0, 0.0
+                tri1x, tri1y = 0.0, -1.0
+            end
+
+            if inner_corner then
+                tri0x, tri1x = tri1x, tri0x
+                tri0y, tri1y = tri1y, tri0y
+            end
+
+            tappend(out,
+                { u0, v0, tri0x, tri0y },
+                { u0, v1, tri0x, tri0y },
+                { u1, v1, tri0x, tri0y },
+
+                { u1, v1, tri1x, tri1y },
+                { u1, v0, tri1x, tri1y },
+                { u0, v0, tri1x, tri1y }
+            )
+        else
+            assert(tr or bl)
+
+            local tri0x, tri0y -- left triangle normal x
+            local tri1x, tri1y -- right triangle normal y
+
+            if obl then
+                tri0x, tri0y = -1.0, 0.0
+                tri1x, tri1y = 0.0, 1.0
+            else
+                tri0x, tri0y = 0.0, -1.0
+                tri1x, tri1y = 1.0, 0.0
+            end
+
+            if inner_corner then
+                tri0x, tri1x = tri1x, tri0x
+                tri0y, tri1y = tri1y, tri0y
+            end
+
+            tappend(out,
+                { u0, v0, tri0x, tri0y },
+                { u0, v1, tri0x, tri0y },
+                { u1, v0, tri0x, tri0y },
+
+                { u1, v0, tri1x, tri1y },
+                { u0, v1, tri1x, tri1y },
+                { u1, v1, tri1x, tri1y }
+            )
+        end
+        return
+    end
+
+    -- too complex! divide and conquer.
+    local uc = (u0 + u1) / 2.0
+    local vc = (v0 + v1) / 2.0
+
+    -- top-left
+    edge_calc_rec(
+        out,
+        false,u,l,false,
+        false,tl,false,false,
+        u0, v0, uc, vc,
+        depth+1
+    )
+
+    -- bottom-left
+    edge_calc_rec(
+        out,
+        false,false,l,d,
+        false,false,bl,false,
+        u0, vc, uc, v1,
+        depth+1
+    )
+
+    -- bottom-right
+    edge_calc_rec(
+        out,
+        r,false,false,d,
+        false,false,false,br,
+        uc, vc, u1, v1,
+        depth+1
+    )
+
+    -- top-right
+    edge_calc_rec(
+        out,
+        r,u,false,false,
+        tr,false,false,false,
+        uc, v0, u1, vc,
+        depth+1
+    )
+end
+
+---@param out number[][]
+---@param adj integer
+---@return nil
+local function edge_calc(out, adj)
+    return edge_calc_rec(
+        out,
+        
+        band(adj, ADJBIT_R) ~= 0,
+        band(adj, ADJBIT_U) ~= 0,
+        band(adj, ADJBIT_L) ~= 0,
+        band(adj, ADJBIT_D) ~= 0,
+
+        band(adj, ADJBIT_TR) ~= 0,
+        band(adj, ADJBIT_TL) ~= 0,
+        band(adj, ADJBIT_BL) ~= 0,
+        band(adj, ADJBIT_BR) ~= 0,
+
+        0, 0, 1, 1,
+        1
+    )
 end
 
 ---@param map game.Map
@@ -45,6 +269,7 @@ function map_loader.create_mesh(map)
             edge_left             = 2,
             edge_bl_corner_in     = 3,
             edge_bl_corner_out    = 4,
+            edge_all              = 16,
             top                   = 0,
         },
         [2] = {
@@ -57,16 +282,9 @@ function map_loader.create_mesh(map)
         }
     }
 
-    local function calc_tex_id(x, y, z, is_side)
+    local function calc_adjacency(x, y, z)
         local tid = get_voxel(x, y, z)
-        if tid == 0 then return end
-
-        local tinfo = tile_data[tid]
-        if not tinfo then return end
-
-        if is_side then
-            return tinfo.side
-        end
+        if tid == 0 then return 0 end
 
         -- true if open, false if closed
         local r = get_voxel(x+1, y, z) ~= tid
@@ -77,6 +295,42 @@ function map_loader.create_mesh(map)
         local bl = get_voxel(x-1, y+1, z) ~= tid
         local tl = get_voxel(x-1, y-1, z) ~= tid
         local tr = get_voxel(x+1, y-1, z) ~= tid
+
+        local out = 0
+
+        if r then out = bor(out, ADJBIT_R) end
+        if u then out = bor(out, ADJBIT_U) end
+        if l then out = bor(out, ADJBIT_L) end
+        if d then out = bor(out, ADJBIT_D) end
+
+        if tr then out = bor(out, ADJBIT_TR) end
+        if tl then out = bor(out, ADJBIT_TL) end
+        if bl then out = bor(out, ADJBIT_BL) end
+        if br then out = bor(out, ADJBIT_BR) end
+
+        return out
+    end
+
+    local function calc_tex_id(x, y, z, adj)
+        local tid = get_voxel(x, y, z)
+        if tid == 0 then return end
+
+        local tinfo = tile_data[tid]
+        if not tinfo then return end
+
+        -- if not adj then
+        --     adj = calc_adjacency(x, y, z)
+        -- end
+
+        -- true if open, false if closed
+        local r  = band(adj, ADJBIT_R) ~= 0
+        local l  = band(adj, ADJBIT_L) ~= 0
+        local u  = band(adj, ADJBIT_U) ~= 0
+        local d  = band(adj, ADJBIT_D) ~= 0
+        local br = band(adj, ADJBIT_BR) ~= 0
+        local bl = band(adj, ADJBIT_BL) ~= 0
+        local tl = band(adj, ADJBIT_TL) ~= 0
+        local tr = band(adj, ADJBIT_TR) ~= 0
 
         local count = 0
         if r then count=count+1 end
@@ -145,15 +399,13 @@ function map_loader.create_mesh(map)
         end
 
         ::unknown::
-        return tinfo.top
+        return tinfo.edge_all
         -- if r and not l and not u and not d then
         --     return tinfo.edge_left, "x"
         -- end
     end
 
-    local function calc_tex_uv(x, y, z, is_side)
-        local id, flip = calc_tex_id(x, y, z, is_side)
-
+    local function calc_tex_uv(id, flip)
         local cols = 16
         local rows = 16
         local tw = 1.0 / cols
@@ -180,17 +432,50 @@ function map_loader.create_mesh(map)
     end
 
     local vi = 1
+    local edge_calc_verts = {}
+
+    local function edge_calc_push(x, y, z, adj, u0, v0, u1, v1, r, g, b, a)
+        table.clear(edge_calc_verts)
+        edge_calc(edge_calc_verts, adj)
+
+        assert(#edge_calc_verts % 3 == 0)
+
+        for _, vert in ipairs(edge_calc_verts) do
+            local i, j, nx, ny = unpack(vert)
+
+            vert[1], vert[2], vert[3] =
+                x + i, y + j, z
+            vert[4], vert[5] =
+                math.lerp(u0, u1, i), math.lerp(v0, v1, 1 - j)
+            vert[6], vert[7], vert[8] =
+                nx, ny, (nx == 0 and ny == 0) and 1 or 0
+            vert[9], vert[10], vert[11], vert[12] =
+                r, g, b, a
+            
+            table.insert(vertices, vert)
+        end
+
+        for i=1, #edge_calc_verts, 3 do
+            tappend(indices, vi+0, vi+1, vi+2)
+            vi=vi+3
+        end
+    end
+
     for z=0, voxel_depth-1 do
         local i=1
         for y=0, map.h-1 do
             for x=0, map.w-1 do
-                if get_voxel(x, y, z) == 0 then
+                local tid = get_voxel(x, y, z)
+                if tid == 0 then
                     goto continue
                 end
 
+                assert(tile_data[tid])
+                local side_u0, side_u1, side_v0, side_v1 = calc_tex_uv(tile_data[tid].side)
+
                 -- right
                 if get_voxel(x + 1, y, z) == 0 then
-                    local u0, v0, u1, v1 = calc_tex_uv(x, y, z, true)
+                    local u0, v0, u1, v1 = side_u0, side_u1, side_v0, side_v1
 
                     tappend(vertices,
                         {
@@ -229,7 +514,7 @@ function map_loader.create_mesh(map)
 
                 -- left
                 if get_voxel(x - 1, y, z) == 0 then
-                    local u0, v0, u1, v1 = calc_tex_uv(x, y, z, true)
+                    local u0, v0, u1, v1 = side_u0, side_u1, side_v0, side_v1
                     
                     tappend(vertices,
                         {
@@ -268,7 +553,7 @@ function map_loader.create_mesh(map)
 
                 -- front
                 if get_voxel(x, y + 1, z) == 0 then
-                    local u0, v0, u1, v1 = calc_tex_uv(x, y, z, true)
+                    local u0, v0, u1, v1 = side_u0, side_u1, side_v0, side_v1
 
                     tappend(vertices,
                         {
@@ -307,7 +592,7 @@ function map_loader.create_mesh(map)
 
                 -- back
                 if get_voxel(x, y - 1, z) == 0 then
-                    local u0, v0, u1, v1 = calc_tex_uv(x, y, z, true)
+                    local u0, v0, u1, v1 = side_u0, side_u1, side_v0, side_v1
 
                     tappend(vertices,
                         {
@@ -345,46 +630,52 @@ function map_loader.create_mesh(map)
                 end
 
                 -- top
-                if get_voxel(x, y, z + 1) == 0 then
-                    local u0, v0, u1, v1 = calc_tex_uv(x, y, z, false)
-                    local nz = 1
+                if get_voxel(x, y, z + 1) == 0 then                    
+                    local adj = calc_adjacency(x, y, z)
+                    local id, flip = calc_tex_id(x, y, z, adj)
+                    local u0, v0, u1, v1 = calc_tex_uv(id, flip)
+
                     if z >= 1 then
-                        nz = -1
-                    end
-
-                    tappend(vertices,
-                        {
-                            x + 1, y + 1, z + 1,
-                            u1, v0,
-                            0, 0, nz,
-                            1, 1, 1, 1
-                        },
-                        {
-                            x, y + 1, z + 1,
-                            u0, v0,
-                            0, 0, nz,
-                            1, 1, 1, 1
-                        },
-                        {
+                        edge_calc_push(
                             x, y, z + 1,
-                            u0, v1,
-                            0, 0, nz,
-                            1, 1, 1, 1
-                        },
-                        {
-                            x + 1, y, z + 1,
-                            u1, v1,
-                            0, 0, nz,
-                            1, 1, 1, 1
-                        }
-                    )
+                            adj,
+                            u0, v0, u1, v1,
+                            1, 1, 1, 1)
+                    else
+                        tappend(vertices,
+                            {
+                                x + 1, y + 1, z + 1,
+                                u1, v0,
+                                0, 0, 1,
+                                1, 1, 1, 1
+                            },
+                            {
+                                x, y + 1, z + 1,
+                                u0, v0,
+                                0, 0, 1,
+                                1, 1, 1, 1
+                            },
+                            {
+                                x, y, z + 1,
+                                u0, v1,
+                                0, 0, 1,
+                                1, 1, 1, 1
+                            },
+                            {
+                                x + 1, y, z + 1,
+                                u1, v1,
+                                0, 0, 1,
+                                1, 1, 1, 1
+                            }
+                        )
 
-                    tappend(indices,
-                        vi+0, vi+2, vi+1,
-                        vi+0, vi+3, vi+2
-                    )
+                        tappend(indices,
+                            vi+0, vi+2, vi+1,
+                            vi+0, vi+3, vi+2
+                        )
 
-                    vi = vi + 4
+                        vi = vi + 4
+                    end
                 end
 
                 -- bottom
