@@ -175,7 +175,6 @@ local function shader_preproc(src, output)
 	-- end
 
 	local result = table.concat(output.lines, "\n")
-	print(result)
 	return result
 end
 

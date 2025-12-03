@@ -319,7 +319,7 @@ function World:draw()
                 u_pos[1], u_pos[2], u_pos[3] = view_mat:mul_vec(px, py, pz)
 
                 u_dir_ang[1], u_dir_ang[2], u_dir_ang[3] = view_normal:mul_vec(dx, dy, dz)
-                u_dir_ang[4] = obj.angle
+                u_dir_ang[4] = math.cos(obj.angle)
 
                 u_color_pow[1], u_color_pow[2], u_color_pow[3] = obj.r, obj.g, obj.b
                 u_color_pow[4] = obj.power
