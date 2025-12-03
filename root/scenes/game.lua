@@ -40,7 +40,7 @@ function scene.load()
 
     -- playerEnt = ent
 
-    Lg.setBackgroundColor(0.5, 0.5, 0.5)
+    Lg.setBackgroundColor(0, 0, 0)
 end
 
 function scene.keypressed(key)
