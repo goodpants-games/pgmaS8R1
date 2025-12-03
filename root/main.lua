@@ -13,6 +13,8 @@ local display_scale = 1.0
 local font = Lg.newFont("res/fonts/ProggyClean.ttf", 16, "none", 1.0)
 
 function love.load(args)
+    love.keyboard.setTextInput(false)
+    
     for _, arg in ipairs(args) do
         if arg == "--debug" then
             Debug.enabled = true
@@ -20,7 +22,13 @@ function love.load(args)
         end
     end
 
-    sceneman.switchScene("game")
+    Lg.setFont(font)
+
+    if Debug.enabled then
+        sceneman.switchScene("game")
+    else
+        sceneman.switchScene("terminal")
+    end
 end
 
 local _paused_sources
@@ -40,6 +48,10 @@ function love.keypressed(key)
     else
         sceneman.dispatch("keypressed", key)
     end
+end
+
+function love.textinput(...)
+    sceneman.dispatch("textinput", ...)
 end
 
 local function update_display_fit()
@@ -77,24 +89,24 @@ function love.draw()
     Lg.setCanvas({ display_canvas, depth = true })
     local bg_r, bg_g, bg_b, bg_a = Lg.getBackgroundColor()
     Lg.clear(bg_r, bg_g, bg_b, bg_a)
-    Lg.setFont(font)
 
     sceneman.draw()
     Debug.draw:flush()
-
-    local draw_frametime = love.timer.getTime() - draw_ts
-
-    -- debug text
-    Lg.setColor(1, 1, 1)
-    Lg.print(("%.1f Kb"):format(collectgarbage("count")), 1, 1)
-    Lg.print(("update: %.1f ms"):format(update_frametime * 1000), 1, 11)
-    Lg.print(("draw: %.1f ms"):format(draw_frametime * 1000), 1, 21)
     
     -- draw display onto window
     Lg.setCanvas()
     Lg.clear(0, 0, 0, 1)
     Lg.origin()
     Lg.draw(display_canvas, display_ox, display_oy, 0, display_scale, display_scale)
+
+    local draw_frametime = love.timer.getTime() - draw_ts
+
+    -- debug text
+    Lg.setColor(1, 1, 1)
+    Lg.setFont(font)
+    Lg.print(("%.1f Kb"):format(collectgarbage("count")), 1, 1)
+    Lg.print(("update: %.1f ms"):format(update_frametime * 1000), 1, 11)
+    Lg.print(("draw: %.1f ms"):format(draw_frametime * 1000), 1, 21)
 end
 
 function love.run()
