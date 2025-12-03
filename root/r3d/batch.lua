@@ -32,6 +32,8 @@ function Batch:new(vertex_count)
     ---@private
     ---@type love.Texture?
     self._last_tex = nil
+    ---@private
+    self._last_shader = nil
 
     ---@private
     self._tmp_m4 = { mat4.new(), mat4.new() }
@@ -40,6 +42,9 @@ function Batch:new(vertex_count)
 
     ---@private
     self._color = { 1.0, 1.0, 1.0, 1.0 }
+
+    ---@private
+    self._shader = "shaded"
 
     ---@private
     self._dirty = false
@@ -57,6 +62,7 @@ function Batch:clear()
     self._vtxi = 1
     self._vtx_map = {}
     self._last_tex = nil
+    self._shader = nil
 end
 
 ---@private
@@ -84,8 +90,25 @@ function Batch:_flush()
     if self._dirty then
         table.insert(self._draw_calls, #self._vtx_map + 1)
         table.insert(self._draw_calls, self._last_tex)
+        table.insert(self._draw_calls, self._last_shader)
         self._dirty = false
     end
+end
+
+---@param tex love.Texture
+---@param shader string?
+function Batch:_begin_draw(tex, shader)
+    if shader == nil then
+        shader = self._shader
+    end
+
+    if self._last_tex ~= tex or self._last_shader ~= shader then
+        self:_flush()
+    end
+
+    self._last_tex = tex
+    self._last_shader = shader
+    self._dirty = true
 end
 
 ---@param r number
@@ -103,6 +126,15 @@ function Batch:set_color(r, g, b, a)
     t[1], t[2], t[3], t[4] = r, g, b, a
 end
 
+---@param shader_name string
+function Batch:set_shader(shader_name)
+    self._shader = shader_name
+end
+
+function Batch:get_shader()
+    return self._shader
+end
+
 ---@param img love.Texture
 ---@param transform mat4
 ---@param u0 number
@@ -110,11 +142,8 @@ end
 ---@param u1 number
 ---@param v1 number
 function Batch:_add_image_uv(img, transform, u0, v0, u1, v1)
-    if self._last_tex ~= img then
-        self:_flush()
-    end
+    self:_begin_draw(img, nil)
 
-    self._last_tex = img
     local mesh = self.mesh
     local col = self._color
 
@@ -160,7 +189,6 @@ function Batch:_add_image_uv(img, transform, u0, v0, u1, v1)
     )
 
     self._vtxi = self._vtxi + 4
-    self._dirty = true
 end
 
 ---@param img love.Texture
@@ -188,17 +216,23 @@ function Batch:add_image(img, quad, transform)
     end
 end
 
-function Batch:draw()
+function Batch:draw(draw_ctx)
     self:_flush()
 
     local draw_calls = self._draw_calls
     local draw_start = 1
     
     self.mesh:setVertexMap(self._vtx_map)
+    local last_shader
 
-    for i=1, #draw_calls, 2 do
-        local idx_end, tex = draw_calls[i], draw_calls[i+1]
+    for i=1, #draw_calls, 3 do
+        local idx_end, tex, shader = draw_calls[i], draw_calls[i+1], draw_calls[i+2]
         
+        if last_shader ~= shader then
+            draw_ctx:activate_shader(shader)
+            last_shader = shader
+        end
+
         self.mesh:setTexture(tex)
         self.mesh:setDrawRange(draw_start, idx_end - draw_start)
         Lg.draw(self.mesh)

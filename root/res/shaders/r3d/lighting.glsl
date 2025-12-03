@@ -30,7 +30,13 @@ vec3 r3d_calc_lighting(vec3 normal, vec3 view_pos)
 
         vec3 pos_diff = view_pos - light_pos;
         vec3 dir = normalize(pos_diff);
-        float facing = max(0.0, dot(normal, -dir));
+
+        float facing;
+        #ifdef R3D_LIGHT_IGNORE_NORMAL
+        facing = 1.0;
+        #else
+        facing = max(0.0, dot(normal, -dir));
+        #endif
 
         float cone_visibility = dot(dir, light_dir) - light_angle_cos;
         float vis_influence = (sign(cone_visibility) + 1.0) / 2.0;

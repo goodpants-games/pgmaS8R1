@@ -6,6 +6,7 @@ local mat4 = require("r3d.mat4")
 ---@param mesh love.Mesh
 function Model:new(mesh)
     self:super() ---@diagnostic disable-line
+    self.shader = "shaded"
     self.mesh = mesh
     self.transform = mat4.new()
 end
@@ -17,7 +18,8 @@ function Model:release()
     end
 end
 
-function Model:draw()
+function Model:draw(draw_ctx)
+    draw_ctx:activate_shader(self.shader)
     Lg.draw(self.mesh)
 end
 

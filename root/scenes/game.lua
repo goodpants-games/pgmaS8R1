@@ -14,7 +14,8 @@ local function create_actor(x, y)
         :give("sprite", "res/robot.png")
         :give("light", "spot")
     
-    ent.sprite.oy = 9
+    -- ent.sprite.oy = 9
+    ent.sprite.unshaded = true
     ent.light.power = 5.0
     ent.light.linear = 0.007
     ent.light.quadratic = 0.0002

@@ -16,11 +16,6 @@ function system:tick()
     local actor = ent.actor
     local light = ent.light
 
-    if position then
-        game.cam_x = position.x
-        game.cam_y = position.y
-    end
-
     local move_lsq = actor.move_x * actor.move_x + actor.move_y * actor.move_y
     if move_lsq > 0.0 then
         local ang = math.atan2(actor.move_y, actor.move_x)
@@ -32,6 +27,15 @@ function system:tick()
         else
             actor.look_angle = math.lerp_angle(actor.look_angle, ang, 0.2)
         end
+    end
+
+    -- update camera
+    if position then
+        local lookx = math.cos(actor.look_angle)
+        local looky = math.sin(actor.look_angle)
+
+        game.cam_x = position.x + lookx * 20.0
+        game.cam_y = position.y + looky * 20.0
     end
 
     if light and light.type == "spot" then

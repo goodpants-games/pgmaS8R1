@@ -41,6 +41,8 @@ Concord.component("sprite", function(cmp, img)
     cmp.sy = 1
     cmp.ox = 0
     cmp.oy = 0
+
+    cmp.unshaded = false
 end)
 
 Concord.component("light", function(cmp, type)

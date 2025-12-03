@@ -7,11 +7,11 @@ function Drawable:new()
 
     --- True if fully opaque, false if not.
     self.opaque = true
-    self.use_shading = true
     self.double_sided = false
 end
 
-function Drawable:draw()
+---@param draw_ctx r3d.DrawContext
+function Drawable:draw(draw_ctx)
     error(self:type() .. " draw not implemented")
 end
 

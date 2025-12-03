@@ -126,7 +126,7 @@ function render_system:draw()
         local px, py = math.round(pos.x), math.round(pos.y)
         local sx, sy = sprite.sx, sprite.sy
         local ox = math.round(img:getWidth() / 2 + sprite.ox)
-        local oy = math.round(img:getHeight() / 2 + sprite.oy)
+        local oy = math.round(img:getHeight() + sprite.oy)
 
         -- TODO: respect entity rotation
         transform0:identity()
@@ -141,7 +141,16 @@ function render_system:draw()
         transform1:set(1, 3, py)
         transform1:set(2, 3, img:getHeight())
 
-        draw_batch:set_color(sprite.r, sprite.g, sprite.b)
+        if sprite.unshaded then
+            draw_batch:set_shader("basic")
+            draw_batch:set_color(sprite.r, sprite.g, sprite.b)
+        else
+            draw_batch:set_shader("shaded_ignore_normal")
+
+            -- darken sprite so that it's not too bright when close to the light
+            draw_batch:set_color(sprite.r * 0.4, sprite.g * 0.4, sprite.b * 0.4)
+        end
+        
         draw_batch:add_image(img, transform1)
     end
 

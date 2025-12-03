@@ -80,6 +80,23 @@ function Game:new()
         end
     end
 
+    -- create actors
+    local obj_layer = self._map.tiled_map:getLayerByName("Objects") --[[@as pklove.tiled.ObjectLayer]]
+    if not obj_layer then
+        print("warning: no object layer")
+    else
+        for _, obj in ipairs(obj_layer.objects) do
+            if obj.name == "enemy" then
+                assert(obj.shape == "point")
+                
+                self:new_entity():assemble(ecsconfig.asm.actor,
+                                           obj.x, obj.y,
+                                           13, 8,
+                                           "res/robot.png")
+            end
+        end
+    end
+
     -- create map model
     local map_mesh = map_loader.create_mesh(map)
     do
@@ -88,14 +105,15 @@ function Game:new()
         tilemap:release()
     end
     self._map_model = r3d.model(map_mesh)
+    self._map_model.shader = "shaded_alpha_influence"
     self._map_model:set_scale(16, 16, 16)
-    self._map_model:set_position(0, 0, -16)
+    self._map_model:set_position(0, 0, -16) -- second layer is play layer
 
     -- create r3d world
     self.r3d_world = r3d.world()
     self.r3d_draw_batch = r3d.batch(2048)
-    self.r3d_draw_batch.use_shading = false
     self.r3d_draw_batch.opaque = false
+    self.r3d_draw_batch:set_shader("shaded_ignore_normal")
 
     self.r3d_world:add_object(self.r3d_draw_batch)
     self.r3d_world:add_object(self._map_model)
@@ -179,13 +197,13 @@ end
 function Game:tick()
     self.ecs_world:emit("tick")
 
-    if self.cam_follow then
-        local pos = self.cam_follow.position
-        if pos then
-            self.cam_x = pos.x
-            self.cam_y = pos.y
-        end
-    end
+    -- if self.cam_follow then
+    --     local pos = self.cam_follow.position
+    --     if pos then
+    --         self.cam_x = pos.x
+    --         self.cam_y = pos.y
+    --     end
+    -- end
 end
 
 function Game:update(dt)

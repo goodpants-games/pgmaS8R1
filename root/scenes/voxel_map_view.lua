@@ -484,9 +484,10 @@ function scene.load()
     self.model2 = r3d.model(mesh)
     self.batch = r3d.batch()
     self.batch.opaque = false
-    self.batch.use_shading = false
+    self.batch.shader = "shaded_ignore_normal"
     self.batch.double_sided = true
 
+    self.model.shader = "shaded_alpha_influenceg"
     self.model:set_scale(16, 16, 16)
     -- self.model2:set_position(5, 0, -4)
 

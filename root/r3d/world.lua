@@ -8,21 +8,31 @@ local SpotLight = require("r3d.light").spotlight
 -- these are inserted as defines into the shader files
 local SPOTLIGHT_COUNT = 4
 
----@class r3d.World
----@overload fun():r3d.World
-local World = batteries.class({ name = "r3d.World" })
+local SHADER_SOURCE_SHADED = [[
+#include <res/shaders/r3d/lighting.glsl>
+#include <res/shaders/r3d/frag.glsl>
 
----@class r3d.Camera: r3d.Object
----@field frustum_width number
----@field frustum_height number
----@overload fun():r3d.Camera
-local Camera = batteries.class({ name = "r3d.Camera", extends = Object })
+vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
+{
+    vec3 light_sum = r3d_calc_lighting(v_normal, v_view_pos);
+    vec4 texturecolor = Texel(tex, texture_coords);
+    texturecolor.rgb *= light_sum;
+    return texturecolor * color;
+}
+]]
 
-function Camera:new()
-    self:super() ---@diagnostic disable-line
-    self.frustum_width = 1
-    self.frustum_height = 1
-end
+local SHADER_SOURCE_SHADED_ALPHA_INFLUENCE = [[
+#include <res/shaders/r3d/lighting.glsl>
+#include <res/shaders/r3d/frag.glsl>
+
+vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
+{
+    vec3 light_sum = r3d_calc_lighting(v_normal, v_view_pos);
+    vec4 texturecolor = Texel(tex, texture_coords);
+    texturecolor.rgb *= light_sum * texturecolor.a;
+    return vec4(texturecolor.rgb, 1.0) * color;
+}
+]]
 
 ---@param path string
 ---@return string?
@@ -65,31 +75,54 @@ local function shader_try_send(shader, name, ...)
     end
 end
 
-local SHADER_SOURCE_SHADED = [[
-#include <res/shaders/r3d/lighting.glsl>
-#include <res/shaders/r3d/frag.glsl>
+---@class r3d.World
+---@overload fun():r3d.World
+local World = batteries.class({ name = "r3d.World" })
 
-vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
-{
-    vec3 light_sum = r3d_calc_lighting(v_normal, v_view_pos);
-    vec4 texturecolor = Texel(tex, texture_coords);
-    texturecolor.rgb *= light_sum;
-    return texturecolor * color;
-}
-]]
+---@class r3d.Camera: r3d.Object
+---@field frustum_width number
+---@field frustum_height number
+---@overload fun():r3d.Camera
+local Camera = batteries.class({ name = "r3d.Camera", extends = Object })
 
-local SHADER_SOURCE_SHADED_ALPHA_INFLUENCE = [[
-#include <res/shaders/r3d/lighting.glsl>
-#include <res/shaders/r3d/frag.glsl>
+function Camera:new()
+    self:super() ---@diagnostic disable-line
+    self.frustum_width = 1
+    self.frustum_height = 1
+end
 
-vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
-{
-    vec3 light_sum = r3d_calc_lighting(v_normal, v_view_pos);
-    vec4 texturecolor = Texel(tex, texture_coords);
-    texturecolor.rgb *= light_sum * texturecolor.a;
-    return vec4(texturecolor.rgb, 1.0) * color;
-}
-]]
+---@class r3d.DrawContext
+---@field package _mv mat4
+---@field package _mv_norm mat3
+---@field package _processed_shaders {[string]:boolean}
+---@field package _world r3d.World
+---@overload fun(world:r3d.World):r3d.DrawContext
+local DrawContext = batteries.class({ name = "r3d.DrawContext" })
+
+function DrawContext:new(world)
+    self._world = world
+end
+
+---@param shader_name string
+function DrawContext:activate_shader(shader_name)
+    local world = self._world
+    local shader = world.shaders[shader_name]
+    if not shader then
+        error(("no shader '%s' exists"):format(shader_name))
+    end
+    Lg.setShader(shader)
+
+    if self._processed_shaders[shader_name] then
+        return
+    end
+
+    shader:send("u_mat_modelview", self._mv)
+    if shader:hasUniform("u_mat_modelview_norm") then
+        shader:send("u_mat_modelview_norm", self._mv_norm)
+    end
+
+    self._processed_shaders[shader_name] = true
+end
 
 function World:new()
     self.sun = {
@@ -120,6 +153,8 @@ function World:new()
     local vertex_code = "res/shaders/r3d/r3d.vert.glsl"
     self.shaders.shaded =
         new_shader(SHADER_SOURCE_SHADED, vertex_code)
+    self.shaders.shaded_ignore_normal =
+        new_shader("#define R3D_LIGHT_IGNORE_NORMAL\n" .. SHADER_SOURCE_SHADED, vertex_code)
     self.shaders.shaded_alpha_influence =
         new_shader(SHADER_SOURCE_SHADED_ALPHA_INFLUENCE, vertex_code)
     self.shaders.basic =
@@ -128,7 +163,7 @@ function World:new()
     ---@private
     ---@type mat4[]
     self._tmp_mat = {}
-    ---@private
+    ---@package
     self._tmp_mat_i = 1
     for i=1, 16 do
         table.insert(self._tmp_mat, mat4.new())
@@ -141,6 +176,9 @@ function World:new()
     ---@private
     ---@type number[]
     self._tmp_vec3 = { 0, 0, 0 }
+
+    ---@private
+    self._draw_ctx = DrawContext(self)
 
     ---@private
     ---@type {pos:number[][], dir_angle:number[][], color_pow:number[][], control:number[][]}
@@ -230,31 +268,24 @@ function World:_pack_vec(x, y, z, mat)
     return self._tmp_vec3
 end
 
+function World:_draw_ctx_activate_shader(shader_name)
+
+end
+
 ---@private
 ---@param obj r3d.Drawable
 ---@param view_mat mat4
 function World:_draw_object(obj, view_mat)
-    local shader
-    if obj.use_shading then
-        shader = self.shaders.shaded_alpha_influence
-    else
-        shader = self.shaders.basic
-    end
-
-    Lg.setShader(shader)
-
+    self._draw_ctx._processed_shaders = {}
     local sp = self._tmp_mat_i
 
     -- local mv = model.transform * view_mat
     local mv = obj.transform:mul(view_mat, self:_push_mat())
-    shader:send("u_mat_modelview", mv)
+    self._draw_ctx._mv = mv
 
-    if shader:hasUniform("u_mat_modelview_norm") then
-        local mv_it = mv:inverse(self:_push_mat())
-                        :transpose(self:_push_mat())
-
-        shader:send("u_mat_modelview_norm", mv_it:to_mat3(self._tmp_mat3))
-    end
+    local mv_it = mv:inverse(self:_push_mat())
+                    :transpose(self:_push_mat())
+    self._draw_ctx._mv_norm = mv_it:to_mat3(self._tmp_mat3)
 
     if obj.double_sided then
         Lg.setMeshCullMode("none")
@@ -262,7 +293,7 @@ function World:_draw_object(obj, view_mat)
         Lg.setMeshCullMode("back")
     end
 
-    obj:draw()
+    obj:draw(self._draw_ctx)
 
     self:_restore_mat_stack(sp)
 end
