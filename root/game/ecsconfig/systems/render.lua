@@ -1,8 +1,10 @@
 local Concord = require("concord")
 local mat4 = require("r3d.mat4")
+local Light = require("r3d.light")
 
 local render_system = Concord.system({
-    pool = {"position", "sprite"},
+    sprite_pool = {"position", "sprite"},
+    light_pool = {"position", "light"},
     dbgdraw_pool = {"position", "collision"}
 })
 
@@ -40,6 +42,7 @@ function render_system:init(world)
     self.render_list = {}
     self.known_entities = {}
     self.texture_cache = {}
+    self.lights = {}
 end
 
 local function sprite_y_search(entity, ypos)
@@ -50,7 +53,90 @@ local function sprite_y_sort(a, b)
     return a.position.y < b.position.y
 end
 
-function render_system:draw()
+---@param world r3d.World
+---@param light r3d.Light
+---@param info any
+---@param pos {x:number, y:number}
+---@return r3d.Light
+local function sync_light(world, light, info, pos)
+    -- replace light object if necessary
+    local old_type
+
+    if light then
+        if light:is(Light.spotlight) then
+            old_type = "spot"
+        end
+    end
+
+    if old_type ~= info.type or not info.type then
+        if light then
+            world:remove_object(light)
+        end
+
+        if info.type == "spot" then
+            light = Light.spotlight()
+        else
+            error(("unknown light type '%s', expected 'spot'"):format(tostring(info.type)))
+        end
+
+        world:add_object(light)
+        print("create new " .. info.type)
+    end
+    
+    -- sync properties
+    light.r = info.r
+    light.g = info.g
+    light.b = info.b
+    light.power = info.power
+    light.enabled = info.enabled
+    light.constant = info.constant
+    light.linear = info.linear
+    light.quadratic = info.quadratic
+
+    local px, py, pz = pos.x, pos.y, info.z_offset
+
+    if info.type == "spot" then
+        ---@cast light r3d.SpotLight
+        light.angle = info.spot_angle
+
+        light.transform =
+            mat4.rotation_z(nil, info.spot_rz)
+            * mat4.rotation_x(nil, info.spot_rx)
+            * mat4.translation(nil, px, py, pz)        
+    else
+        light.transform:identity()
+        light:set_position(px, py, pz)
+    end
+
+    return light
+end
+
+function render_system:sync_lights()
+    ---@type r3d.World
+    local world = self:getWorld().game.r3d_world
+    
+    local ents_to_remove = {}
+    for ent, _ in pairs(self.lights) do
+        ents_to_remove[ent] = true
+    end
+
+    -- handle new entities
+    for _, ent in ipairs(self.light_pool) do
+        ents_to_remove[ent] = nil
+        
+        local pos = ent.position
+        self.lights[ent] = sync_light(world, self.lights[ent], ent.light, pos)
+    end
+    
+    -- prune entities no longer in world
+    for ent, _ in ipairs(ents_to_remove) do
+        print("destroy a light")
+        world:remove_object(self.lights[ent])
+        self.lights[ent] = nil
+    end
+end
+
+function render_system:draw_sprites()
     ---@type r3d.Batch
     local draw_batch = self:getWorld().game.r3d_draw_batch
 
@@ -72,7 +158,7 @@ function render_system:draw()
     end
 
     -- find new entities
-    for _, entity in ipairs(self.pool) do
+    for _, entity in ipairs(self.sprite_pool) do
         local pos = entity.position
 
         if not self.known_entities[entity] then
@@ -153,6 +239,11 @@ function render_system:draw()
         
         draw_batch:add_image(img, transform1)
     end
+end
+
+function render_system:draw()
+    self:draw_sprites()
+    self:sync_lights()
 
     if Debug.enabled then
         for _, entity in ipairs(self.dbgdraw_pool) do

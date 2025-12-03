@@ -38,8 +38,7 @@ function Game:new()
         ecsconfig.systems.player_controller,
         ecsconfig.systems.actor,
         ecsconfig.systems.physics,
-        ecsconfig.systems.render,
-        ecsconfig.systems.lights)
+        ecsconfig.systems.render)
 
     local map = map_loader.load("res/maps/voxeltest.lua")
     self._map = map
@@ -48,6 +47,9 @@ function Game:new()
     local tw, th = map.tw, map.th
     self.map_width, self.map_height = w, h
     self.tile_width, self.tile_height = tw, th
+
+    ---@type table?
+    self.player = nil
 
     -- get collision data
     self._colmap = {}
@@ -83,19 +85,33 @@ function Game:new()
     -- create actors
     local obj_layer = self._map.tiled_map:getLayerByName("Objects") --[[@as pklove.tiled.ObjectLayer]]
     if not obj_layer then
-        print("warning: no object layer")
+        error("level has no object layer (the layer must be named \"Objects\")")
     else
         for _, obj in ipairs(obj_layer.objects) do
-            if obj.name == "enemy" then
+            if obj.type == "entity" then
                 assert(obj.shape == "point")
-                
-                self:new_entity():assemble(ecsconfig.asm.actor,
-                                           obj.x, obj.y,
-                                           13, 8,
-                                           "res/robot.png")
+                local x = obj.x
+                local y = obj.y
+
+                if obj.name == "enemy" then     
+                    self:new_entity():assemble(
+                        ecsconfig.asm.actor,
+                        x, y,
+                        13, 8,
+                        "res/robot.png")
+                elseif obj.name == "player" then
+                    assert(not self.player, "there can not be more than one player in a level")
+
+                    self.player = self:new_entity():assemble(ecsconfig.asm.entity_player, x, y)
+                    self.player.sprite.unshaded = true
+                    self.player:give("player_control")
+                    self.cam_follow = self.player
+                end
             end
         end
     end
+
+    assert(self.player, "level must have a player")
 
     -- create map model
     local map_mesh = map_loader.create_mesh(map)

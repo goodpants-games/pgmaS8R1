@@ -30,9 +30,9 @@ function scene.load()
     scndat.music:setLooping(true)
     scndat.music:play()
 
-    local player = create_actor(100, 100)
-    player:give("player_control")
-    scndat.game.cam_follow = player
+    -- local player = create_actor(100, 100)
+    -- player:give("player_control")
+    -- scndat.game.cam_follow = player
 
     -- for i=1, 100 do
     --     create_actor(148 + i, 116 + i)
