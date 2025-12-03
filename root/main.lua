@@ -96,6 +96,7 @@ function love.draw()
     -- draw display onto window
     Lg.setCanvas()
     Lg.clear(0, 0, 0, 1)
+    Lg.setColor(1, 1, 1)
     Lg.origin()
     Lg.draw(display_canvas, display_ox, display_oy, 0, display_scale, display_scale)
 
