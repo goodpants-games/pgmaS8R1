@@ -1,54 +1,9 @@
 local Concord = require("concord")
-
-local COLLISION_MARGIN = 0.001
+local collision = require("game.collision")
 
 local system = Concord.system({
     pool = {"position", "velocity"}
 })
-
-local function rect_collision(rx0, ry0, rw0, rh0, rx1, ry1, rw1, rh1)
-    local xe0 = rw0 / 2.0
-    local ye0 = rh0 / 2.0
-    local xe1 = rw1 / 2.0
-    local ye1 = rh1 / 2.0
-
-    local l0 = rx0 - xe0 + COLLISION_MARGIN
-    local r0 = rx0 + xe0 - COLLISION_MARGIN
-    local t0 = ry0 - ye0 + COLLISION_MARGIN
-    local b0 = ry0 + ye0 - COLLISION_MARGIN
-
-    local l1 = rx1 - xe1
-    local r1 = rx1 + xe1
-    local t1 = ry1 - ye1
-    local b1 = ry1 + ye1
-    
-    -- local pr = r0 - l1
-    -- local pt = b0 - t1
-    -- local pl = r1 - l0
-    -- local pb = b1 - t0
-    local pl = r0 - l1
-    local pt = b0 - t1
-    local pr = r1 - l0
-    local pb = b1 - t0
-    local mp = math.min(pr, pt, pl, pb)
-    if mp < 0 then
-        return
-    end
-
-    local nx, ny
-
-    if mp == pl then
-        nx, ny = -1, 0
-    elseif mp == pt then
-        nx, ny = 0, -1
-    elseif mp == pr then
-        nx, ny = 1, 0
-    elseif mp == pb then
-        nx, ny = 0, 1
-    end
-
-    return mp + COLLISION_MARGIN, nx, ny
-end
 
 local function get_tile_collision_bounds(cx, cy, tw, th, colv)
     local colx, coly, colw, colh
@@ -79,12 +34,13 @@ local function resolve_tilemap_collisions(ent, game)
     local cye = collider.h / 2 -- collider y extents
 
     local tw, th = game.tile_width, game.tile_height
+    local margin = collision.margin
 
     for _=1, 4 do
-        local minx = math.floor((pos.x - cxe + COLLISION_MARGIN) / tw)
-        local maxx = math.ceil((pos.x + cxe - COLLISION_MARGIN) / th)
-        local miny = math.floor((pos.y - cye + COLLISION_MARGIN) / tw)
-        local maxy = math.ceil((pos.y + cye - COLLISION_MARGIN) / th)
+        local minx = math.floor((pos.x - cxe + margin) / tw)
+        local maxx = math.ceil((pos.x + cxe - margin) / th)
+        local miny = math.floor((pos.y - cye + margin) / tw)
+        local maxy = math.ceil((pos.y + cye - margin) / th)
 
         -- find the closest intersecting cell
         -- local cell_value = 0
@@ -105,8 +61,9 @@ local function resolve_tilemap_collisions(ent, game)
                         local colx, coly, colw, colh =
                             get_tile_collision_bounds(x, y, tw, th, v)
                         local pn, nx, ny =
-                            rect_collision(pos.x, pos.y, collider.w, collider.h,
-                                           colx, coly, colw, colh)
+                            collision.rect_rect_collision(
+                                pos.x, pos.y, collider.w, collider.h,
+                                colx, coly, colw, colh)
 
                         if pn and (col_pn == nil or pn > col_pn) then
                             cx = x

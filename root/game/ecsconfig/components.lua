@@ -1,4 +1,5 @@
 local Concord = require("concord")
+local consts = require("game.consts")
 
 Concord.component("position", function(cmp, x, y)
     cmp.x = x or 0
@@ -18,6 +19,7 @@ end)
 Concord.component("collision", function(cmp, w, h)
     cmp.w = w
     cmp.h = h
+    cmp.group = consts.COLGROUP_DEFAULT
 end)
 
 Concord.component("actor", function(cmp)
@@ -27,6 +29,9 @@ Concord.component("actor", function(cmp)
     
     -- px/tick
     cmp.move_speed = 1.4
+
+    cmp.kb_vx = 0.0
+    cmp.kb_vy = 0.0
 end)
 
 Concord.component("player_control")
@@ -65,3 +70,8 @@ Concord.component("light", function(cmp, type)
 end)
 
 Concord.component("ai")
+
+Concord.component("attackable", function(cmp)
+    cmp.hit = nil
+    -- cmp.on_hit = hit_callback
+end)

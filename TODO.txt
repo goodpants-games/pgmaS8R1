@@ -1,3 +1,7 @@
-- try out gouraud shading
+- two weapons:
+    melee attack: long windup you need to time, but takes no battery
+    gun: easier to use but takes battery
+- maybe killing enemies give you battery, so you would have an actual reason
+  to try to kill enemies. kind of.
 - please work on an actual enemy and gameplay stop working on the fucking
   graphics please.

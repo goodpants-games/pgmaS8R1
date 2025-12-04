@@ -20,6 +20,7 @@ function system:tick()
         local pos = ent.position
         local vel = ent.velocity
         local actor = ent.actor
+        local attackable = ent.attackable
         
         local move_vec_len = math.sqrt(actor.move_x * actor.move_x +
                                        actor.move_y * actor.move_y)
@@ -29,6 +30,18 @@ function system:tick()
 
         vel.x = actor.move_x / move_vec_len * actor.move_speed
         vel.y = actor.move_y / move_vec_len * actor.move_speed
+
+        vel.x = vel.x + actor.kb_vx
+        vel.y = vel.y + actor.kb_vy
+        actor.kb_vx = actor.kb_vx * 0.9
+        actor.kb_vy = actor.kb_vy * 0.9
+
+        if attackable and attackable.hit then
+            local attack = attackable.hit --[[@as Game.Attack]]
+            print("ow")
+            actor.kb_vx = attack.dx * 4.0
+            actor.kb_vy = attack.dy * 4.0
+        end
     end
 end
 

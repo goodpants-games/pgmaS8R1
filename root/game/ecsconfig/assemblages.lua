@@ -1,4 +1,5 @@
 local asm = {}
+local consts = require("game.consts")
 
 ---@param e any
 ---@param x number
@@ -22,6 +23,7 @@ function asm.entity_player(e, x, y)
                "res/robot.png")
     e:give("light", "spot")
 
+    e.collision.group = consts.COLGROUP_PLAYER
     e.light.power = 5.0
     e.light.linear = 0.007
     e.light.quadratic = 0.0002

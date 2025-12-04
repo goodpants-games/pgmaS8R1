@@ -53,6 +53,13 @@ function DebugDraw:line(x0, y0, x1, y1)
     end)
 end
 
+function DebugDraw:circle_lines(x, y, r)
+    if not self.enabled then return end
+    table.insert(self._draw_list, function()
+        Lg.circle("line", math.floor(x), math.floor(y), r)
+    end)
+end
+
 function DebugDraw:flush()
     Lg.push()
     Lg.origin()

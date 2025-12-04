@@ -36,6 +36,19 @@ function system:tick()
 
         game.cam_x = position.x + lookx * 20.0
         game.cam_y = position.y + looky * 20.0
+
+        if Input.players[1]:pressed("action1") then
+            game:add_attack({
+                x = position.x + lookx * 16,
+                y = position.y + looky * 16,
+                radius = 16,
+                damage = 1,
+                dx = lookx,
+                dy = looky,
+                mask = require("game.consts").COLGROUP_ENEMY,
+                owner = ent
+            })
+        end
     end
 
     if light and light.type == "spot" then

@@ -5,6 +5,17 @@ local r3d = require("r3d")
 
 local ecsconfig = require("game.ecsconfig")
 local map_loader = require("game.map_loader")
+local consts = require("game.consts")
+
+---@class Game.Attack
+---@field x number
+---@field y number
+---@field radius number
+---@field damage number
+---@field dx number
+---@field dy number
+---@field mask integer?
+---@field owner any?
 
 ---@class Game
 ---@field ecs_world any
@@ -24,9 +35,6 @@ local map_loader = require("game.map_loader")
 ---@overload fun():Game
 local Game = batteries.class({ name = "Game" })
 
-Game.TICK_RATE = 60
-Game.TICK_LEN = 1 / Game.TICK_RATE
-
 function Game:new()
     self.cam_x = 0.0
     self.cam_y = 0.0
@@ -38,6 +46,7 @@ function Game:new()
         ecsconfig.systems.player_controller,
         ecsconfig.systems.ai,
         ecsconfig.systems.actor,
+        ecsconfig.systems.attack,
         ecsconfig.systems.physics,
         ecsconfig.systems.render)
 
@@ -102,7 +111,10 @@ function Game:new()
                             13, 8,
                             "res/robot.png")
                         :give("ai")
+                        :give("attackable")
                     
+                    e.collision.group =
+                        bit.bor(e.collision.group, consts.COLGROUP_ENEMY)
                     e.actor.move_speed = 0.5
                 elseif obj.name == "player" then
                     assert(not self.player, "there can not be more than one player in a level")
@@ -110,6 +122,7 @@ function Game:new()
                     self.player = self:new_entity():assemble(ecsconfig.asm.entity_player, x, y)
                     self.player.sprite.unshaded = true
                     self.player:give("player_control")
+
                     self.cam_follow = self.player
                 end
             end
@@ -138,6 +151,9 @@ function Game:new()
 
     self.r3d_world:add_object(self.r3d_draw_batch)
     self.r3d_world:add_object(self._map_model)
+
+    ---@type table[]
+    self._attacks = {}
 
     -- ---@type pklove.tiled.TileLayer?
     -- local col_layer
@@ -237,31 +253,32 @@ function Game:update(dt)
     -- https://medium.com/@tglaiel/how-to-make-your-game-run-at-60fps-24c61210fe75
     local dt_to_accum = dt
     local DT_SNAP_EPSILON = 0.002
+    local tick_len = consts.TICK_LEN
 
-    if math.abs(dt - Game.TICK_LEN) < DT_SNAP_EPSILON then -- 30 fps?
-        dt_to_accum = Game.TICK_LEN
-    elseif math.abs(dt - Game.TICK_LEN * 2.0) < DT_SNAP_EPSILON then -- 15 fps?
-        dt_to_accum = Game.TICK_LEN * 2.0
-    elseif math.abs(dt - Game.TICK_LEN * 0.5) < DT_SNAP_EPSILON then -- 60 fps?
-        dt_to_accum = Game.TICK_LEN * 0.5
-    elseif math.abs(dt - Game.TICK_LEN * 0.25) < DT_SNAP_EPSILON then -- 120 fps?
-        dt_to_accum = Game.TICK_LEN * 0.25
+    if math.abs(dt - tick_len) < DT_SNAP_EPSILON then -- 30 fps?
+        dt_to_accum = tick_len
+    elseif math.abs(dt - tick_len * 2.0) < DT_SNAP_EPSILON then -- 15 fps?
+        dt_to_accum = tick_len * 2.0
+    elseif math.abs(dt - tick_len * 0.5) < DT_SNAP_EPSILON then -- 60 fps?
+        dt_to_accum = tick_len * 0.5
+    elseif math.abs(dt - tick_len * 0.25) < DT_SNAP_EPSILON then -- 120 fps?
+        dt_to_accum = tick_len * 0.25
     else
         print("no dt snap")
     end
 
     local iter = 1
     self._dt_accum = self._dt_accum + dt_to_accum
-    while self._dt_accum >= Game.TICK_LEN do
+    while self._dt_accum >= tick_len do
         if iter > 8 then
             print("too many ticks in one frame!")
-            self._dt_accum = self._dt_accum % Game.TICK_LEN
+            self._dt_accum = self._dt_accum % tick_len
             break
         end
         
         self:tick()
 
-        self._dt_accum = self._dt_accum - Game.TICK_LEN
+        self._dt_accum = self._dt_accum - tick_len
         iter=iter+1
     end
 
@@ -313,19 +330,26 @@ function Game:draw()
     -- Lg.pop()
 end
 
-function Game:make_3d_model()
-    ---@type number
-    local heightmap = {}
-    local tinsert = table.insert
-
-    local i = 1
-    for y=0, self.map_height - 1 do
-        for x=0, self.map_width - 1 do
-            local col = self:get_col(x, y)
-
-            i=i+1
-        end
+---Add attack sphere
+---@param attack Game.Attack
+function Game:add_attack(attack)
+    if not attack.mask then
+        attack.mask = consts.COLGROUP_ALL
     end
+    if not attack.dx then
+        attack.dx = 0.0
+    end
+    if not attack.dy then
+        attack.dy = 0.0
+    end
+
+    assert(attack.x, "attack does not have required field 'x'")
+    assert(attack.y, "attack does not have required field 'y'")
+    assert(attack.radius, "attack does not have required field 'radius'")
+    assert(attack.damage, "attack does not have required field 'damage'")
+
+    local attack_system = self.ecs_world:getSystem(ecsconfig.systems.attack)
+    table.insert(attack_system.attacks, attack)
 end
 
 return Game
