@@ -1,0 +1,3 @@
+- try out gouraud shading
+- please work on an actual enemy and gameplay stop working on the fucking
+  graphics please.

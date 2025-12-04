@@ -60,6 +60,15 @@ function tiled.mapPath(cwd, path)
     return tpath.normalize(tpath.join(cwd, path))
 end
 
+function math.normalize_v2(x, y)
+    local len = math.sqrt(x*x + y*y)
+    if len > 0 then
+        x = x / len
+        y = y / len
+    end
+    return x, y
+end
+
 MOUSE_X = 0
 MOUSE_Y = 0
 

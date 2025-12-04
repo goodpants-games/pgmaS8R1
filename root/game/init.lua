@@ -36,6 +36,7 @@ function Game:new()
     self.ecs_world.game = self
     self.ecs_world:addSystems(
         ecsconfig.systems.player_controller,
+        ecsconfig.systems.ai,
         ecsconfig.systems.actor,
         ecsconfig.systems.physics,
         ecsconfig.systems.render)
@@ -94,11 +95,15 @@ function Game:new()
                 local y = obj.y
 
                 if obj.name == "enemy" then     
-                    self:new_entity():assemble(
-                        ecsconfig.asm.actor,
-                        x, y,
-                        13, 8,
-                        "res/robot.png")
+                    local e = self:new_entity()
+                        :assemble(
+                            ecsconfig.asm.actor,
+                            x, y,
+                            13, 8,
+                            "res/robot.png")
+                        :give("ai")
+                    
+                    e.actor.move_speed = 0.5
                 elseif obj.name == "player" then
                     assert(not self.player, "there can not be more than one player in a level")
 

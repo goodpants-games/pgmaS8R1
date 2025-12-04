@@ -234,7 +234,7 @@ function render_system:draw_sprites()
             draw_batch:set_shader("shaded_ignore_normal")
 
             -- darken sprite so that it's not too bright when close to the light
-            draw_batch:set_color(sprite.r * 0.4, sprite.g * 0.4, sprite.b * 0.4)
+            draw_batch:set_color(sprite.r * 0.3, sprite.g * 0.3, sprite.b * 0.3)
         end
         
         draw_batch:add_image(img, transform1)

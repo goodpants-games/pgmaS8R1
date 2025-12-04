@@ -26,7 +26,7 @@ Concord.component("actor", function(cmp)
     cmp.look_angle = 0
     
     -- px/tick
-    cmp.move_speed = 2
+    cmp.move_speed = 1.4
 end)
 
 Concord.component("player_control")
@@ -63,3 +63,5 @@ Concord.component("light", function(cmp, type)
 
     cmp.z_offset = 8.0
 end)
+
+Concord.component("ai")
