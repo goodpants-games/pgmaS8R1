@@ -26,7 +26,8 @@ end
 function scene.load()
     scndat = {}
     scndat.game = Game()
-    scndat.music = love.audio.newSource("res/cemetery.xm", "stream")
+    scndat.music = love.audio.newSource("res/music/drone.wav", "static")
+    scndat.music:setVolume(0.2)
     scndat.music:setLooping(true)
     scndat.music:play()
 
