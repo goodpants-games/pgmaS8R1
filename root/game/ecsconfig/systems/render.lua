@@ -185,36 +185,10 @@ function render_system:sync_sprite_graphic(sprite, rotation)
         sprite._cmd = nil
         sprite._cmd_arg = nil
 
-        spr:update(consts.TICK_LEN)
         sprite.anim = spr.curAnim
 
-        -- TODO: sprite rotation needs to work better. i think i can make it work
-        --       with only three rotations but the angle thresholds need to be
-        --       different. also how tf do i turn off the vscode word
-        --       autocomplete thing where it shows a word in transparent. but its obviously
-        --       not the language autocomplete. what is this.
-        local ang_inc = math.pi / 2.0
-        local rotr = rotation / ang_inc
-
-        if rotr > 1.0 then
-            rotr = 2.0 - rotr
-        elseif rotr < -1.0 then
-            rotr = -2.0 - rotr
-        end
-
-        -- assert(rotr >= 0.0 and rotr <= 2.0)
-        -- if rotr > 1.0 then
-        --     rotr = 2.0 - rotr
-        -- end
-
-        -- if rotation < 0.0 then
-        --     rotr = 1.0 - rotr
-        -- end
-
-        local cel_rot_offset = math.round(rotr)
-
         img = spr.res.atlas
-        local cel = spr.res.cels[spr.cel + cel_rot_offset]
+        local cel = spr.res.cels[spr.cel]
         img_quad = cel.quad
         img_ox = cel.ox
         img_oy = cel.oy

@@ -16,19 +16,32 @@ function system:tick()
     local actor = ent.actor
     local rotation = ent.rotation
     local light = ent.light
+    local sprite = ent.sprite
 
-    if rotation then
-        local move_lsq = actor.move_x * actor.move_x + actor.move_y * actor.move_y
-        if move_lsq > 0.0 then
-            local ang = math.atan2(actor.move_y, actor.move_x)
-            local ang_diff = math.abs(math.angle_difference(rotation.ang, ang))
+    local move_len = math.sqrt(actor.move_x * actor.move_x + actor.move_y * actor.move_y)
+    local move_min = 0.1
+    if rotation and move_len > move_min then
+        local ang = math.atan2(actor.move_y, actor.move_x)
+        local ang_diff = math.abs(math.angle_difference(rotation.ang, ang))
 
-            -- snap angle when either close enough or turning 180 degrees
-            if ang_diff < math.rad(0.5) or math.abs(ang_diff - math.pi) < math.rad(1) then
-                rotation.ang = ang
-            else
-                rotation.ang = math.lerp_angle(rotation.ang, ang, 0.2)
-            end
+        -- snap angle when either close enough or turning 180 degrees
+        -- if ang_diff < math.rad(0.5) or math.abs(ang_diff - math.pi) < math.rad(1) then
+        --     rotation.ang = ang
+        -- else
+            rotation.ang = math.lerp_angle(rotation.ang, ang, 0.2)
+        -- end
+    end
+
+    -- update animation lol
+    if sprite then
+        local anim = "idle"
+
+        if move_len * actor.move_speed > move_min then
+            anim = "walk"
+        end
+
+        if sprite.anim ~= anim then
+            sprite:play(anim)
         end
     end
 
@@ -44,7 +57,7 @@ function system:tick()
         game.cam_x = position.x + lookx * 20.0
         game.cam_y = position.y + looky * 20.0
 
-        if Input.players[1]:pressed("action1") then
+        if Input.players[1]:pressed("player_attack") then
             game:add_attack({
                 x = position.x + lookx * 16,
                 y = position.y + looky * 16,
@@ -79,6 +92,12 @@ function system:update(dt)
             end
             
             actor.move_x, actor.move_y = mx, my
+
+            if Input.players[1]:down("player_lock") then
+                actor.move_speed = 0.0
+            else
+                actor.move_speed = 1.4
+            end
         end
     end
 end

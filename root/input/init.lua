@@ -8,8 +8,9 @@ Input.players[1] = baton.new {
         right = {'key:right', 'key:d', 'axis:leftx+', 'button:dpright'},
         up = {'key:up', 'key:w', 'axis:lefty-', 'button:dpup'},
         down = {'key:down', 'key:s', 'axis:lefty+', 'button:dpdown'},
-        action1 = {'key:z', 'button:a'},
-        action2 = {'key:x', 'button:b'},
+        player_attack = {'key:z', 'button:a'},
+        player_lock = {'key:x', 'button:leftshoulder'},
+        player_run = {'key:c', 'button:b'}
     },
     pairs = {
         move = {'left', 'right', 'up', 'down'}

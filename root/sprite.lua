@@ -349,8 +349,9 @@ function Sprite:update(dt)
     local curAnim = self.res.animations[self.curAnim]
     
     self._timeAccum = self._timeAccum + dt
-    while self._timeAccum * 1000 >= cel.duration do
-        self._timeAccum = self._timeAccum - cel.duration / 1000
+    local celDuration = cel.duration / 1000;
+    while self._timeAccum >= celDuration do
+        self._timeAccum = self._timeAccum - celDuration
         
         if self.cel >= curAnim.to then
             self._loopCount = self._loopCount + 1
