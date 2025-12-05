@@ -255,8 +255,8 @@ function render_system:draw()
             Lg.setLineWidth(1)
             Lg.setLineStyle("rough")
             Lg.rectangle("line",
-                         math.floor(pos.x - rect.w / 2.0) + 0.5,
-                         math.floor(pos.y - rect.h / 2.0) + 0.5,
+                         math.round(pos.x - rect.w / 2.0) + 0.5,
+                         math.round(pos.y - rect.h / 2.0) + 0.5,
                          rect.w,
                          rect.h)
             
@@ -266,8 +266,8 @@ function render_system:draw()
 
                 Lg.setColor(1, 0, 0, 0.8)
                 Lg.line(
-                    math.floor(pos.x) + 0.5, math.floor(pos.y) + 0.5,
-                    math.floor(pos.x + lookx * 10) + 0.5, math.floor(pos.y + looky * 10) + 0.5)
+                    math.round(pos.x) + 0.5, math.round(pos.y) + 0.5,
+                    math.round(pos.x + lookx * 10) + 0.5, math.round(pos.y + looky * 10) + 0.5)
             end
         end
     end

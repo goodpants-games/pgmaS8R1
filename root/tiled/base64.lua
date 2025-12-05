@@ -18,7 +18,10 @@ freely, subject to the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
 --]]
 
-local bit = require("bit")
+local module_root = (...):gsub("%.base64$", "")
+local bit = require(module_root .. ".bitcompat")
+local tablecompat = require(module_root .. ".tablecompat")
+local table_clear, table_unpack = tablecompat.clear, tablecompat.unpack
 
 local digits = {}
 local digitStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
@@ -75,13 +78,13 @@ local function readBase64(str)
         end
 
         if #byteBuf >= 512 then
-            table.insert(out, string.char(unpack(byteBuf)))
-            table.clear(byteBuf)
+            table.insert(out, string.char(table_unpack(byteBuf)))
+            table_clear(byteBuf)
         end
     end
     
     if #byteBuf > 0 then
-        table.insert(out, string.char(unpack(byteBuf)))
+        table.insert(out, string.char(table_unpack(byteBuf)))
     end
     
     return table.concat(out)

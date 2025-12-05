@@ -114,6 +114,8 @@
 local sceneman = {}
 sceneman._version = "0.2.0"
 
+local unpack = table.unpack or unpack  ---@diagnostic disable-line
+
 -- placeholder functions
 local function functionNoOp() end
 

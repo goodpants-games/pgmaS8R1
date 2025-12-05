@@ -6,7 +6,7 @@
     ----
     call tiled.loadMap(mapPath, mapSettings) to load a map, where mapPath is the
     path to the lua export of the map file. mapSettings is an optional table
-    which will be explaiend later. it returns a map object, which is directly
+    which will be explained later. it returns a map object, which is directly
     based off the root table of the lua export.
 
     the mapSettings table may contain the following fields:
@@ -35,10 +35,12 @@
     method list:
         - map:release(): releases all gpu resources loaded by the map
         - map:draw()
-        - map:getTileInfo(globalId)
+        - map:getTileInfo(globalId): returns a table containing tile info, like
+                                     the tile's tileset and local IDs.
         - map:getLayerByName(layerName)
         - map:getLayersByClass(class)
-        - map:getBackgroundColor(): returns 4 numbers corresponding to r,g,b,a values to pass into love.graphics.setBackgroundColor
+        - map:getBackgroundColor(): returns 4 numbers corresponding to r,g,b,a
+          values to pass into love.graphics.setBackgroundColor
     
     layers
     ----
@@ -55,18 +57,22 @@
         - layer.parallaxy
         - layer.properties: custom property tabl
     
-    tile layers have their layer.type set to "tilelayer", and have these methods:
-        - layer:release(): releases all gpu resources needed to render the tile layer. (this is called by map:release)
+    tile layers have their layer.type set to "tilelayer", and have these
+    methods:
+        - layer:release(): releases all gpu resources needed to render the tile
+                           layer. (this is called by map:release)
         - layer:get(x, y)
         - layer:getFlags(x, y)
-        - layer:syncGraphics(): (re)creates the SpriteBatches used to draw the TileLayer
+        - layer:syncGraphics(): (re)creates the SpriteBatches used to draw the
+                                TileLayer
         - layer:draw(): automatically calls syncGraphics if not loaded
-        - layer:getTintColor(): returns four numbers corresponding to r, g, b, a values to pass into love.graphics.setColor
+        - layer:getTintColor(): returns four numbers corresponding to r,g,b,a
+                                values to pass into love.graphics.setColor
         - layer:pushTransform()
 
     object layers have their layer.type set to "objectgroup".
-    they have an extra field named "objects", which contains a list of all objects.
-    they also have these methods:
+    they have an extra field named "objects", which contains a list of all
+    objects. they also have these methods:
         - layer:getObjectByName(name)
         - layer:getObjectByType(type)
     
@@ -110,23 +116,13 @@
     3. This notice may not be removed or altered from any source distribution.
 --]]
 
-local module_root = (...):gsub("%.init.lua$", "")
+local module_root = (...):gsub("%.init$", "")
 
--- polyfill table.new
----@type fun(size:integer, fill:any):table
-local table_new = table.new ---@diagnostic disable-line
-if not table_new then
-    local has_tnew = pcall(require, "table.new")
-    if has_tnew then
-       table_new = table.new ---@diagnostic disable-line
-    else
-        table_new = function() return {} end
-    end
-end
-
-local bit = require("bit")
+local bit = require(module_root .. ".bitcompat")
 local Path = require(module_root .. ".path")
 local readBase64 = require(module_root .. ".base64")
+local table_new = require(module_root .. ".tablecompat").new
+
 local tiled = {}
 tiled._version = "0.2.0"
 

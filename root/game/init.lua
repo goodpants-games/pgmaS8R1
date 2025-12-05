@@ -245,7 +245,7 @@ end
 
 function Game:update(dt)
     Debug.draw:push()
-    Debug.draw:translate(math.floor(-self.cam_x + DISPLAY_WIDTH / 2.0), math.floor(-self.cam_y + DISPLAY_HEIGHT / 2.0))
+    Debug.draw:translate(math.round(-self.cam_x + DISPLAY_WIDTH / 2.0), math.round(-self.cam_y + DISPLAY_HEIGHT / 2.0))
 
     self.ecs_world:emit("update", dt)
 
@@ -317,7 +317,7 @@ function Game:draw()
     self.r3d_draw_batch:clear()
 
     Lg.push()
-    Lg.translate(math.floor(-cam_x + DISPLAY_WIDTH / 2.0), math.floor(-cam_y + DISPLAY_HEIGHT / 2.0))
+    Lg.translate(math.round(-cam_x + DISPLAY_WIDTH / 2.0), math.round(-cam_y + DISPLAY_HEIGHT / 2.0))
     self.ecs_world:emit("draw")
     Lg.pop()
 
