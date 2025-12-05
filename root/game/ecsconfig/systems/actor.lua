@@ -21,6 +21,7 @@ function system:tick()
         local vel = ent.velocity
         local actor = ent.actor
         local attackable = ent.attackable
+        local sprite = ent.sprite
         
         local move_vec_len = math.sqrt(actor.move_x * actor.move_x +
                                        actor.move_y * actor.move_y)
@@ -41,6 +42,15 @@ function system:tick()
             print("ow")
             actor.kb_vx = attack.dx * 4.0
             actor.kb_vy = attack.dy * 4.0
+        end
+
+        if sprite then
+            local ang = math.normalise_angle(actor.look_angle)
+            if math.abs(ang) > math.pi / 2.0 then
+                sprite.sx = -1.0
+            else
+                sprite.sx = 1.0
+            end
         end
     end
 end

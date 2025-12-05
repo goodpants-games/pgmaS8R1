@@ -298,7 +298,7 @@ function Game:draw()
 
     if love.keyboard.isDown("e") then
         r3d_world.cam.transform =
-            mat4.rotation_z(nil, (MOUSE_Y - DISPLAY_HEIGHT / 2) / 100) *
+            mat4.rotation_z(nil, (MOUSE_Y - DISPLAY_HEIGHT / 2) / 40) *
             r3d_world.cam.transform
         --     mat4.translation(nil, cam_x, cam_y, 0.0)
         

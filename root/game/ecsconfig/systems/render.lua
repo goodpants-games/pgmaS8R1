@@ -45,6 +45,7 @@ function render_system:init(world)
     self.known_entities = {}
     self.texture_cache = {}
     self.lights = {}
+    self.tmp_quad = Lg.newQuad(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)
 end
 
 local function sprite_y_search(entity, ypos)
@@ -278,8 +279,8 @@ function render_system:draw_sprites()
         transform0:identity()
         transform0:set(0, 3, -img_ox)
         transform0:set(2, 3, -img_oy)
-        transform0:set(0, 0, sx)
-        transform0:set(1, 1, sy)
+        transform0:set(0, 0, math.abs(sx))
+        transform0:set(1, 1, math.abs(sy))
 
         rot_matrix:mul(transform0, transform1)
 
@@ -297,12 +298,38 @@ function render_system:draw_sprites()
             draw_batch:set_color(sprite.r * 0.3, sprite.g * 0.3, sprite.b * 0.3)
         end
         
+        -- the sprite flipping will reverse the order of the triangles, making
+        -- it so that it culls the wrong face. to fix this, i make the scale the
+        -- absolute value of it, and flip the UVs instead.
+        local u0, u1 = 0.0, 1.0
+        local v0, v1 = 0.0, 1.0
         if img_quad then
-            draw_batch:add_image(img, img_quad, transform1)
-        else
-            ---@diagnostic disable-next-line
-            draw_batch:add_image(img, transform1)
+            local x, y, w, h = img_quad:getViewport()
+            local tw, th = img_quad:getTextureDimensions()
+
+            u0 = x       / tw
+            u1 = (x + w) / tw
+            v0 = y       / th
+            v1 = (y + h) / th
         end
+
+        if sx < 0.0 then
+            u0, u1 = u1, u0
+        end
+
+        if sy < 0.0 then
+            v0, v1 = v1, v0
+        end
+
+        self.tmp_quad:setViewport(u0, v0, u1 - u0, v1 - v0, 1.0, 1.0)
+        draw_batch:add_image(img, self.tmp_quad, transform1)
+
+        -- if img_quad then
+        --     draw_batch:add_image(img, img_quad, transform1)
+        -- else
+        --     ---@diagnostic disable-next-line
+        --     draw_batch:add_image(img, transform1)
+        -- end
     end
 end
 

@@ -3,5 +3,11 @@
     gun: easier to use but takes battery
 - maybe killing enemies give you battery, so you would have an actual reason
   to try to kill enemies. kind of.
+- rooms generate in a 5x5 grid, each room being 32x32 tiles.
+- there is a starter room placed on one side of the map, randomly selected.
+  no enemies there.
+- maybe the things you destroy are transcendental/eldritch Creatures you have to
+  kill. maybe they're not aggressive. they're hiding so that's why you need to
+  emit an electromagnetic to make them reveal themselves.
 - please work on an actual enemy and gameplay stop working on the fucking
   graphics please.
