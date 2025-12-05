@@ -147,8 +147,8 @@ function Batch:_add_image_uv(img, transform, u0, v0, u1, v1)
     local mesh = self.mesh
     local col = self._color
 
-    local img_w = img:getWidth()
-    local img_h = img:getHeight()
+    local img_w = (u1 - u0) * img:getWidth()
+    local img_h = (v1 - v0) * img:getHeight()
 
     local x0, y0, z0 = transform:mul_vec(0, img_h, 0)
     local x1, y1, z1 = transform:mul_vec(img_w, img_h, 0)

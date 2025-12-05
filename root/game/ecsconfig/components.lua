@@ -36,6 +36,34 @@ end)
 
 Concord.component("player_control")
 
+local function sprite_play(cmp, anim_name)
+    local spr = cmp._spr --[[@as pklove.Sprite?]]
+    if spr then
+        spr:play(anim_name)
+        cmp.anim = spr.curAnim
+    else
+        -- sprite does not exist yet; need to wait for render system to
+        -- create it.
+        cmp._cmd = "play"
+        cmp._cmd_arg = anim_name
+        cmp.anim = anim_name
+    end
+end
+
+local function sprite_stop(cmp)
+    local spr = cmp._spr --[[@as pklove.Sprite?]]
+    if spr then
+        spr:stop()
+        cmp.anim = spr.curAnim
+    else
+        -- sprite does not exist yet; need to wait for render system to create
+        -- it.
+        cmp._cmd = "stop"
+        cmp._cmd_arg = nil
+        cmp.anim = nil
+    end
+end
+
 Concord.component("sprite", function(cmp, img)
     cmp.img = img
     cmp.r = 1
@@ -48,6 +76,10 @@ Concord.component("sprite", function(cmp, img)
     cmp.oy = 0
 
     cmp.unshaded = false
+    cmp.anim = nil
+
+    cmp.play = sprite_play
+    cmp.stop = sprite_stop
 end)
 
 Concord.component("light", function(cmp, type)

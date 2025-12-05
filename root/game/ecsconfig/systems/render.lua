@@ -1,6 +1,8 @@
 local Concord = require("concord")
+local Sprite = require("sprite")
 local mat4 = require("r3d.mat4")
 local Light = require("r3d.light")
+local consts = require("game.consts")
 
 local render_system = Concord.system({
     sprite_pool = {"position", "sprite"},
@@ -136,6 +138,71 @@ function render_system:sync_lights()
     end
 end
 
+---@param sprite table
+---@return love.Texture img, number ox, number oy, love.Quad? quad
+function render_system:sync_sprite_graphic(sprite)
+    ---@type number, number, love.Texture, love.Quad?
+    local img_ox, img_oy, img, img_quad
+    
+    ---@type pklove.SpriteResource|love.Texture
+    local cached = self.texture_cache[sprite.img]
+    local is_sprite = string.match(sprite.img, ".*(%..*)$") == ".json"
+
+    if not cached then
+        if is_sprite then
+            cached = Sprite.loadResource(sprite.img)
+        else
+            cached = Lg.newImage(sprite.img)
+        end
+        self.texture_cache[sprite.img] = cached
+    end
+
+    if is_sprite then
+        assert(Sprite.isSpriteResource(cached), 
+                "cached value is not a SpriteResource")
+        ---@cast cached pklove.SpriteResource
+
+        ---@type pklove.Sprite
+        local spr = sprite._spr
+        if spr == nil or spr.res ~= cached then
+            print("new sprite")
+            spr = Sprite.load(cached)
+            sprite._spr = spr
+        end
+
+        if sprite._cmd then
+            if sprite._cmd == "play" then
+                spr:play(sprite._cmd_arg)
+            elseif sprite._cmd == "stop" then
+                spr:stop()
+            else
+                print(("warn: invalid sprite component command '%s'"):format(sprite._cmd))
+            end
+        end
+
+        sprite._cmd = nil
+        sprite._cmd_arg = nil
+
+        spr:update(consts.TICK_LEN)
+        sprite.anim = spr.curAnim
+
+        img = spr.res.atlas
+        local cel = spr.res.cels[spr.cel]
+        img_quad = cel.quad
+        img_ox = cel.ox
+        img_oy = cel.oy
+    else
+        assert(cached.typeOf and cached:typeOf("Texture"))
+        ---@cast cached love.Texture
+        
+        img = cached
+        img_ox = img:getWidth() / 2.0
+        img_oy = img:getHeight() / 2.0
+    end
+
+    return img, img_ox, img_oy, img_quad
+end
+
 function render_system:draw_sprites()
     ---@type r3d.Batch
     local draw_batch = self:getWorld().game.r3d_draw_batch
@@ -200,24 +267,17 @@ function render_system:draw_sprites()
             rot = entity.rotation.ang
         end
 
-        local img = sprite.img
-        if type(img) == "string" then
-            img = self.texture_cache[sprite.img]
-            if not img then
-                img = Lg.newImage(sprite.img)
-                self.texture_cache[sprite.img] = img
-            end
-        end
+        local img, img_ox, img_oy, img_quad = self:sync_sprite_graphic(sprite)
 
         local px, py = math.round(pos.x), math.round(pos.y)
         local sx, sy = sprite.sx, sprite.sy
-        local ox = math.round(img:getWidth() / 2 + sprite.ox)
-        local oy = math.round(img:getHeight() + sprite.oy)
+        local ox = math.round(img_ox + sprite.ox)
+        local oy = math.round(img_oy + sprite.oy)
 
         -- TODO: respect entity rotation
         transform0:identity()
-        transform0:set(0, 3, -ox)
-        transform0:set(2, 3, -oy)
+        transform0:set(0, 3, -img_ox)
+        transform0:set(2, 3, -img_oy)
         transform0:set(0, 0, sx)
         transform0:set(1, 1, sy)
 
@@ -225,7 +285,7 @@ function render_system:draw_sprites()
 
         transform1:set(0, 3, px - ox)
         transform1:set(1, 3, py)
-        transform1:set(2, 3, img:getHeight())
+        transform1:set(2, 3, oy)
 
         if sprite.unshaded then
             draw_batch:set_shader("basic")
@@ -237,7 +297,21 @@ function render_system:draw_sprites()
             draw_batch:set_color(sprite.r * 0.3, sprite.g * 0.3, sprite.b * 0.3)
         end
         
-        draw_batch:add_image(img, transform1)
+        if img_quad then
+            draw_batch:add_image(img, img_quad, transform1)
+        else
+            ---@diagnostic disable-next-line
+            draw_batch:add_image(img, transform1)
+        end
+    end
+end
+
+function render_system:tick()
+    for _, ent in ipairs(self.sprite_pool) do
+        local sprite = ent.sprite._spr --[[@as pklove.Sprite?]]
+        if sprite then
+            sprite:update(consts.TICK_LEN)
+        end
     end
 end
 

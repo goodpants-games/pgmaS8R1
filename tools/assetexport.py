@@ -9,9 +9,10 @@ TILED = os.environ.get('TILED', 'tiled')
 
 TMX_BASE_DIRECTORY = os.path.join(os.curdir, 'assets/tiled/maps')
 TSX_BASE_DIRECTORY = os.path.join(os.curdir, 'assets/tiled/tilesets')
-ASE_INPUTS = os.path.join(os.curdir, 'assets/ase')
-ASE_OUTPUTS = os.path.join(os.curdir, 'res/sprites')
+ASE_BASE_DIRECTORY = os.path.join(os.curdir, 'assets/sprites')
 
+ASEPRITE_ARGS = ['--sheet-pack', '--inner-padding', '1', '--trim',
+                 '--merge-duplicates', '--format', 'json-array', '--list-tags']
 
 def needs_update(src_path: str, dst_path: str) -> bool:
     # first, determine if out_path is out of date
@@ -67,6 +68,30 @@ def process_tsx(src_path: str) -> bool:
     os.replace(intermediate_path, dst_path)
     return True
 
+def process_ase(src_path: str) -> bool:
+    (filename, _) = os.path.splitext(os.path.basename(src_path))
+    dst_json_path = os.path.join('root/res/sprites/',
+                                 os.path.relpath(os.path.dirname(src_path), ASE_BASE_DIRECTORY),
+                                 filename + '.json')
+    dst_png_path = os.path.splitext(dst_json_path)[0] + '.png'
+
+    if not needs_update(src_path, dst_json_path): return True
+
+    src_path = os.path.normpath(src_path)
+    dst_json_path = os.path.normpath(dst_json_path)
+    dst_png_path = os.path.normpath(dst_png_path)
+
+    print(f'[ASE] {src_path} => {dst_json_path}')
+    os.makedirs(os.path.dirname(dst_json_path), exist_ok=True)
+    ase = subprocess.run([ASEPRITE,
+                          '-b', src_path,
+                          '--data', dst_json_path,
+                          '--sheet', dst_png_path] + ASEPRITE_ARGS)
+    if ase.returncode != 0:
+        return False
+    
+    return True
+
 def scan_tileset_directory(dirpath: str) -> bool:
     for basename in os.listdir(dirpath):
         path = os.path.join(dirpath, basename)
@@ -83,11 +108,13 @@ def scan_tileset_directory(dirpath: str) -> bool:
                 dst_path = os.path.normpath(dst_path)
 
                 if needs_update(path, dst_path):
+                    print(f"[CPY] {path} => {dst_path}")
                     os.makedirs(os.path.dirname(dst_path), exist_ok=True)
                     shutil.copy(path, dst_path)
             
             elif fileext == '.tsx':
-                process_tsx(path)
+                if not process_tsx(path):
+                    return False
     
     return True
 
@@ -102,23 +129,35 @@ def scan_tiled_directory(dirpath: str) -> bool:
                 return False
     
     return True
-# def process_tiled_directory(dirpath: str) -> bool:
-#     success = True
 
-#     for fpath in os.listdir(dirpath):
-#         abs_path = os.path.join(dirpath, fpath)
+def scan_ase_directory(dirpath: str) -> bool:
+    for basename in os.listdir(dirpath):
+        path = os.path.join(dirpath, basename)
 
-#         if os.path.isdir(abs_path):
-#             process_tiled_directory(abs_path)
-#         else:
-#             (filename, _) = os.path.splitext(rel_path)
+        if os.path.isdir(path) and basename != 'editoronly':
+            scan_ase_directory(path)
 
-#             spr_path = os.path.join(ASE_OUTPUTS, filename + '.spr')
-#             if not process_ase(abs_path, spr_path) or not process_normal_map(spr_path):
-#                 success = False
+        else:
+            if not process_ase(path):
+                return False
+    
+    return True
 
-#     return success
-            
-if __name__ == '__main__':
-    if not (scan_tiled_directory(TMX_BASE_DIRECTORY) and scan_tileset_directory(TSX_BASE_DIRECTORY)):
-        sys.exit(1)    
+def main():
+    s = False
+    while True:
+        if not scan_tiled_directory(TMX_BASE_DIRECTORY):
+            break
+
+        if not scan_tileset_directory(TSX_BASE_DIRECTORY):
+            break
+
+        if not scan_ase_directory(ASE_BASE_DIRECTORY):
+            break
+
+        s = True
+        break
+    
+    if not s: sys.exit(1)
+
+if __name__ == '__main__': main()

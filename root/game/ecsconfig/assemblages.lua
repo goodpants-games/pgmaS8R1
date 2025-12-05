@@ -20,9 +20,12 @@ function asm.entity_player(e, x, y)
     e:assemble(asm.actor,
                x, y,
                13, 8,
-               "res/robot.png")
+               "res/sprites/robot.json")
     e:give("light", "spot")
 
+    e.sprite.oy = 14
+    e.sprite:play("idle")
+    
     e.collision.group = consts.COLGROUP_PLAYER
     e.light.power = 5.0
     e.light.linear = 0.007

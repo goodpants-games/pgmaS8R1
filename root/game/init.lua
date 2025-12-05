@@ -113,6 +113,7 @@ function Game:new()
                         :give("ai")
                         :give("attackable")
                     
+                    e.sprite.oy = 13
                     e.collision.group =
                         bit.bor(e.collision.group, consts.COLGROUP_ENEMY)
                     e.actor.move_speed = 0.5
