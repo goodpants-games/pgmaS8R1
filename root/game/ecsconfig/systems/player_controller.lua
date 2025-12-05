@@ -14,25 +14,32 @@ function system:tick()
     local game = self:getWorld().game --[[@as Game]]
     local position = ent.position
     local actor = ent.actor
+    local rotation = ent.rotation
     local light = ent.light
 
-    local move_lsq = actor.move_x * actor.move_x + actor.move_y * actor.move_y
-    if move_lsq > 0.0 then
-        local ang = math.atan2(actor.move_y, actor.move_x)
-        local ang_diff = math.abs(math.angle_difference(actor.look_angle, ang))
+    if rotation then
+        local move_lsq = actor.move_x * actor.move_x + actor.move_y * actor.move_y
+        if move_lsq > 0.0 then
+            local ang = math.atan2(actor.move_y, actor.move_x)
+            local ang_diff = math.abs(math.angle_difference(rotation.ang, ang))
 
-        -- snap angle when either close enough or turning 180 degrees
-        if ang_diff < math.rad(0.5) or math.abs(ang_diff - math.pi) < math.rad(1) then
-            actor.look_angle = ang
-        else
-            actor.look_angle = math.lerp_angle(actor.look_angle, ang, 0.2)
+            -- snap angle when either close enough or turning 180 degrees
+            if ang_diff < math.rad(0.5) or math.abs(ang_diff - math.pi) < math.rad(1) then
+                rotation.ang = ang
+            else
+                rotation.ang = math.lerp_angle(rotation.ang, ang, 0.2)
+            end
         end
     end
 
     -- update camera
     if position then
-        local lookx = math.cos(actor.look_angle)
-        local looky = math.sin(actor.look_angle)
+        local lookx, looky = 0.0, 0.0
+
+        if rotation then
+            lookx = math.cos(rotation.ang)
+            looky = math.sin(rotation.ang)
+        end
 
         game.cam_x = position.x + lookx * 20.0
         game.cam_y = position.y + looky * 20.0
@@ -56,7 +63,7 @@ function system:tick()
         -- local dy = MOUSE_Y - DISPLAY_HEIGHT / 2
         -- local ang = math.atan2(dy, dx)
 
-        light.spot_rz = actor.look_angle
+        light.spot_rz = rotation and rotation.ang or 0.0
     end
 end
 

@@ -172,11 +172,11 @@ local function pathNormalize(path)
     end
 end
 
----Load an Aseprite export
----@param jsonPath string The file path to the exported JSON file.
-function module.loadResource(jsonPath)
-    local json = JSON.decode(love.filesystem.read(jsonPath))
-
+---Load an Aseprite export from preloaded data.
+---@param data table The Aseprite export data; the JSON data converted into a Lua table.
+---@param atlas love.Image The image atlas.
+---@return pklove.SpriteResource
+function module.loadResourceFromMemory(data, atlas)
     local resource = setmetatable({}, SpriteResource)
     
     -- used for release call
@@ -184,48 +184,34 @@ function module.loadResource(jsonPath)
         __mode = "k"
     })
 
-    -- load atlas texture
-    local pngPath ---@type string
-    do
-        local path = pathSplit(jsonPath)
-        local imagePath = pathSplit(json.meta.image)
-        table.remove(path)
-        for _, v in ipairs(imagePath) do
-            table.insert(path, v)
-        end
-
-        pngPath = pathNormalize(path)
-    end
-
-    local atlas = love.graphics.newImage(pngPath)
     resource.atlas = atlas
 
     -- load cels
     resource.cels = {}
-    for _, data in ipairs(json.frames) do
-        local frame = data.frame
+    for _, cel in ipairs(data.frames) do
+        local frame = cel.frame
 
         -- frame render offset
-        local ox = data.sourceSize.w / 2 - data.spriteSourceSize.x
-        local oy = data.sourceSize.h / 2 - data.spriteSourceSize.y
+        local ox = cel.sourceSize.w / 2 - cel.spriteSourceSize.x
+        local oy = cel.sourceSize.h / 2 - cel.spriteSourceSize.y
 
         table.insert(resource.cels, {
             quad = love.graphics.newQuad(frame.x, frame.y, frame.w, frame.h, atlas:getWidth(), atlas:getHeight()),
             ox = ox,
             oy = oy,
-            duration = data.duration
+            duration = cel.duration
         })
     end
 
     -- load animation data
     resource.animations = {}
-    if json.meta.frameTags then
-        for _, data in ipairs(json.meta.frameTags) do
-            resource.animations[data.name] = {
-                from = data.from + 1,
-                to = data.to + 1,
-                loopCount = tonumber(data["repeat"]) or 0,
-                loopPoint = data.from + 1
+    if data.meta.frameTags then
+        for _, anim in ipairs(data.meta.frameTags) do
+            resource.animations[anim.name] = {
+                from = anim.from + 1,
+                to = anim.to + 1,
+                loopCount = tonumber(anim["repeat"]) or 0,
+                loopPoint = anim.from + 1
             }
         end
 
@@ -244,9 +230,33 @@ function module.loadResource(jsonPath)
     return resource
 end
 
----Create a sprite from a sprite resource. (see loadResource)
+---Load an Aseprite export from its JSON file.
+---@param jsonPath string Path to the JSON file.
+---@return pklove.SpriteResource
+function module.loadResource(jsonPath)
+    local data = JSON.decode(love.filesystem.read(jsonPath))
+    
+    -- load atlas texture
+    local pngPath ---@type string
+    do
+        local path = pathSplit(jsonPath)
+        local imagePath = pathSplit(data.meta.image)
+        table.remove(path)
+        for _, v in ipairs(imagePath) do
+            table.insert(path, v)
+        end
+
+        pngPath = pathNormalize(path)
+    end
+
+    local atlas = love.graphics.newImage(pngPath)
+    
+    return module.loadResourceFromMemory(data, atlas)
+end
+
+---Create a sprite from a sprite resource. (see loadResource or loadResourceFromMemory)
 ---@param pathOrResource pklove.SpriteResource|string A sprite resource or the path to it.
-function module.load(pathOrResource)
+function module.new(pathOrResource)
     local resource
     if type(pathOrResource) == "string" then
         resource = module.loadResource(pathOrResource)

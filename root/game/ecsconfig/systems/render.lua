@@ -140,8 +140,9 @@ function render_system:sync_lights()
 end
 
 ---@param sprite table
+---@param rotation number
 ---@return love.Texture img, number ox, number oy, love.Quad? quad
-function render_system:sync_sprite_graphic(sprite)
+function render_system:sync_sprite_graphic(sprite, rotation)
     ---@type number, number, love.Texture, love.Quad?
     local img_ox, img_oy, img, img_quad
     
@@ -167,7 +168,7 @@ function render_system:sync_sprite_graphic(sprite)
         local spr = sprite._spr
         if spr == nil or spr.res ~= cached then
             print("new sprite")
-            spr = Sprite.load(cached)
+            spr = Sprite.new(cached)
             sprite._spr = spr
         end
 
@@ -187,8 +188,33 @@ function render_system:sync_sprite_graphic(sprite)
         spr:update(consts.TICK_LEN)
         sprite.anim = spr.curAnim
 
+        -- TODO: sprite rotation needs to work better. i think i can make it work
+        --       with only three rotations but the angle thresholds need to be
+        --       different. also how tf do i turn off the vscode word
+        --       autocomplete thing where it shows a word in transparent. but its obviously
+        --       not the language autocomplete. what is this.
+        local ang_inc = math.pi / 2.0
+        local rotr = rotation / ang_inc
+
+        if rotr > 1.0 then
+            rotr = 2.0 - rotr
+        elseif rotr < -1.0 then
+            rotr = -2.0 - rotr
+        end
+
+        -- assert(rotr >= 0.0 and rotr <= 2.0)
+        -- if rotr > 1.0 then
+        --     rotr = 2.0 - rotr
+        -- end
+
+        -- if rotation < 0.0 then
+        --     rotr = 1.0 - rotr
+        -- end
+
+        local cel_rot_offset = math.round(rotr)
+
         img = spr.res.atlas
-        local cel = spr.res.cels[spr.cel]
+        local cel = spr.res.cels[spr.cel + cel_rot_offset]
         img_quad = cel.quad
         img_ox = cel.ox
         img_oy = cel.oy
@@ -261,21 +287,21 @@ function render_system:draw_sprites()
 
     for _, entity in ipairs(self.render_list) do
         local pos = entity.position
-        local rot = 0
         local sprite = entity.sprite
+        local rot = entity.rotation and entity.rotation.ang or 0.0
+        rot = math.normalise_angle(rot)
 
-        if entity.rotation then
-            rot = entity.rotation.ang
-        end
-
-        local img, img_ox, img_oy, img_quad = self:sync_sprite_graphic(sprite)
+        local img, img_ox, img_oy, img_quad = self:sync_sprite_graphic(sprite, rot)
 
         local px, py = math.round(pos.x), math.round(pos.y)
         local sx, sy = sprite.sx, sprite.sy
         local ox = math.round(img_ox + sprite.ox)
         local oy = math.round(img_oy + sprite.oy)
 
-        -- TODO: respect entity rotation
+        if math.abs(rot) > math.pi / 2.0 then
+            sx = -sx
+        end
+
         transform0:identity()
         transform0:set(0, 3, -img_ox)
         transform0:set(2, 3, -img_oy)
@@ -350,7 +376,7 @@ function render_system:draw()
         for _, entity in ipairs(self.dbgdraw_pool) do
             local pos = entity.position
             local rect = entity.collision
-            local actor = entity.actor
+            local rotation = entity.rotation
 
             Lg.setColor(1, 0, 0, 0.2)
             Lg.setLineWidth(1)
@@ -361,9 +387,9 @@ function render_system:draw()
                          rect.w,
                          rect.h)
             
-            if actor then
-                local lookx = math.cos(actor.look_angle)
-                local looky = math.sin(actor.look_angle)
+            if rotation then
+                local lookx = math.cos(rotation.ang)
+                local looky = math.sin(rotation.ang)
 
                 Lg.setColor(1, 0, 0, 0.8)
                 Lg.line(

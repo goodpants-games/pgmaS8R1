@@ -44,14 +44,14 @@ function system:tick()
             actor.kb_vy = attack.dy * 4.0
         end
 
-        if sprite then
-            local ang = math.normalise_angle(actor.look_angle)
-            if math.abs(ang) > math.pi / 2.0 then
-                sprite.sx = -1.0
-            else
-                sprite.sx = 1.0
-            end
-        end
+        -- if sprite then
+        --     local ang = math.normalise_angle(actor.look_angle)
+        --     if math.abs(ang) > math.pi / 2.0 then
+        --         sprite.sx = -1.0
+        --     else
+        --         sprite.sx = 1.0
+        --     end
+        -- end
     end
 end
 

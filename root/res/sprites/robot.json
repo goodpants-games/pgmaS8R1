@@ -1,19 +1,28 @@
 { "frames": [
    {
     "filename": "robot 0.ase",
-    "frame": { "x": 0, "y": 0, "w": 19, "h": 28 },
+    "frame": { "x": 19, "y": 0, "w": 17, "h": 28 },
     "rotated": false,
     "trimmed": true,
-    "spriteSourceSize": { "x": 7, "y": 3, "w": 17, "h": 26 },
+    "spriteSourceSize": { "x": 8, "y": 3, "w": 15, "h": 26 },
     "sourceSize": { "w": 32, "h": 32 },
     "duration": 500
    },
    {
     "filename": "robot 1.ase",
-    "frame": { "x": 19, "y": 0, "w": 19, "h": 27 },
+    "frame": { "x": 0, "y": 28, "w": 16, "h": 28 },
     "rotated": false,
     "trimmed": true,
-    "spriteSourceSize": { "x": 7, "y": 4, "w": 17, "h": 25 },
+    "spriteSourceSize": { "x": 10, "y": 3, "w": 14, "h": 26 },
+    "sourceSize": { "w": 32, "h": 32 },
+    "duration": 500
+   },
+   {
+    "filename": "robot 2.ase",
+    "frame": { "x": 0, "y": 0, "w": 19, "h": 28 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 7, "y": 3, "w": 17, "h": 26 },
     "sourceSize": { "w": 32, "h": 32 },
     "duration": 500
    }
@@ -23,10 +32,10 @@
   "version": "1.3-rc8-dev",
   "image": "robot.png",
   "format": "RGBA8888",
-  "size": { "w": 38, "h": 28 },
+  "size": { "w": 36, "h": 56 },
   "scale": "1",
   "frameTags": [
-   { "name": "idle", "from": 0, "to": 1, "direction": "forward", "color": "#000000ff" }
+   { "name": "idle", "from": 1, "to": 1, "direction": "forward", "color": "#000000ff" }
   ]
  }
 }
