@@ -23,6 +23,7 @@ function asm.entity_player(e, x, y)
                "res/sprites/robot.json")
     e:give("light", "spot")
     e:give("health", 150)
+    e:give("attackable")
 
     e.sprite.oy = 14
     e.sprite:play("idle")

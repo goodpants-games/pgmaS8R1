@@ -20,6 +20,17 @@ function system:tick()
 
         actor.move_x = dx
         actor.move_y = dy
+
+        game:add_attack({
+            x = position.x,
+            y = position.y,
+            radius = 4,
+            damage = 10,
+            dx = dx,
+            dy = dy,
+            -- mask = require("game.consts").COLGROUP_PLAYER,
+            owner = ent
+        })
     end
 end
 

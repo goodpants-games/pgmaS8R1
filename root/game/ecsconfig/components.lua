@@ -38,6 +38,9 @@ Concord.component("player_control", function(cmp)
     cmp.move_y = 0.0
     cmp.run = false
     cmp.lock = false
+
+    cmp.trigger_attack = false
+    cmp.state = "move"
 end)
 
 Concord.component("health", function(cmp, max, init)
@@ -114,5 +117,7 @@ Concord.component("ai")
 
 Concord.component("attackable", function(cmp)
     cmp.hit = nil
+    cmp.iframe_length = 30
+    cmp.iframes = 0
     -- cmp.on_hit = hit_callback
 end)

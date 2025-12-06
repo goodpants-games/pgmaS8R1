@@ -58,7 +58,7 @@ function scene.keypressed(key)
 
     if Debug.enabled then
         if key == "h" then
-            local actor = scndat.game.cam_follow
+            local actor = scndat.game.player
             local e = create_actor(actor.position.x, actor.position.y)
             e.actor.move_x = math.random(-1, 1)
             e.actor.move_y = math.random(-1, 1)
@@ -68,7 +68,7 @@ function scene.keypressed(key)
                 if #entities > 1 then
                     while true do
                         local ent = entities[math.random(1, #entities)]
-                        if ent ~= scndat.game.cam_follow then
+                        if ent ~= scndat.game.player then
                             ent:destroy()
                             break
                         end

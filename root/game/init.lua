@@ -21,9 +21,6 @@ local consts = require("game.consts")
 ---@field ecs_world any
 ---@field r3d_world r3d.World
 ---@field r3d_draw_batch r3d.Batch
----@field cam_x number
----@field cam_y number
----@field cam_follow any
 ---@field map_width integer Map width in tiles
 ---@field map_height integer Map height in tiles
 ---@field tile_width integer Tile width in pixels
@@ -36,9 +33,20 @@ local consts = require("game.consts")
 local Game = batteries.class({ name = "Game" })
 
 function Game:new()
-    self.cam_x = 0.0
-    self.cam_y = 0.0
     self._dt_accum = 0.0
+    
+    self.cam = {
+        x = 0.0,
+        y = 0.0,
+        offset_x = 0.0,
+        offset_y = 0.0,
+        ---@type any?
+        follow = nil,
+        offset_target_x = 0.0,
+        offset_target_y = 0.0,
+        vel_x = 0.0,
+        vel_y = 0.0,
+    }
 
     self.ecs_world = Concord.world()
     self.ecs_world.game = self
@@ -60,6 +68,7 @@ function Game:new()
 
     ---@type table?
     self.player = nil
+    self.player_is_dead = false
 
     -- get collision data
     self._colmap = {}
@@ -116,7 +125,7 @@ function Game:new()
                     e.sprite.oy = 13
                     e.collision.group =
                         bit.bor(e.collision.group, consts.COLGROUP_ENEMY)
-                    e.actor.move_speed = 0.5
+                    e.actor.move_speed = 0.8
                 elseif obj.name == "player" then
                     assert(not self.player, "there can not be more than one player in a level")
 
@@ -124,7 +133,7 @@ function Game:new()
                     self.player.sprite.unshaded = true
                     self.player:give("player_control")
 
-                    self.cam_follow = self.player
+                    -- self.cam_follow = self.player
                 end
             end
         end
@@ -153,9 +162,6 @@ function Game:new()
 
     self.r3d_world:add_object(self.r3d_draw_batch)
     self.r3d_world:add_object(self._map_model)
-
-    ---@type table[]
-    self._attacks = {}
 
     -- ---@type pklove.tiled.TileLayer?
     -- local col_layer
@@ -234,7 +240,45 @@ function Game:get_col(x, y)
 end
 
 function Game:tick()
+    if self.player_is_dead then
+        return
+    end
+
+    if self.player.health.value <= 0 then
+        self.player_is_dead = true
+
+        love.audio.pause()
+        love.audio.newSource("res/music/death.ogg", "stream"):play()
+    end
+
     self.ecs_world:emit("tick")
+    local cam = self.cam
+
+    cam.vel_x = cam.vel_x + (cam.offset_target_x - cam.offset_x) * 0.009 - cam.vel_x * 0.13
+    cam.vel_y = cam.vel_y + (cam.offset_target_y - cam.offset_y) * 0.009 - cam.vel_y * 0.13
+    cam.offset_x = cam.offset_x + cam.vel_x
+    cam.offset_y = cam.offset_y + cam.vel_y
+
+    -- if camera is close enough to target, snap position and velocity
+    local dx = cam.offset_target_x - cam.offset_x
+    local dy = cam.offset_target_y - cam.offset_y
+    local target_dist = math.sqrt(dx*dx + dy*dy)
+    local move_speed = math.sqrt(cam.vel_x * cam.vel_x + cam.vel_y * cam.vel_y)
+    if target_dist < 0.5 and move_speed < 0.1 then
+        cam.offset_x = cam.offset_target_x
+        cam.offset_y = cam.offset_target_y
+        cam.vel_x = 0.0
+        cam.vel_y = 0.0
+    end
+
+    local focus_x, focus_y = 0.0, 0.0
+    if cam.follow and cam.follow.position then
+        local pos = cam.follow.position
+        focus_x, focus_y = pos.x, pos.y
+    end
+
+    cam.x = focus_x + cam.offset_x
+    cam.y = focus_y + cam.offset_y
 
     -- if self.cam_follow then
     --     local pos = self.cam_follow.position
@@ -247,9 +291,11 @@ end
 
 function Game:update(dt)
     Debug.draw:push()
-    Debug.draw:translate(math.round(-self.cam_x + DISPLAY_WIDTH / 2.0), math.round(-self.cam_y + DISPLAY_HEIGHT / 2.0))
+    Debug.draw:translate(math.round(-self.cam.x + DISPLAY_WIDTH / 2.0), math.round(-self.cam.y + DISPLAY_HEIGHT / 2.0))
 
-    self.ecs_world:emit("update", dt)
+    if not self.player_is_dead then
+        self.ecs_world:emit("update", dt)
+    end
 
     -- dt snap calculation
     -- https://medium.com/@tglaiel/how-to-make-your-game-run-at-60fps-24c61210fe75
@@ -289,8 +335,8 @@ function Game:draw()
     local mat4 = require("r3d.mat4")
 
     local r3d_world = self.r3d_world
-    local cam_x = math.round(self.cam_x)
-    local cam_y = math.round(self.cam_y)
+    local cam_x = math.round(self.cam.x)
+    local cam_y = math.round(self.cam.y)
 
     r3d_world.cam.transform:identity()
     r3d_world.cam:set_position(cam_x, cam_y, 0.0)
