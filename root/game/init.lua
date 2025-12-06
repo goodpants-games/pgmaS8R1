@@ -257,16 +257,14 @@ function Game:update(dt)
     local DT_SNAP_EPSILON = 0.002
     local tick_len = consts.TICK_LEN
 
-    if math.abs(dt - tick_len) < DT_SNAP_EPSILON then -- 30 fps?
+    if math.abs(dt - tick_len) < DT_SNAP_EPSILON then -- 60 fps?
         dt_to_accum = tick_len
-    elseif math.abs(dt - tick_len * 2.0) < DT_SNAP_EPSILON then -- 15 fps?
+    elseif math.abs(dt - tick_len * 2.0) < DT_SNAP_EPSILON then -- 30 fps?
         dt_to_accum = tick_len * 2.0
-    elseif math.abs(dt - tick_len * 0.5) < DT_SNAP_EPSILON then -- 60 fps?
+    elseif math.abs(dt - tick_len * 0.5) < DT_SNAP_EPSILON then -- 120 fps?
         dt_to_accum = tick_len * 0.5
-    elseif math.abs(dt - tick_len * 0.25) < DT_SNAP_EPSILON then -- 120 fps?
+    elseif math.abs(dt - tick_len * 0.25) < DT_SNAP_EPSILON then -- 240 fps?
         dt_to_accum = tick_len * 0.25
-    else
-        print("no dt snap")
     end
 
     local iter = 1
