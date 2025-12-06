@@ -148,6 +148,7 @@ function Game:new()
     self.r3d_world = r3d.world()
     self.r3d_draw_batch = r3d.batch(2048)
     self.r3d_draw_batch.opaque = false
+    self.r3d_draw_batch.double_sided = true
     self.r3d_draw_batch:set_shader("shaded_ignore_normal")
 
     self.r3d_world:add_object(self.r3d_draw_batch)
@@ -323,6 +324,13 @@ function Game:draw()
     Lg.pop()
 
     r3d_world:draw()
+
+    -- display battery ui
+    local player_health = self.player.health
+    local battery_percentage = player_health.value / player_health.max
+
+    Lg.setColor(1, 1, 1)
+    Lg.rectangle("fill", 0, 0, math.round(battery_percentage * DISPLAY_WIDTH), 4)
 
     -- local tl = self._tiled_map.layers[1] --[[@as pklove.tiled.TileLayer]]
     -- tl:draw()

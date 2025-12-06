@@ -45,7 +45,6 @@ function render_system:init(world)
     self.known_entities = {}
     self.texture_cache = {}
     self.lights = {}
-    self.tmp_quad = Lg.newQuad(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)
 end
 
 local function sprite_y_search(entity, ypos)
@@ -208,9 +207,11 @@ function render_system:draw_sprites()
     ---@type r3d.Batch
     local draw_batch = self:getWorld().game.r3d_draw_batch
 
-    local transform0 = mat4.new()
+    local tmpmat0 = mat4.new()
+    local tmpmat1 = mat4.new()
+    local tmpmat2 = mat4.new()
+
     local rot_matrix = mat4.new()
-    local transform1 = mat4.new()
     rot_matrix:rotation_x(math.pi / 2)
 
     local existing = {}
@@ -276,17 +277,16 @@ function render_system:draw_sprites()
             sx = -sx
         end
 
-        transform0:identity()
-        transform0:set(0, 3, -img_ox)
-        transform0:set(2, 3, -img_oy)
-        transform0:set(0, 0, math.abs(sx))
-        transform0:set(1, 1, math.abs(sy))
-
-        rot_matrix:mul(transform0, transform1)
-
-        transform1:set(0, 3, px - ox)
-        transform1:set(1, 3, py)
-        transform1:set(2, 3, oy)
+        -- transform1 =
+        --     mat4.translation(nil, -img_ox, -img_oy, 0.0)
+        --     * mat4.scale(nil, sx, sy, 1.0)
+        --     * rot_matrix
+        --     * mat4.translation(nil, px, py, sprite.oy)
+        local sprite_transform =
+            tmpmat0:identity():translation(-img_ox, -img_oy, 0)
+            :mul(tmpmat1:identity():scale(sx, sy, 1.0), tmpmat2)
+            :mul(rot_matrix, tmpmat0)
+            :mul(tmpmat1:identity():translation(px, py, sprite.oy), tmpmat2)
 
         if sprite.unshaded then
             draw_batch:set_shader("basic")
@@ -297,32 +297,12 @@ function render_system:draw_sprites()
             -- darken sprite so that it's not too bright when close to the light
             draw_batch:set_color(sprite.r * 0.3, sprite.g * 0.3, sprite.b * 0.3)
         end
-        
-        -- the sprite flipping will reverse the order of the triangles, making
-        -- it so that it culls the wrong face. to fix this, i make the scale the
-        -- absolute value of it, and flip the UVs instead.
-        local u0, u1 = 0.0, 1.0
-        local v0, v1 = 0.0, 1.0
+
         if img_quad then
-            local x, y, w, h = img_quad:getViewport()
-            local tw, th = img_quad:getTextureDimensions()
-
-            u0 = x       / tw
-            u1 = (x + w) / tw
-            v0 = y       / th
-            v1 = (y + h) / th
+            draw_batch:add_image(img, img_quad, sprite_transform)
+        else
+            draw_batch:add_image(img, sprite_transform)
         end
-
-        if sx < 0.0 then
-            u0, u1 = u1, u0
-        end
-
-        if sy < 0.0 then
-            v0, v1 = v1, v0
-        end
-
-        self.tmp_quad:setViewport(u0, v0, u1 - u0, v1 - v0, 1.0, 1.0)
-        draw_batch:add_image(img, self.tmp_quad, transform1)
 
         -- if img_quad then
         --     draw_batch:add_image(img, img_quad, transform1)

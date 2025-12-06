@@ -17,11 +17,33 @@ function system:tick()
     local rotation = ent.rotation
     local light = ent.light
     local sprite = ent.sprite
+    local health = ent.health
+    local player = ent.player_control
 
-    local move_len = math.sqrt(actor.move_x * actor.move_x + actor.move_y * actor.move_y)
+    local battery_drain_scale = 0.01
+    local battery_drain = 1.0
+
+    if player.lock then
+        actor.move_x = 0.0
+        actor.move_y = 0.0
+    else
+        actor.move_x, actor.move_y = player.move_x, player.move_y
+    end
+
+    if player.lock then
+        actor.move_speed = 0.0
+    elseif player.run then
+        actor.move_speed = 2.4
+        battery_drain = battery_drain + 2.0
+    else
+        actor.move_speed = 1.4
+    end
+
+    local input_move_len =
+        math.sqrt(player.move_x * player.move_x + player.move_y * player.move_y)
     local move_min = 0.1
-    if rotation and move_len > move_min then
-        local ang = math.atan2(actor.move_y, actor.move_x)
+    if rotation and input_move_len > move_min then
+        local ang = math.atan2(player.move_y, player.move_x)
         local ang_diff = math.abs(math.angle_difference(rotation.ang, ang))
 
         -- snap angle when either close enough or turning 180 degrees
@@ -33,10 +55,14 @@ function system:tick()
     end
 
     -- update animation lol
+    local cur_move_speed =
+          math.sqrt(actor.move_x * actor.move_x + actor.move_y * actor.move_y)
+        * actor.move_speed
+    
     if sprite then
         local anim = "idle"
 
-        if move_len * actor.move_speed > move_min then
+        if cur_move_speed > 1.0 then
             anim = "walk"
         end
 
@@ -68,6 +94,8 @@ function system:tick()
                 mask = require("game.consts").COLGROUP_ENEMY,
                 owner = ent
             })
+
+            -- health.value = health.value - 10
         end
     end
 
@@ -78,25 +106,32 @@ function system:tick()
 
         light.spot_rz = rotation and rotation.ang or 0.0
     end
+
+    if health then
+        health.value = health.value - battery_drain * battery_drain_scale
+    end
 end
 
 function system:update(dt)
     for _, ent in ipairs(self.pool) do
-        local actor = ent.actor
+        local control = ent.player_control
 
-        if actor then
-            local mx, my = Input.players[1]:get("move")
+        if control then
+            local input = Input.players[1]
+            local mx, my = input:get("move")
             local mlen = math.sqrt(mx*mx + my*my)
             if mlen > 0.0 then
                 mx, my = mx / mlen, my / mlen
             end
             
-            actor.move_x, actor.move_y = mx, my
+            control.move_x, control.move_y = mx, my
+            control.run = false
+            control.lock = false
 
-            if Input.players[1]:down("player_lock") then
-                actor.move_speed = 0.0
-            else
-                actor.move_speed = 1.4
+            if input:down("player_lock") then
+                control.lock = true
+            elseif input:down("player_run") then
+                control.run = true
             end
         end
     end

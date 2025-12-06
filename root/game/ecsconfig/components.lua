@@ -33,7 +33,17 @@ Concord.component("actor", function(cmp)
     cmp.kb_vy = 0.0
 end)
 
-Concord.component("player_control")
+Concord.component("player_control", function(cmp)
+    cmp.move_x = 0.0
+    cmp.move_y = 0.0
+    cmp.run = false
+    cmp.lock = false
+end)
+
+Concord.component("health", function(cmp, max, init)
+    cmp.value = max
+    cmp.max = init or max
+end)
 
 local function sprite_play(cmp, anim_name)
     local spr = cmp._spr --[[@as pklove.Sprite?]]
