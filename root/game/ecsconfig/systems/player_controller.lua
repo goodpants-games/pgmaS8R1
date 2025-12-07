@@ -25,7 +25,7 @@ function system:update(dt)
             local aim_x = MOUSE_X - DISPLAY_WIDTH / 2.0
             local aim_y = MOUSE_Y - DISPLAY_HEIGHT / 2.0
             control.aim_x, control.aim_y = math.normalize_v2(aim_x, aim_y)
-            
+
             control.run = false
             control.lock = false
 
@@ -36,7 +36,7 @@ function system:update(dt)
             end
 
             if input:pressed("player_attack") then
-                control.trigger_attack = true
+                control.trigger_attack = 15
             end
 
             if input:pressed("player_switch_weapon") then

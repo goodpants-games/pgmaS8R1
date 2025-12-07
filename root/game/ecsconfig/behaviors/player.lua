@@ -53,16 +53,23 @@ function PlayerBehavior:tick()
         player.state = "hurt"
     end
 
-    if player.trigger_attack then
+    local was_attack_triggered = false
+    if player.trigger_attack > 0 then
         if player.state == "move" then
             if self.selected_weapon == 1 then
                 player.state = "melee_attack"
             else
                 player.state = "shoot"
             end
+
+            was_attack_triggered = true
         end
-        
-        player.trigger_attack = false
+    end
+
+    if was_attack_triggered then
+        player.trigger_attack = 0.0
+    elseif player.trigger_attack > 0 then
+        player.trigger_attack = player.trigger_attack - 1
     end
 
     if player.trigger_weapon_switch then
@@ -125,6 +132,9 @@ function PlayerBehavior:tick()
         * actor.move_speed
     
     if sprite then
+        local sprite_anim_frame = sprite._spr:getAnimFrame()
+        local anim_frame_changed = sprite_anim_frame ~= self._sprite_last_anim_frame
+
         if player.state == "melee_attack" then
             if prev_state ~= "melee_attack" then
                 sprite:play("melee_attack")
@@ -151,9 +161,13 @@ function PlayerBehavior:tick()
             elseif not sprite.anim then
                 player.state = "move"
                 sprite:play("idle")
-            elseif sprite._spr:getAnimFrame() == 5 then
-                battery_drain = battery_drain + 100.0
+            elseif anim_frame_changed and sprite_anim_frame == 5 then
+                battery_drain = battery_drain + 300.0
                 self:_fire_shoot_scanline()
+
+                if ent.gun_sight then
+                    ent.gun_sight.visible = false
+                end
             end
         
         elseif player.state == "hurt" then
@@ -174,6 +188,8 @@ function PlayerBehavior:tick()
                 sprite:play(anim)
             end
         end
+
+        self._sprite_last_anim_frame = sprite._spr:getAnimFrame()
     end
 
     -- update camera
@@ -202,9 +218,9 @@ function PlayerBehavior:tick()
         health.value = health.value - battery_drain * battery_drain_scale
     end
 
-    -- if ent.gun_sight then
-    --     ent.gun_sight.visible = player.state == "move"
-    -- end
+    if ent.gun_sight and player.state == "move" then
+        ent.gun_sight.visible = true
+    end
 end
 
 return PlayerBehavior

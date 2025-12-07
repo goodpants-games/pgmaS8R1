@@ -18,22 +18,40 @@ function system:tick()
         ent_ignore[1] = ent
 
         if gun_sight.auto_aim then
-            local min_ang_diff = math.rad(10)
+            local min_ang_diff = math.rad(20)
 
             for _, target in ipairs(self.target_pool) do
+                if target.health and target.health.value <= 0.0 then
+                    goto continue
+                end
+
                 local t_position = target.position
 
-                local ang_to_target = math.atan2(t_position.y - position.y, t_position.x - position.x)
+                local dx = t_position.x - position.x
+                local dy = t_position.y - position.y
+
+                local ang_to_target = math.atan2(dy, dx)
                 local ang_diff = math.abs(math.angle_difference(ang_to_target, rotation))
 
                 if ang_diff < min_ang_diff then
-                    rotation = ang_to_target
+                    local _, _, _, hit_ent = game:raycast(
+                        position.x, position.y,
+                        dx, dy,
+                        consts.COLGROUP_ALL, ent_ignore)
+
+                    if hit_ent == target then
+                        min_ang_diff = ang_diff
+                        rotation = ang_to_target
+                    end
                 end
+
+                ::continue::
             end
         end
 
         local look_x = math.cos(rotation)
         local look_y = math.sin(rotation)
+
         local raydist = game:raycast(position.x, position.y,
                                      look_x * gun_sight.max_dist, look_y * gun_sight.max_dist,
                                      consts.COLGROUP_ALL, ent_ignore)
