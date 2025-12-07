@@ -1,6 +1,7 @@
 local Concord = require("concord")
 local bit = require("bit")
 local r3d = require("r3d")
+local Sprite = require("sprite")
 
 local ecsconfig = require("game.ecsconfig")
 local map_loader = require("game.map_loader")
@@ -19,9 +20,11 @@ local Collision = require("game.collision")
 ---@field owner any?
 
 ---@class Game
+---@field frame integer
 ---@field ecs_world any
 ---@field r3d_world r3d.World
----@field r3d_draw_batch r3d.Batch
+---@field r3d_sprite_batch r3d.Batch Transparency-allowed draw batch
+---@field r3d_batch r3d.Batch Opaque draw batch
 ---@field map_width integer Map width in tiles
 ---@field map_height integer Map height in tiles
 ---@field tile_width integer Tile width in pixels
@@ -35,6 +38,7 @@ local Game = batteries.class({ name = "Game" })
 
 function Game:new()
     self._dt_accum = 0.0
+    self.frame = 0
     
     self.cam = {
         x = 0.0,
@@ -57,6 +61,7 @@ function Game:new()
         ecsconfig.systems.actor,
         ecsconfig.systems.attack,
         ecsconfig.systems.physics,
+        ecsconfig.systems.gun_sight,
         ecsconfig.systems.render)
 
     local map = map_loader.load("res/maps/voxeltest.lua")
@@ -141,13 +146,23 @@ function Game:new()
 
     -- create r3d world
     self.r3d_world = r3d.world()
-    self.r3d_draw_batch = r3d.batch(2048)
-    self.r3d_draw_batch.opaque = false
-    self.r3d_draw_batch.double_sided = true
-    self.r3d_draw_batch:set_shader("shaded_ignore_normal")
 
-    self.r3d_world:add_object(self.r3d_draw_batch)
+    self.r3d_sprite_batch = r3d.batch(2048)
+    self.r3d_sprite_batch.opaque = false
+    self.r3d_sprite_batch.double_sided = true
+    self.r3d_sprite_batch:set_shader("shaded_ignore_normal")
+
+    self.r3d_batch = r3d.batch(2048)
+    self.r3d_batch.opaque = true
+    self.r3d_batch.double_sided = false
+    self.r3d_batch:set_shader("basic")
+
+    self.r3d_world:add_object(self.r3d_batch)
+    self.r3d_world:add_object(self.r3d_sprite_batch)
     self.r3d_world:add_object(self._map_model)
+
+    self._ui_icons_sprite = Sprite.new("res/sprites/ui_icons.json")
+    self._font = Lg.newFont("res/fonts/DepartureMono-Regular.otf", 11, "mono", 1.0)
 
     -- ---@type pklove.tiled.TileLayer?
     -- local col_layer
@@ -203,8 +218,11 @@ end
 
 function Game:release()
     self.r3d_world:release()
-    self.r3d_draw_batch:release()
+    self.r3d_batch:release()
+    self.r3d_sprite_batch:release()
     self._map_model:release()
+    self._ui_icons_sprite:release()
+    self._font:release()
 end
 
 function Game:new_entity()
@@ -280,6 +298,8 @@ function Game:tick()
     --         self.cam_y = pos.y
     --     end
     -- end
+
+    self.frame = self.frame + 1
 end
 
 function Game:update(dt)
@@ -353,7 +373,8 @@ function Game:draw()
     r3d_world.ambient.g = 0.04
     r3d_world.ambient.b = 0.04
 
-    self.r3d_draw_batch:clear()
+    self.r3d_batch:clear()
+    self.r3d_sprite_batch:clear()
 
     Lg.push()
     Lg.translate(math.round(-cam_x + DISPLAY_WIDTH / 2.0), math.round(-cam_y + DISPLAY_HEIGHT / 2.0))
@@ -362,18 +383,70 @@ function Game:draw()
 
     r3d_world:draw()
 
-    -- display battery ui
-    local player_health = self.player.health
-    local battery_percentage = player_health.value / player_health.max
-
-    Lg.setColor(1, 1, 1)
-    Lg.rectangle("fill", 0, 0, math.round(battery_percentage * DISPLAY_WIDTH), 4)
+    self:_draw_ui()
 
     -- local tl = self._tiled_map.layers[1] --[[@as pklove.tiled.TileLayer]]
     -- tl:draw()
     -- self.ecs_world:emit("draw")
 
     -- Lg.pop()
+end
+
+---@private
+function Game:_draw_ui()
+    local old_font = Lg.getFont()
+    Lg.setFont(self._font)
+
+    -- display battery ui
+    local player_health = self.player.health
+    local battery_percentage = player_health.value / player_health.max
+    if battery_percentage < 0.0 then
+        battery_percentage = 0.0
+    end
+
+    -- Lg.setColor(1, 1, 1)
+    -- Lg.rectangle("fill", 0, 0, math.round(battery_percentage * DISPLAY_WIDTH), 4)
+
+    if battery_percentage < 0.2 then
+        Lg.setColor(1, 0, 0)
+    elseif battery_percentage < 0.5 then
+        Lg.setColor(1, 1, 0)
+    else
+        Lg.setColor(1, 1, 1)
+    end
+
+    local sprite_ox = 5.5
+    local sprite_oy = 5.5
+
+    local text_origin_y = DISPLAY_HEIGHT - 15
+
+    do
+        local height = math.round(6.0 * battery_percentage)
+        self._ui_icons_sprite:drawCel(1, sprite_ox, text_origin_y + sprite_oy)
+        Lg.rectangle("fill", 4, DISPLAY_HEIGHT - 5 - height, 5, height)
+    end
+
+    Lg.print(("%.0f%%"):format(battery_percentage * 100.0), 12, DISPLAY_HEIGHT - 15)
+
+    local selected_weapon = self.player.behavior.inst.selected_weapon
+
+    -- melee
+    if selected_weapon == 1 then
+        Lg.setColor(batteries.color.unpack_rgb(0x4266f5))
+    else
+        Lg.setColor(1, 1, 1, 0.5)
+    end
+    self._ui_icons_sprite:drawCel(2, sprite_ox + 42, text_origin_y + sprite_oy)
+
+    -- gun
+    if selected_weapon == 2 then
+        Lg.setColor(batteries.color.unpack_rgb(0xff3826))
+    else
+        Lg.setColor(1, 1, 1, 0.5)
+    end
+    self._ui_icons_sprite:drawCel(3, sprite_ox + 54, text_origin_y + sprite_oy)
+
+    Lg.setFont(old_font)
 end
 
 ---Add attack sphere
@@ -466,16 +539,18 @@ function Game:_tile_raycast(ray_x, ray_y, ray_dx, ray_dy)
     end
 end
 
+---@private
 ---@param ray_x number
 ---@param ray_y number
 ---@param ray_dx number
 ---@param ray_dy number
 ---@param col_flags integer
+---@param ignore any[]?
 ---@return any|nil entity
 ---@return number? distance
 ---@return number? nx
 ---@return number? ny
-function Game:_entity_raycast(ray_x, ray_y, ray_dx, ray_dy, col_flags)
+function Game:_entity_raycast(ray_x, ray_y, ray_dx, ray_dy, col_flags, ignore)
     local min_dist = math.huge
 
     ---@type any?, number?, number?
@@ -490,7 +565,7 @@ function Game:_entity_raycast(ray_x, ray_y, ray_dx, ray_dy, col_flags)
                 ray_x, ray_y, ray_dx, ray_dy,
                 position.x, position.y, collision.w, collision.h)
 
-            if dist and dist < min_dist then
+            if dist and dist < min_dist and (ignore == nil or table.index_of(ignore, ent) == nil) then
                 assert(nx and ny)
                 min_dist = dist
                 result_ent = ent
@@ -510,8 +585,9 @@ end
 ---@param dx number
 ---@param dy number
 ---@param col_flags integer?
+---@param entity_ignore any[]?
 ---@return number? distance, number? nx, number? ny, any|nil entity
-function Game:raycast(x, y, dx, dy, col_flags)
+function Game:raycast(x, y, dx, dy, col_flags, entity_ignore)
     if col_flags == nil then
         col_flags = consts.COLGROUP_ALL
     end
@@ -519,8 +595,13 @@ function Game:raycast(x, y, dx, dy, col_flags)
     if col_flags == 0 then return end
 
     -- get tile raycast
-    local tile_dist, tile_nx, tile_ny = self:_tile_raycast(x, y, dx, dy)
-    local ent_dist, ent_hit, ent_nx, ent_ny = self:_entity_raycast(x, y, dx, dy, col_flags)
+    ---@type number?, number?, number?
+    local tile_dist, tile_nx, tile_ny
+    if bit.band(col_flags, consts.COLGROUP_DEFAULT) ~= 0 then
+        tile_dist, tile_nx, tile_ny = self:_tile_raycast(x, y, dx, dy)
+    end
+
+    local ent_dist, ent_hit, ent_nx, ent_ny = self:_entity_raycast(x, y, dx, dy, col_flags, entity_ignore)
 
     if tile_dist ~= nil and (not ent_dist or tile_dist < ent_dist) then
         return tile_dist, tile_nx, tile_ny

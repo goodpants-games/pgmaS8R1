@@ -6,6 +6,7 @@ local consts = require("game.consts")
 
 local render_system = Concord.system({
     sprite_pool = {"position", "sprite"},
+    gun_sight_pool = {"position", "gun_sight"},
     light_pool = {"position", "light"},
     dbgdraw_pool = {"position", "collision"}
 })
@@ -205,7 +206,7 @@ end
 
 function render_system:draw_sprites()
     ---@type r3d.Batch
-    local draw_batch = self:getWorld().game.r3d_draw_batch
+    local draw_batch = self:getWorld().game.r3d_sprite_batch
 
     local tmpmat0 = mat4.new()
     local tmpmat1 = mat4.new()
@@ -313,6 +314,30 @@ function render_system:draw_sprites()
     end
 end
 
+function render_system:draw_gun_sights()
+    ---@type Game
+    local game = self:getWorld().game
+    local batch = game.r3d_batch
+
+    for _, ent in ipairs(self.gun_sight_pool) do
+        local position = ent.position
+        local gun_sight = ent.gun_sight
+
+        if gun_sight.visible then
+            local end_x = position.x + gun_sight.cur_dx
+            local end_y = position.y + gun_sight.cur_dy
+
+            local zpos = 8
+
+            if game.frame % 3 == 0 then
+                batch:set_shader("basic")
+                batch:set_color(gun_sight.r, gun_sight.g, gun_sight.b)
+                batch:add_line(position.x, position.y, zpos, end_x, end_y, zpos, 1)
+            end
+        end
+    end
+end
+
 function render_system:tick()
     for _, ent in ipairs(self.sprite_pool) do
         local sprite = ent.sprite._spr --[[@as pklove.Sprite?]]
@@ -323,6 +348,7 @@ function render_system:tick()
 end
 
 function render_system:draw()
+    self:draw_gun_sights()
     self:draw_sprites()
     self:sync_lights()
 

@@ -36,10 +36,14 @@ end)
 Concord.component("player_control", function(cmp)
     cmp.move_x = 0.0
     cmp.move_y = 0.0
+    cmp.aim_x = 1.0
+    cmp.aim_y = 0.0
     cmp.run = false
     cmp.lock = false
 
     cmp.trigger_attack = false
+    cmp.trigger_weapon_switch = false
+
     cmp.state = "move"
 end)
 
@@ -113,6 +117,18 @@ Concord.component("light", function(cmp, type)
     cmp.z_offset = 8.0
 end)
 
+Concord.component("gun_sight", function(cmp, r, g, b)
+    cmp.r = r or 1.0
+    cmp.g = g or 0.0
+    cmp.b = b or 0.0
+    cmp.max_dist = 1000.0
+    cmp.visible = true
+    cmp.auto_aim = false
+
+    cmp.cur_dx = 0.0
+    cmp.cur_dy = 0.0
+end)
+
 Concord.component("behavior", function(cmp, behav_name)
     local behav = require("game.ecsconfig.behaviors." .. behav_name)
     cmp.inst = behav()
@@ -120,7 +136,7 @@ end)
 
 Concord.component("attackable", function(cmp)
     cmp.hit = nil
-    cmp.iframe_length = 60
+    cmp.iframe_length = 20
     cmp.iframes = 0
     -- cmp.on_hit = hit_callback
 end)

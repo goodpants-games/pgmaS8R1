@@ -27,10 +27,10 @@ function asm.entity.enemy(e, x, y)
         "res/robot.png")
     :give("behavior", "basic_enemy")
     :give("attackable")
+    :give("health", 30)
     
     e.sprite.oy = 13
-    e.collision.group =
-        bit.bor(e.collision.group, consts.COLGROUP_ENEMY)
+    e.collision.group = consts.COLGROUP_ENEMY
     e.actor.move_speed = 0.8
 end
 
@@ -48,6 +48,7 @@ function asm.entity.player(e, x, y)
     e.sprite.oy = 14
     e.sprite.unshaded = true
     e.sprite:play("idle")
+    e.attackable.iframe_length = 60
     
     e.collision.group = consts.COLGROUP_PLAYER
     e.light.power = 5.0

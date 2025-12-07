@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="32" height="32" tilewidth="16" tileheight="16" infinite="0" nextlayerid="6" nextobjectid="6">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="32" height="32" tilewidth="16" tileheight="16" infinite="0" nextlayerid="6" nextobjectid="9">
  <tileset firstgid="1" source="../tilesets/voxel.tsx"/>
  <layer id="4" name="Floor" width="32" height="32">
   <data encoding="base64">
@@ -14,6 +14,15 @@
  <objectgroup id="5" name="Objects">
   <object id="1" name="door_right" x="432" y="144" width="16" height="48"/>
   <object id="4" name="enemy" type="entity" x="320" y="176">
+   <point/>
+  </object>
+  <object id="6" name="enemy" type="entity" x="352" y="224">
+   <point/>
+  </object>
+  <object id="7" name="enemy" type="entity" x="176" y="80">
+   <point/>
+  </object>
+  <object id="8" name="enemy" type="entity" x="320" y="96">
    <point/>
   </object>
   <object id="5" name="player" type="entity" x="64" y="400">

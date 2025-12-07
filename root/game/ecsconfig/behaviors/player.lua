@@ -4,6 +4,33 @@ local PlayerBehavior = batteries.class {
     extends = require("game.ecsconfig.behaviors.base")
 }
 
+function PlayerBehavior:new()
+    self:super() ---@diagnostic disable-line
+    self.selected_weapon = 1
+end
+
+function PlayerBehavior:_fire_shoot_scanline()
+    local gun_sight = self.entity.gun_sight
+    if not gun_sight then return end
+
+    local position = self.entity.position
+
+    local dx, dy = math.normalize_v2(gun_sight.cur_dx, gun_sight.cur_dy)
+
+    print("fire!")
+    self.game:add_attack({
+        x = position.x + gun_sight.cur_dx,
+        y = position.y + gun_sight.cur_dy,
+        radius = 4,
+        damage = 16,
+        dx = dx,
+        dy = dy,
+        mask = require("game.consts").COLGROUP_ENEMY,
+        knockback = 2.0,
+        owner = self.entity
+    })
+end
+
 function PlayerBehavior:tick()
     local ent = self.entity
     local game = self.game
@@ -28,10 +55,29 @@ function PlayerBehavior:tick()
 
     if player.trigger_attack then
         if player.state == "move" then
-            player.state = "attack"
+            if self.selected_weapon == 1 then
+                player.state = "melee_attack"
+            else
+                player.state = "shoot"
+            end
         end
         
         player.trigger_attack = false
+    end
+
+    if player.trigger_weapon_switch then
+        local last_selected_weapon = self.selected_weapon
+
+        self.selected_weapon = self.selected_weapon % 2 + 1
+        print(self.selected_weapon)
+        player.trigger_weapon_switch = false
+
+        if self.selected_weapon == 2 and last_selected_weapon ~= 2 then
+            ent:give("gun_sight", 1, 0, 0)
+            ent.gun_sight.auto_aim = true
+        elseif self.selected_weapon ~= 2 and last_selected_weapon == 2 then
+            ent:remove("gun_sight")
+        end
     end
 
     local movement_lock = player.state ~= "move"
@@ -79,9 +125,9 @@ function PlayerBehavior:tick()
         * actor.move_speed
     
     if sprite then
-        if player.state == "attack" then
-            if prev_state ~= "attack" then
-                sprite:play("attack")
+        if player.state == "melee_attack" then
+            if prev_state ~= "melee_attack" then
+                sprite:play("melee_attack")
             elseif not sprite.anim then
                 player.state = "move"
                 sprite:play("idle")
@@ -97,6 +143,17 @@ function PlayerBehavior:tick()
                     knockback = 4.0,
                     owner = ent
                 })
+            end
+
+        elseif player.state == "shoot" then
+            if prev_state ~= "shoot" then
+                sprite:play("shoot")
+            elseif not sprite.anim then
+                player.state = "move"
+                sprite:play("idle")
+            elseif sprite._spr:getAnimFrame() == 5 then
+                battery_drain = battery_drain + 100.0
+                self:_fire_shoot_scanline()
             end
         
         elseif player.state == "hurt" then
@@ -144,6 +201,10 @@ function PlayerBehavior:tick()
     if health then
         health.value = health.value - battery_drain * battery_drain_scale
     end
+
+    -- if ent.gun_sight then
+    --     ent.gun_sight.visible = player.state == "move"
+    -- end
 end
 
 return PlayerBehavior
