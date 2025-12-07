@@ -14,6 +14,7 @@ local consts = require("game.consts")
 ---@field damage number
 ---@field dx number
 ---@field dy number
+---@field knockback number?
 ---@field mask integer?
 ---@field owner any?
 
@@ -52,7 +53,7 @@ function Game:new()
     self.ecs_world.game = self
     self.ecs_world:addSystems(
         ecsconfig.systems.player_controller,
-        ecsconfig.systems.ai,
+        ecsconfig.systems.behavior,
         ecsconfig.systems.actor,
         ecsconfig.systems.attack,
         ecsconfig.systems.physics,
@@ -112,27 +113,12 @@ function Game:new()
                 local x = obj.x
                 local y = obj.y
 
-                if obj.name == "enemy" then     
-                    local e = self:new_entity()
-                        :assemble(
-                            ecsconfig.asm.actor,
-                            x, y,
-                            13, 8,
-                            "res/robot.png")
-                        :give("ai")
-                        :give("attackable")
-                    
-                    e.sprite.oy = 13
-                    e.collision.group =
-                        bit.bor(e.collision.group, consts.COLGROUP_ENEMY)
-                    e.actor.move_speed = 0.8
-                elseif obj.name == "player" then
+                local e = self:new_entity()
+                              :assemble(ecsconfig.asm.entity[obj.name], x, y)
+                
+                if obj.name == "player" then
                     assert(not self.player, "there can not be more than one player in a level")
-
-                    self.player = self:new_entity():assemble(ecsconfig.asm.entity_player, x, y)
-                    self.player.sprite.unshaded = true
-                    self.player:give("player_control")
-
+                    self.player = e
                     -- self.cam_follow = self.player
                 end
             end
@@ -223,6 +209,13 @@ end
 
 function Game:new_entity()
     return Concord.entity(self.ecs_world)
+end
+
+---@param x integer 0-based
+---@param y integer 0-based
+---@return boolean
+function Game:is_tile_in_bounds(x, y)
+    return x >= 0 and y >= 0 and x < self.map_width and y < self.map_height
 end
 
 ---@param x integer 0-based
@@ -395,6 +388,9 @@ function Game:add_attack(attack)
     if not attack.dy then
         attack.dy = 0.0
     end
+    if not attack.knockback then
+        attack.knockback = 0.0
+    end
 
     assert(attack.x, "attack does not have required field 'x'")
     assert(attack.y, "attack does not have required field 'y'")
@@ -403,6 +399,85 @@ function Game:add_attack(attack)
 
     local attack_system = self.ecs_world:getSystem(ecsconfig.systems.attack)
     table.insert(attack_system.attacks, attack)
+end
+
+---@private
+---@return number? distance, number? dx, number? dy
+function Game:_tile_raycast(ray_x, ray_y, ray_dx, ray_dy)
+    local ray_len = math.length(ray_dx, ray_dy)
+    if ray_len == 0.0 then return end
+    ray_dx, ray_dy = math.normalize_v2(ray_dx, ray_dy)
+
+    local tw = self.tile_width
+    local th = self.tile_height
+
+    local dir_sign_x = math.binsign(ray_dx)
+    local dir_sign_y = math.binsign(ray_dy)
+    local tile_offset_x = (ray_dx >= 0.0) and 1 or 0
+    local tile_offset_y = (ray_dy >= 0.0) and 1 or 0
+
+    local cur_x = ray_x
+    local cur_y = ray_y
+    local tile_x = math.floor(cur_x / tw)
+    local tile_y = math.floor(cur_y / th)
+    
+    local t = 0.0
+    local dt = 0.0
+    local dt_x = ((tile_x + tile_offset_x) * tw - cur_x) / ray_dx
+    local dt_y = ((tile_y + tile_offset_y) * th - cur_y) / ray_dy
+    local side = 0
+
+    while (self:is_tile_in_bounds(tile_x, tile_y) and t < ray_len) do
+        local col = self:get_col(tile_x, tile_y)
+        if col > 0 --[[and not NONCOLLIDABLE_TILES[col])]] then
+            local nx, ny
+            if side == 0 then
+                nx = dir_sign_x
+                ny = 0.0
+            else
+                nx = 0
+                ny = dir_sign_y
+            end
+
+            return t, nx, ny
+        end
+
+        if dt_x < dt_y then
+            tile_x = tile_x + dir_sign_x
+            side = 0
+            dt = dt_x
+            t = t + dt
+            dt_x = dt_x + dir_sign_x * tw / ray_dx - dt
+            dt_y = dt_y - dt
+        else
+            tile_y = tile_y + dir_sign_y
+            side = 1
+            dt = dt_y
+            t = t + dt
+            dt_x = dt_x - dt
+            dt_y = dt_y + dir_sign_y * th / ray_dy - dt
+        end
+    end
+end
+
+---@param x number
+---@param y number
+---@param dx number
+---@param dy number
+---@param col_flags integer?
+---@return number? distance, number? nx, number? ny, any|nil entity
+function Game:raycast(x, y, dx, dy, col_flags)
+    if col_flags == nil then
+        col_flags = consts.COLGROUP_ALL
+    end
+
+    if col_flags == 0 then return end
+
+    -- get tile raycast
+    local tile_dist, tile_x, tile_y = self:_tile_raycast(x, y, dx, dy)
+    -- TODO: entity raycasts
+
+    return tile_dist, tile_x, tile_y
 end
 
 return Game

@@ -7,5 +7,6 @@ ecsconfig.systems = {}
 ecsconfig.asm = require(module_path .. ".assemblages")
 
 Concord.utils.loadNamespace("game/ecsconfig/systems", ecsconfig.systems)
+Concord.utils.loadNamespace("game/ecsconfig/behaviors", ecsconfig.behaviors)
 
 return ecsconfig

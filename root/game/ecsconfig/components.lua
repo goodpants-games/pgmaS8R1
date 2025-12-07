@@ -113,11 +113,14 @@ Concord.component("light", function(cmp, type)
     cmp.z_offset = 8.0
 end)
 
-Concord.component("ai")
+Concord.component("behavior", function(cmp, behav_name)
+    local behav = require("game.ecsconfig.behaviors." .. behav_name)
+    cmp.inst = behav()
+end)
 
 Concord.component("attackable", function(cmp)
     cmp.hit = nil
-    cmp.iframe_length = 30
+    cmp.iframe_length = 60
     cmp.iframes = 0
     -- cmp.on_hit = hit_callback
 end)

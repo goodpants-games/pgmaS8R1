@@ -40,8 +40,8 @@ function system:tick()
         if attackable and attackable.hit then
             local attack = attackable.hit --[[@as Game.Attack]]
             print("ow")
-            actor.kb_vx = attack.dx * 4.0
-            actor.kb_vy = attack.dy * 4.0
+            actor.kb_vx = attack.dx * attack.knockback
+            actor.kb_vy = attack.dy * attack.knockback
         end
 
         -- if sprite then

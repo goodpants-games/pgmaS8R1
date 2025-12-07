@@ -60,6 +60,17 @@ function tiled.mapPath(cwd, path)
     return tpath.normalize(tpath.join(cwd, path))
 end
 
+---Return the sign of a number, counting zero as positive.
+---@param v number
+---@return integer sign 1 or -1
+function math.binsign(v)
+    if v >= 0.0 then
+        return 1
+    else
+        return -1
+    end
+end
+
 function math.normalize_v2(x, y)
     local len = math.sqrt(x*x + y*y)
     if len > 0 then
