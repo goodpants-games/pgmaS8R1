@@ -40,7 +40,7 @@ function system:tick()
             local ent_pos = ent.position
             local ent_attackable = ent.attackable
 
-            local col = collision.circle_rect(
+            local col = collision.circle_rect_intersection(
                 attack.x, attack.y, attack.radius,
                 ent_pos.x, ent_pos.y, ent_col.w, ent_col.h)
             

@@ -42,7 +42,7 @@ function system:update(dt)
             if position and rotation then
                 local ray_dx = math.cos(rotation.ang)
                 local ray_dy = math.sin(rotation.ang)
-                local dist = game:raycast(position.x, position.y, ray_dx * 100, ray_dy * 100)
+                local dist = game:raycast(position.x, position.y, ray_dx * 100, ray_dy * 100, require("bit").bnot(require("game.consts").COLGROUP_PLAYER))
 
                 if dist then
                     local hit_x = position.x + ray_dx * dist

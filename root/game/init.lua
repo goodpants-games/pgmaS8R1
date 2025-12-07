@@ -1,11 +1,11 @@
 local Concord = require("concord")
-local tiled = require("tiled")
 local bit = require("bit")
 local r3d = require("r3d")
 
 local ecsconfig = require("game.ecsconfig")
 local map_loader = require("game.map_loader")
 local consts = require("game.consts")
+local Collision = require("game.collision")
 
 ---@class Game.Attack
 ---@field x number
@@ -402,11 +402,17 @@ function Game:add_attack(attack)
 end
 
 ---@private
+---@param ray_x number
+---@param ray_y number
+---@param ray_dx number
+---@param ray_dy number
 ---@return number? distance, number? dx, number? dy
 function Game:_tile_raycast(ray_x, ray_y, ray_dx, ray_dy)
     local ray_len = math.length(ray_dx, ray_dy)
     if ray_len == 0.0 then return end
-    ray_dx, ray_dy = math.normalize_v2(ray_dx, ray_dy)
+
+    ray_dx = ray_dx / ray_len
+    ray_dy = ray_dy / ray_len
 
     local tw = self.tile_width
     local th = self.tile_height
@@ -460,6 +466,45 @@ function Game:_tile_raycast(ray_x, ray_y, ray_dx, ray_dy)
     end
 end
 
+---@param ray_x number
+---@param ray_y number
+---@param ray_dx number
+---@param ray_dy number
+---@param col_flags integer
+---@return any|nil entity
+---@return number? distance
+---@return number? nx
+---@return number? ny
+function Game:_entity_raycast(ray_x, ray_y, ray_dx, ray_dy, col_flags)
+    local min_dist = math.huge
+
+    ---@type any?, number?, number?
+    local result_ent, result_nx, result_ny
+
+    for _, ent in ipairs(self.ecs_world:getEntities()) do
+        local position = ent.position
+        local collision = ent.collision
+
+        if position and collision and bit.band(collision.group, col_flags) ~= 0 then
+            local dist, nx, ny = Collision.ray_rect_intersection(
+                ray_x, ray_y, ray_dx, ray_dy,
+                position.x, position.y, collision.w, collision.h)
+
+            if dist and dist < min_dist then
+                assert(nx and ny)
+                min_dist = dist
+                result_ent = ent
+                result_nx = nx
+                result_ny = ny
+            end
+        end
+    end
+
+    if min_dist then
+        return min_dist, result_ent, result_nx, result_ny
+    end
+end
+
 ---@param x number
 ---@param y number
 ---@param dx number
@@ -474,10 +519,16 @@ function Game:raycast(x, y, dx, dy, col_flags)
     if col_flags == 0 then return end
 
     -- get tile raycast
-    local tile_dist, tile_x, tile_y = self:_tile_raycast(x, y, dx, dy)
-    -- TODO: entity raycasts
+    local tile_dist, tile_nx, tile_ny = self:_tile_raycast(x, y, dx, dy)
+    local ent_dist, ent_hit, ent_nx, ent_ny = self:_entity_raycast(x, y, dx, dy, col_flags)
 
-    return tile_dist, tile_x, tile_y
+    if tile_dist ~= nil and (not ent_dist or tile_dist < ent_dist) then
+        return tile_dist, tile_nx, tile_ny
+    elseif ent_dist ~= nil and (not tile_dist or ent_dist < tile_dist) then
+        return ent_dist, ent_nx, ent_ny, ent_hit
+    else
+        return
+    end
 end
 
 return Game

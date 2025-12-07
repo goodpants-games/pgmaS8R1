@@ -61,7 +61,7 @@ local function resolve_tilemap_collisions(ent, game)
                         local colx, coly, colw, colh =
                             get_tile_collision_bounds(x, y, tw, th, v)
                         local pn, nx, ny =
-                            collision.rect_rect_collision(
+                            collision.rect_rect_intersection(
                                 pos.x, pos.y, collider.w, collider.h,
                                 colx, coly, colw, colh)
 
