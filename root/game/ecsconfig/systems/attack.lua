@@ -22,8 +22,8 @@ function system:tick()
     end
 
     for _, attack in ipairs(self.attacks) do
-        Debug.draw:color(1, 0, 0)
-        Debug.draw:circle_lines(attack.x, attack.y, attack.radius)
+        -- Debug.draw:color(1, 0, 0)
+        -- Debug.draw:circle_lines(attack.x, attack.y, attack.radius)
 
         -- TODO: maybe i could do some basic spatial partitioning (like maybe
         --       sweep and prune) but i doubt i'd need it.

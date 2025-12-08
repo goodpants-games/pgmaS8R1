@@ -28,6 +28,8 @@ Concord.component("actor", function(cmp)
     
     -- px/tick
     cmp.move_speed = 1.4
+    cmp.rigid_velocity = true
+    cmp.velocity_damp = 0.9
 
     cmp.kb_vx = 0.0
     cmp.kb_vy = 0.0
@@ -91,6 +93,7 @@ Concord.component("sprite", function(cmp, img)
     cmp.ox = 0
     cmp.oy = 0
 
+    cmp.z_offset = 0.0
     cmp.unshaded = false
     cmp.anim = nil
 
@@ -127,6 +130,7 @@ Concord.component("gun_sight", function(cmp, r, g, b)
 
     cmp.cur_dx = 0.0
     cmp.cur_dy = 0.0
+    cmp.target_zoff = 0.0
 end)
 
 Concord.component("behavior", function(cmp, behav_name)

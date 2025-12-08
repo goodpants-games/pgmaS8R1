@@ -46,6 +46,10 @@ function render_system:init(world)
     self.known_entities = {}
     self.texture_cache = {}
     self.lights = {}
+
+    -- TODO: maybe add circle drawing function to sprite batch renderer
+    --       but i think this should be good enough
+    self._shadow_tex = self:get_resource("res/img/shadow16x8.png")
 end
 
 local function sprite_y_search(entity, ypos)
@@ -139,6 +143,25 @@ function render_system:sync_lights()
     end
 end
 
+---@param path string
+---@return pklove.SpriteResource|love.Texture
+function render_system:get_resource(path)
+    ---@type pklove.SpriteResource|love.Texture
+    local cached = self.texture_cache[path]
+    local is_sprite = string.match(path, ".*(%..*)$") == ".json"
+
+    if not cached then
+        if is_sprite then
+            cached = Sprite.loadResource(path)
+        else
+            cached = Lg.newImage(path)
+        end
+        self.texture_cache[path] = cached
+    end
+
+    return cached
+end
+
 ---@param sprite table
 ---@param rotation number
 ---@return love.Texture img, number ox, number oy, love.Quad? quad
@@ -146,18 +169,8 @@ function render_system:sync_sprite_graphic(sprite, rotation)
     ---@type number, number, love.Texture, love.Quad?
     local img_ox, img_oy, img, img_quad
     
-    ---@type pklove.SpriteResource|love.Texture
-    local cached = self.texture_cache[sprite.img]
     local is_sprite = string.match(sprite.img, ".*(%..*)$") == ".json"
-
-    if not cached then
-        if is_sprite then
-            cached = Sprite.loadResource(sprite.img)
-        else
-            cached = Lg.newImage(sprite.img)
-        end
-        self.texture_cache[sprite.img] = cached
-    end
+    local cached = self:get_resource(sprite.img)
 
     if is_sprite then
         assert(Sprite.isSpriteResource(cached), 
@@ -271,12 +284,16 @@ function render_system:draw_sprites()
 
         local px, py = math.round(pos.x), math.round(pos.y)
         local sx, sy = sprite.sx, sprite.sy
-        local ox = math.round(img_ox + sprite.ox)
-        local oy = math.round(img_oy + sprite.oy)
 
         if math.abs(rot) > math.pi / 2.0 then
             sx = -sx
         end
+
+        -- draw shadow circle
+        local shadow_transform = mat4.translation(nil, px - 8, py - 4, 1.0)
+        draw_batch:set_shader("basic")
+        draw_batch:set_color(0.0, 0.0, 0.0, 0.5)
+        draw_batch:add_image(self._shadow_tex --[[@as love.Texture]], shadow_transform)
 
         -- transform1 =
         --     mat4.translation(nil, -img_ox, -img_oy, 0.0)
@@ -287,7 +304,7 @@ function render_system:draw_sprites()
             tmpmat0:identity():translation(-img_ox, -img_oy, 0)
             :mul(tmpmat1:identity():scale(sx, sy, 1.0), tmpmat2)
             :mul(rot_matrix, tmpmat0)
-            :mul(tmpmat1:identity():translation(px, py, sprite.oy), tmpmat2)
+            :mul(tmpmat1:identity():translation(px, py, sprite.oy + sprite.z_offset), tmpmat2)
 
         if sprite.unshaded then
             draw_batch:set_shader("basic")
@@ -332,7 +349,8 @@ function render_system:draw_gun_sights()
             if game.frame % 3 == 0 then
                 batch:set_shader("basic")
                 batch:set_color(gun_sight.r, gun_sight.g, gun_sight.b)
-                batch:add_line(position.x, position.y, zpos, end_x, end_y, zpos, 1)
+                print(gun_sight.target_zoff)
+                batch:add_line(position.x, position.y, zpos, end_x, end_y, zpos + gun_sight.target_zoff, 1)
             end
         end
     end

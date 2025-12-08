@@ -19,13 +19,28 @@ end
 
 asm.entity = {}
 
-function asm.entity.enemy(e, x, y)
+function asm.entity.basic_enemy(e, x, y)
     e:assemble(
         asm.actor,
         x, y,
         13, 8,
         "res/robot.png")
     :give("behavior", "basic_enemy")
+    :give("attackable")
+    :give("health", 30)
+    
+    e.sprite.oy = 13
+    e.collision.group = consts.COLGROUP_ENEMY
+    e.actor.move_speed = 0.8
+end
+
+function asm.entity.flying_enemy(e, x, y)
+    e:assemble(
+        asm.actor,
+        x, y,
+        13, 8,
+        "res/robot.png")
+    :give("behavior", "flying_enemy")
     :give("attackable")
     :give("health", 30)
     

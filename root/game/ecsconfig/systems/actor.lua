@@ -29,19 +29,33 @@ function system:tick()
             move_vec_len = 1.0
         end
 
-        vel.x = actor.move_x / move_vec_len * actor.move_speed
-        vel.y = actor.move_y / move_vec_len * actor.move_speed
+        if actor.rigid_velocity then
+            vel.x = actor.move_x / move_vec_len * actor.move_speed
+            vel.y = actor.move_y / move_vec_len * actor.move_speed
+            vel.x = vel.x + actor.kb_vx
+            vel.y = vel.y + actor.kb_vy
+            actor.kb_vx = actor.kb_vx * 0.9
+            actor.kb_vy = actor.kb_vy * 0.9
+        else
+            actor.kb_vx = 0.0
+            actor.kb_vy = 0.0
 
-        vel.x = vel.x + actor.kb_vx
-        vel.y = vel.y + actor.kb_vy
-        actor.kb_vx = actor.kb_vx * 0.9
-        actor.kb_vy = actor.kb_vy * 0.9
+            vel.x = vel.x + actor.move_x / move_vec_len * actor.move_speed
+            vel.y = vel.y + actor.move_y / move_vec_len * actor.move_speed
+            vel.x = vel.x * actor.velocity_damp
+            vel.y = vel.y * actor.velocity_damp
+        end
 
         if attackable and attackable.hit then
             local attack = attackable.hit --[[@as Game.Attack]]
-            print("ow")
-            actor.kb_vx = attack.dx * attack.knockback
-            actor.kb_vy = attack.dy * attack.knockback
+
+            if actor.rigid_velocity then
+                actor.kb_vx = attack.dx * attack.knockback
+                actor.kb_vy = attack.dy * attack.knockback
+            else
+                vel.x = attack.dx * attack.knockback
+                vel.y = attack.dy * attack.knockback
+            end
         end
 
         -- if sprite then

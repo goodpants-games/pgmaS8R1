@@ -14,7 +14,8 @@ function system:tick()
         local position = ent.position
         local gun_sight = ent.gun_sight
         local rotation = ent.rotation and ent.rotation.ang or 0
-
+        
+        local target_ent = nil
         ent_ignore[1] = ent
 
         if gun_sight.auto_aim then
@@ -42,6 +43,7 @@ function system:tick()
                     if hit_ent == target then
                         min_ang_diff = ang_diff
                         rotation = ang_to_target
+                        target_ent = target
                     end
                 end
 
@@ -58,10 +60,29 @@ function system:tick()
         
         if not raydist then
             raydist = gun_sight.max_dist
-        end 
-        
+        end
+
+        gun_sight.target_zoff = 0.0
         gun_sight.cur_dx = look_x * raydist
         gun_sight.cur_dy = look_y * raydist
+        
+        if target_ent then
+            local target_sprite = target_ent.sprite
+            local target_position = target_ent.position
+
+            if target_sprite then
+                gun_sight.target_zoff = target_sprite.z_offset
+            end
+
+            if target_position then
+                gun_sight.cur_dx = target_position.x - position.x
+                gun_sight.cur_dy = target_position.y - position.y 
+            end
+        else
+            gun_sight.target_zoff = 0.0
+            gun_sight.cur_dx = look_x * raydist
+            gun_sight.cur_dy = look_y * raydist
+        end
     end
 end
 

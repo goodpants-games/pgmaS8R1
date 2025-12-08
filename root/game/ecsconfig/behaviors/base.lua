@@ -4,6 +4,8 @@
 ---@overload fun()
 local Behavior = batteries.class { name = "game.Behavior" }
 
+function Behavior:new() end
+
 ---@param ent any
 ---@param game Game
 function Behavior:init(ent, game)

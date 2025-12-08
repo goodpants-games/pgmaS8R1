@@ -118,6 +118,11 @@ function Game:new()
                 local x = obj.x
                 local y = obj.y
 
+                if not ecsconfig.asm.entity[obj.name] then
+                    print(("WARN: no entity assembler for '%s'"):format(obj.name))
+                    goto continue
+                end
+
                 local e = self:new_entity()
                               :assemble(ecsconfig.asm.entity[obj.name], x, y)
                 
@@ -127,6 +132,8 @@ function Game:new()
                     -- self.cam_follow = self.player
                 end
             end
+            
+            ::continue::
         end
     end
 

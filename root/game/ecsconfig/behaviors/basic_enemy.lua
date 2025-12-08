@@ -1,19 +1,13 @@
 local game_consts = require("game.consts")
 local bit = require("bit")
 
----@class game.BasicEnemyBehavior: game.Behavior
+---@class game.BasicEnemyBehavior: game.EnemyBehaviorBase
 local Behavior = batteries.class {
-    extends = require("game.ecsconfig.behaviors.base")
+    extends = require("game.ecsconfig.behaviors.base_enemy")
 }
 
 function Behavior:new()
     self:super()
-
-    ---@type number?
-    self.last_known_px = nil
-
-    ---@type number?
-    self.last_known_py = nil
 end
 
 function Behavior:tick()
@@ -33,23 +27,9 @@ function Behavior:tick()
         return
     end
 
-    local real_player_dx = player.position.x - position.x
-    local real_player_dy = player.position.y - position.y
-    -- local real_player_dist = math.length(real_player_dx, real_player_dy)
-    real_player_dx, real_player_dy = math.normalize_v2(real_player_dx, real_player_dy)
+    self.__super.tick(self)
 
-    local _, _, _, raycast_ent =
-        game:raycast(position.x, position.y,
-                     real_player_dx * 160, real_player_dy * 160,
-                     bit.bor(game_consts.COLGROUP_PLAYER, game_consts.COLGROUP_DEFAULT))
-
-    local is_seeing_player = raycast_ent == player
-    if is_seeing_player then
-        self.last_known_px = player.position.x
-        self.last_known_py = player.position.y
-    end
-
-    if self.last_known_px then
+    if self:has_player_memory() then
         local known_player_dx = self.last_known_px - position.x
         local known_player_dy = self.last_known_py - position.y
         local known_player_dist = math.length(known_player_dx, known_player_dy)
@@ -57,7 +37,7 @@ function Behavior:tick()
         actor.move_x = known_player_dx
         actor.move_y = known_player_dy
 
-        if known_player_dist < 1.0 and not is_seeing_player then
+        if known_player_dist < 1.0 and not self.is_seeing_player then
             self.last_known_px = nil
             self.last_known_py = nil
         end
