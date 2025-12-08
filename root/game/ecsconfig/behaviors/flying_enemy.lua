@@ -130,6 +130,7 @@ function Behavior:_diving_mode_update()
         actor.rigid_velocity = false
         ent.velocity.x = actor.kb_vx
         ent.velocity.y = actor.kb_vy
+
         return
     end
 
@@ -193,6 +194,10 @@ function Behavior:tick()
         if health.value <= 0.0 and self.mode ~= "dead" then
             self.dead_vz = 2.0
             self.mode = "dead"
+
+            if sprite.anim ~= "dead" then
+                sprite:play("dead")
+            end
         end
     end
 

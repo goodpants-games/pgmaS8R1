@@ -16,19 +16,19 @@
   <object id="6" name="basic_enemy" type="entity" x="352" y="224">
    <point/>
   </object>
-  <object id="7" name="basic_enemy" type="entity" x="320" y="192">
+  <object id="7" name="basic_enemy" type="entity" x="368" y="256">
    <point/>
   </object>
-  <object id="13" name="flying_enemy" type="entity" x="352" y="144">
+  <object id="13" name="flying_enemy" type="entity" x="55.3333" y="130">
    <point/>
   </object>
   <object id="8" name="basic_enemy" type="entity" x="176" y="224">
    <point/>
   </object>
-  <object id="5" name="player" type="entity" x="64" y="400">
+  <object id="5" name="player" type="entity" x="80" y="48">
    <point/>
   </object>
-  <object id="14" name="weeping_angel" type="entity" x="256" y="432">
+  <object id="14" name="weeping_angel" type="entity" x="176" y="80">
    <point/>
   </object>
  </objectgroup>

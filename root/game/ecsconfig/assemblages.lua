@@ -39,7 +39,7 @@ function asm.entity.flying_enemy(e, x, y)
         asm.actor,
         x, y,
         13, 8,
-        "res/robot.png")
+        "res/sprites/flying_enemy.json")
     :give("behavior", "flying_enemy")
     :give("attackable")
     :give("health", 30)
