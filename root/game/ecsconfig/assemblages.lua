@@ -50,6 +50,21 @@ function asm.entity.flying_enemy(e, x, y)
     e.attackable.aerial = true
 end
 
+function asm.entity.weeping_angel(e, x, y)
+    e:assemble(
+        asm.actor,
+        x, y,
+        13, 8,
+        "res/robot.png")
+    :give("behavior", "weeping_angel")
+    :give("attackable")
+    :give("health", 300000000)
+    
+    e.sprite.oy = 13
+    e.collision.group = consts.COLGROUP_ENEMY
+    e.actor.move_speed = 0.8
+end
+
 function asm.entity.player(e, x, y)
     e:assemble(asm.actor,
                x, y,

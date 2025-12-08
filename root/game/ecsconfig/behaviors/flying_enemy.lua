@@ -1,7 +1,7 @@
 local game_consts = require("game.consts")
 local bit = require("bit")
 
----@class game.BasicEnemyBehavior: game.EnemyBehaviorBase
+---@class game.FlyingEnemyBehavior: game.EnemyBehaviorBase
 local Behavior = batteries.class {
     extends = require("game.ecsconfig.behaviors.base_enemy")
 }
