@@ -33,7 +33,7 @@ local function resolve_tilemap_collisions(ent, game)
     local cxe = collider.w / 2 -- collider x extents
     local cye = collider.h / 2 -- collider y extents
 
-    local tw, th = game.tile_width, game.tile_height
+    local tw, th = game.room.tile_width, game.room.tile_height
     local margin = collision.margin
 
     for _=1, 4 do
@@ -51,7 +51,7 @@ local function resolve_tilemap_collisions(ent, game)
 
         for y=miny, maxy-1 do
             for x=minx, maxx-1 do
-                local v = game:get_col(x, y)
+                local v = game.room:get_col(x, y)
                 if v ~= 0 then
                     local dx = (x+0.5) * tw - pos.x
                     local dy = (y+0.5) * th - pos.y

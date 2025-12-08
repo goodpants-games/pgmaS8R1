@@ -1,6 +1,7 @@
 - make tentacles of flying enemy death sprite a separate sprite that faces
   upwards, so it doesn't clip through the ground. although this does require
   a bit of a rework with the rendering system
+- Spider web decor
 
 - two weapons:
     melee attack: long windup you need to time, but takes no battery

@@ -1,12 +1,10 @@
 local Concord = require("concord")
-local bit = require("bit")
 local r3d = require("r3d")
 local Sprite = require("sprite")
+local Room = require("game.room")
 
 local ecsconfig = require("game.ecsconfig")
-local map_loader = require("game.map_loader")
 local consts = require("game.consts")
-local Collision = require("game.collision")
 
 ---@class Game.Attack
 ---@field x number
@@ -26,33 +24,13 @@ local Collision = require("game.collision")
 ---@field r3d_world r3d.World
 ---@field r3d_sprite_batch r3d.Batch Transparency-allowed draw batch
 ---@field r3d_batch r3d.Batch Opaque draw batch
----@field map_width integer Map width in tiles
----@field map_height integer Map height in tiles
----@field tile_width integer Tile width in pixels
----@field tile_height integer Tile height in pixels
 ---@field private _dt_accum number
----@field private _colmap integer[]
----@field private _map game.Map
----@field private _map_model r3d.Model
 ---@overload fun():Game
 local Game = batteries.class({ name = "Game" })
 
 function Game:new()
     self._dt_accum = 0.0
     self.frame = 0
-    
-    self.cam = {
-        x = 0.0,
-        y = 0.0,
-        offset_x = 0.0,
-        offset_y = 0.0,
-        ---@type any?
-        follow = nil,
-        offset_target_x = 0.0,
-        offset_target_y = 0.0,
-        vel_x = 0.0,
-        vel_y = 0.0,
-    }
 
     self.ecs_world = Concord.world()
     self.ecs_world.game = self
@@ -65,92 +43,9 @@ function Game:new()
         ecsconfig.systems.gun_sight,
         ecsconfig.systems.render)
 
-    local map = map_loader.load("res/maps/voxeltest.lua")
-    self._map = map
-
-    local w, h = map.w, map.h
-    local tw, th = map.tw, map.th
-    self.map_width, self.map_height = w, h
-    self.tile_width, self.tile_height = tw, th
-
     ---@type table?
     self.player = nil
     self.player_is_dead = false
-
-    -- get collision data
-    self._colmap = {}
-
-    if map.data[2] then
-        local col_layer = map.data[2]
-        local i = 1
-        for y=0, h-1 do
-            for x=0, w-1 do
-                local tid = col_layer[i]
-
-                if tid > 0 then
-                    self._colmap[i] = 1
-                else
-                    self._colmap[i] = 0
-                end
-
-                i=i+1
-            end
-        end
-    else
-        print("warning: no collision map")
-
-        local i=1
-        for y=0, h-1 do
-            for x=0, w-1 do
-                self._colmap[i] = 0
-                i=i+1
-            end
-        end
-    end
-
-    -- create actors
-    local obj_layer = self._map.tiled_map:getLayerByName("Objects") --[[@as pklove.tiled.ObjectLayer]]
-    if not obj_layer then
-        error("level has no object layer (the layer must be named \"Objects\")")
-    else
-        for _, obj in ipairs(obj_layer.objects) do
-            if obj.type == "entity" then
-                assert(obj.shape == "point")
-                local x = obj.x
-                local y = obj.y
-
-                if not ecsconfig.asm.entity[obj.name] then
-                    print(("WARN: no entity assembler for '%s'"):format(obj.name))
-                    goto continue
-                end
-
-                local e = self:new_entity()
-                              :assemble(ecsconfig.asm.entity[obj.name], x, y)
-                
-                if obj.name == "player" then
-                    assert(not self.player, "there can not be more than one player in a level")
-                    self.player = e
-                    -- self.cam_follow = self.player
-                end
-            end
-
-            ::continue::
-        end
-    end
-
-    assert(self.player, "level must have a player")
-
-    -- create map model
-    local map_mesh = map_loader.create_mesh(map)
-    do
-        local tilemap = Lg.newImage("res/tilesets/test_tileset.png")
-        map_mesh:setTexture(tilemap)
-        tilemap:release()
-    end
-    self._map_model = r3d.model(map_mesh)
-    self._map_model.shader = "shaded_alpha_influence"
-    self._map_model:set_scale(16, 16, 16)
-    self._map_model:set_position(0, 0, -16) -- second layer is play layer
 
     -- create r3d world
     self.r3d_world = r3d.world()
@@ -167,10 +62,13 @@ function Game:new()
 
     self.r3d_world:add_object(self.r3d_batch)
     self.r3d_world:add_object(self.r3d_sprite_batch)
-    self.r3d_world:add_object(self._map_model)
 
     self._ui_icons_sprite = Sprite.new("res/sprites/ui_icons.json")
     self._font = Lg.newFont("res/fonts/DepartureMono-Regular.otf", 11, "mono", 1.0)
+
+    self.room = Room(self, "res/maps/units/01.lua")
+
+    self.player = self:new_entity():assemble(ecsconfig.asm.entity.player, 48, 48)
 
     -- ---@type pklove.tiled.TileLayer?
     -- local col_layer
@@ -225,37 +123,16 @@ function Game:new()
 end
 
 function Game:release()
+    self.room:release()
     self.r3d_world:release()
     self.r3d_batch:release()
     self.r3d_sprite_batch:release()
-    self._map_model:release()
     self._ui_icons_sprite:release()
     self._font:release()
 end
 
 function Game:new_entity()
     return Concord.entity(self.ecs_world)
-end
-
----@param x integer 0-based
----@param y integer 0-based
----@return boolean
-function Game:is_tile_in_bounds(x, y)
-    return x >= 0 and y >= 0 and x < self.map_width and y < self.map_height
-end
-
----@param x integer 0-based
----@param y integer 0-based
----@return integer
-function Game:get_tile(x, y)
-    return self._map[y * self.map_width + x + 1]
-end
-
----@param x integer 0-based
----@param y integer 0-based
----@return integer
-function Game:get_col(x, y)
-    return self._colmap[y * self.map_width + x + 1]
 end
 
 function Game:tick()
@@ -271,7 +148,8 @@ function Game:tick()
     end
 
     self.ecs_world:emit("tick")
-    local cam = self.cam
+    assert(self.room, "room is not loaded")
+    local cam = self.room.cam
 
     cam.vel_x = cam.vel_x + (cam.offset_target_x - cam.offset_x) * 0.009 - cam.vel_x * 0.13
     cam.vel_y = cam.vel_y + (cam.offset_target_y - cam.offset_y) * 0.009 - cam.vel_y * 0.13
@@ -311,8 +189,10 @@ function Game:tick()
 end
 
 function Game:update(dt)
+    assert(self.room, "a room is not loaded")
+
     Debug.draw:push()
-    Debug.draw:translate(math.round(-self.cam.x + DISPLAY_WIDTH / 2.0), math.round(-self.cam.y + DISPLAY_HEIGHT / 2.0))
+    Debug.draw:translate(math.round(-self.room.cam.x + DISPLAY_WIDTH / 2.0), math.round(-self.room.cam.y + DISPLAY_HEIGHT / 2.0))
 
     if not self.player_is_dead then
         self.ecs_world:emit("update", dt)
@@ -356,8 +236,8 @@ function Game:draw()
     local mat4 = require("r3d.mat4")
 
     local r3d_world = self.r3d_world
-    local cam_x = math.round(self.cam.x)
-    local cam_y = math.round(self.cam.y)
+    local cam_x = math.round(self.room.cam.x)
+    local cam_y = math.round(self.room.cam.y)
 
     r3d_world.cam.transform:identity()
     r3d_world.cam:set_position(cam_x, cam_y, 0.0)
@@ -483,144 +363,6 @@ function Game:add_attack(attack)
 
     local attack_system = self.ecs_world:getSystem(ecsconfig.systems.attack)
     table.insert(attack_system.attacks, attack)
-end
-
----@private
----@param ray_x number
----@param ray_y number
----@param ray_dx number
----@param ray_dy number
----@return number? distance, number? dx, number? dy
-function Game:_tile_raycast(ray_x, ray_y, ray_dx, ray_dy)
-    local ray_len = math.length(ray_dx, ray_dy)
-    if ray_len == 0.0 then return end
-
-    ray_dx = ray_dx / ray_len
-    ray_dy = ray_dy / ray_len
-
-    local tw = self.tile_width
-    local th = self.tile_height
-
-    local dir_sign_x = math.binsign(ray_dx)
-    local dir_sign_y = math.binsign(ray_dy)
-    local tile_offset_x = (ray_dx >= 0.0) and 1 or 0
-    local tile_offset_y = (ray_dy >= 0.0) and 1 or 0
-
-    local cur_x = ray_x
-    local cur_y = ray_y
-    local tile_x = math.floor(cur_x / tw)
-    local tile_y = math.floor(cur_y / th)
-    
-    local t = 0.0
-    local dt = 0.0
-    local dt_x = ((tile_x + tile_offset_x) * tw - cur_x) / ray_dx
-    local dt_y = ((tile_y + tile_offset_y) * th - cur_y) / ray_dy
-    local side = 0
-
-    while (self:is_tile_in_bounds(tile_x, tile_y) and t < ray_len) do
-        local col = self:get_col(tile_x, tile_y)
-        if col > 0 --[[and not NONCOLLIDABLE_TILES[col])]] then
-            local nx, ny
-            if side == 0 then
-                nx = dir_sign_x
-                ny = 0.0
-            else
-                nx = 0
-                ny = dir_sign_y
-            end
-
-            return t, nx, ny
-        end
-
-        if dt_x < dt_y then
-            tile_x = tile_x + dir_sign_x
-            side = 0
-            dt = dt_x
-            t = t + dt
-            dt_x = dt_x + dir_sign_x * tw / ray_dx - dt
-            dt_y = dt_y - dt
-        else
-            tile_y = tile_y + dir_sign_y
-            side = 1
-            dt = dt_y
-            t = t + dt
-            dt_x = dt_x - dt
-            dt_y = dt_y + dir_sign_y * th / ray_dy - dt
-        end
-    end
-end
-
----@private
----@param ray_x number
----@param ray_y number
----@param ray_dx number
----@param ray_dy number
----@param col_flags integer
----@param ignore any[]?
----@return any|nil entity
----@return number? distance
----@return number? nx
----@return number? ny
-function Game:_entity_raycast(ray_x, ray_y, ray_dx, ray_dy, col_flags, ignore)
-    local min_dist = math.huge
-
-    ---@type any?, number?, number?
-    local result_ent, result_nx, result_ny
-
-    for _, ent in ipairs(self.ecs_world:getEntities()) do
-        local position = ent.position
-        local collision = ent.collision
-
-        if position and collision and bit.band(collision.group, col_flags) ~= 0 then
-            local dist, nx, ny = Collision.ray_rect_intersection(
-                ray_x, ray_y, ray_dx, ray_dy,
-                position.x, position.y, collision.w, collision.h)
-
-            if dist and dist < min_dist and (ignore == nil or table.index_of(ignore, ent) == nil) then
-                assert(nx and ny)
-                min_dist = dist
-                result_ent = ent
-                result_nx = nx
-                result_ny = ny
-            end
-        end
-    end
-
-    if min_dist then
-        return min_dist, result_ent, result_nx, result_ny
-    end
-end
-
----@param x number
----@param y number
----@param dx number
----@param dy number
----@param col_flags integer?
----@param entity_ignore any[]?
----@return number? distance, number? nx, number? ny, any|nil entity
-function Game:raycast(x, y, dx, dy, col_flags, entity_ignore)
-    if col_flags == nil then
-        col_flags = consts.COLGROUP_ALL
-    end
-
-    if col_flags == 0 then return end
-
-    -- get tile raycast
-    ---@type number?, number?, number?
-    local tile_dist, tile_nx, tile_ny
-    if bit.band(col_flags, consts.COLGROUP_DEFAULT) ~= 0 then
-        tile_dist, tile_nx, tile_ny = self:_tile_raycast(x, y, dx, dy)
-    end
-
-    local ent_dist, ent_hit, ent_nx, ent_ny = self:_entity_raycast(x, y, dx, dy, col_flags, entity_ignore)
-
-    if tile_dist ~= nil and (not ent_dist or tile_dist < ent_dist) then
-        return tile_dist, tile_nx, tile_ny
-    elseif ent_dist ~= nil and (not tile_dist or ent_dist < tile_dist) then
-        return ent_dist, ent_nx, ent_ny, ent_hit
-    else
-        return
-    end
 end
 
 return Game

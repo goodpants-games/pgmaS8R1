@@ -35,7 +35,7 @@ function system:tick()
                 local ang_diff = math.abs(math.angle_difference(ang_to_target, rotation))
 
                 if ang_diff < min_ang_diff then
-                    local _, _, _, hit_ent = game:raycast(
+                    local _, _, _, hit_ent = game.room:raycast(
                         position.x, position.y,
                         dx, dy,
                         consts.COLGROUP_ALL, ent_ignore)
@@ -54,9 +54,10 @@ function system:tick()
         local look_x = math.cos(rotation)
         local look_y = math.sin(rotation)
 
-        local raydist = game:raycast(position.x, position.y,
-                                     look_x * gun_sight.max_dist, look_y * gun_sight.max_dist,
-                                     consts.COLGROUP_ALL, ent_ignore)
+        local raydist
+            = game.room:raycast(position.x, position.y,
+                                look_x * gun_sight.max_dist, look_y * gun_sight.max_dist,
+                                consts.COLGROUP_ALL, ent_ignore)
         
         if not raydist then
             raydist = gun_sight.max_dist
@@ -78,10 +79,6 @@ function system:tick()
                 gun_sight.cur_dx = target_position.x - position.x
                 gun_sight.cur_dy = target_position.y - position.y 
             end
-        else
-            gun_sight.target_zoff = 0.0
-            gun_sight.cur_dx = look_x * raydist
-            gun_sight.cur_dy = look_y * raydist
         end
     end
 end

@@ -120,13 +120,18 @@ def scan_tileset_directory(dirpath: str) -> bool:
 
 def scan_tiled_directory(dirpath: str) -> bool:
     for basename in os.listdir(dirpath):
-        path = os.path.normpath(os.path.join(dirpath, basename))
-        (filename, fileext) = os.path.splitext(basename)
+        path = os.path.join(dirpath, basename)
 
-        if fileext == ".tmx":
-            s = process_tmx(path)
-            if not s:
-                return False
+        if os.path.isdir(path) and basename != 'editoronly':
+            scan_tiled_directory(path)
+
+        else:
+            (filename, fileext) = os.path.splitext(basename)
+
+            if fileext == ".tmx":
+                s = process_tmx(os.path.normpath(path))
+                if not s:
+                    return False
     
     return True
 

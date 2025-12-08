@@ -21,7 +21,7 @@ function PlayerBehavior:_fire_shoot_scanline()
     self.game:add_attack({
         x = position.x + gun_sight.cur_dx,
         y = position.y + gun_sight.cur_dy,
-        radius = 4,
+        radius = 1,
         damage = 16,
         dx = dx,
         dy = dy,
@@ -203,9 +203,9 @@ function PlayerBehavior:tick()
         --     looky = math.sin(rotation.ang)
         -- end
 
-        game.cam.follow = ent
-        game.cam.offset_target_x = lookx * 25.0
-        game.cam.offset_target_y = looky * 25.0
+        game.room.cam.follow = ent
+        game.room.cam.offset_target_x = lookx * 25.0
+        game.room.cam.offset_target_y = looky * 25.0
     end
 
     if light and light.type == "spot" then

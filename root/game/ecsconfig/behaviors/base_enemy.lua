@@ -38,9 +38,9 @@ function Behavior:tick()
     real_player_dx, real_player_dy = math.normalize_v2(real_player_dx, real_player_dy)
 
     local _, _, _, raycast_ent =
-        game:raycast(position.x, position.y,
-                     real_player_dx * 160, real_player_dy * 160,
-                     bit.bor(game_consts.COLGROUP_PLAYER, game_consts.COLGROUP_DEFAULT))
+        game.room:raycast(position.x, position.y,
+                          real_player_dx * 160, real_player_dy * 160,
+                          bit.bor(game_consts.COLGROUP_PLAYER, game_consts.COLGROUP_DEFAULT))
 
     self.is_seeing_player = raycast_ent == player
     if self.is_seeing_player then

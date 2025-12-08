@@ -32,6 +32,45 @@ local ADJBIT_TL = 0x20
 local ADJBIT_BL = 0x40
 local ADJBIT_BR = 0x80
 
+local TILE_TEXTURE_DATA = {
+    [1] = {
+        side                  = 5,
+        edge_bottom           = 1,
+        edge_left             = 2,
+        edge_bl_corner_in     = 3,
+        edge_bl_corner_out    = 4,
+        edge_all              = 16,
+        top                   = 0,
+    },
+    [2] = {
+        side                  = 6,
+        edge_bottom           = 6,
+        edge_left             = 6,
+        edge_bl_corner_in     = 6,
+        edge_bl_corner_out    = 6,
+        top                   = 6,
+        edge_all              = 6,
+    },
+    [3] = {
+        side                  = 7,
+        edge_bottom           = 7,
+        edge_left             = 7,
+        edge_bl_corner_in     = 7,
+        edge_bl_corner_out    = 7,
+        top                   = 7,
+        edge_all              = 7,
+    },
+    [4] = {
+        side                  = 37,
+        edge_bottom           = 1,
+        edge_left             = 2,
+        edge_bl_corner_in     = 3,
+        edge_bl_corner_out    = 4,
+        edge_all              = 16,
+        top                   = 0,
+    }
+}
+
 ---@param out number[][]
 ---@param r boolean
 ---@param u boolean
@@ -47,6 +86,20 @@ local ADJBIT_BR = 0x80
 ---@param v1 number
 local function edge_calc_rec(out, r,u,l,d, tr,tl,bl,br, u0,v0,u1,v1, depth)
     assert(depth <= 2)
+
+    -- handle diagonal connections
+    if r and d then
+        br = true
+    end
+    if l and d then
+        bl = true
+    end
+    if l and u then
+        tl = true
+    end
+    if r and u then
+        tr = true
+    end
     
     -- open corner count
     local otr,otl,obl,obr = tr,tl,bl,br
@@ -262,27 +315,6 @@ function map_loader.create_mesh(map)
         return map.data[z+1][y * map.w + x + 1]
     end
 
-    local tile_data = {
-        [1] = {
-            side                  = 5,
-            edge_bottom           = 1,
-            edge_left             = 2,
-            edge_bl_corner_in     = 3,
-            edge_bl_corner_out    = 4,
-            edge_all              = 16,
-            top                   = 0,
-        },
-        [2] = {
-            side                  = 6,
-            edge_bottom           = 6,
-            edge_left             = 6,
-            edge_bl_corner_in     = 6,
-            edge_bl_corner_out    = 6,
-            top                   = 6,
-            edge_all              = 6,
-        }
-    }
-
     local function calc_adjacency(x, y, z)
         local tid = get_voxel(x, y, z)
         if tid == 0 then return 0 end
@@ -316,7 +348,7 @@ function map_loader.create_mesh(map)
         local tid = get_voxel(x, y, z)
         if tid == 0 then return end
 
-        local tinfo = tile_data[tid]
+        local tinfo = TILE_TEXTURE_DATA[tid]
         if not tinfo then return end
 
         -- if not adj then
@@ -471,8 +503,8 @@ function map_loader.create_mesh(map)
                     goto continue
                 end
 
-                assert(tile_data[tid])
-                local side_u0, side_u1, side_v0, side_v1 = calc_tex_uv(tile_data[tid].side)
+                assert(TILE_TEXTURE_DATA[tid])
+                local side_u0, side_u1, side_v0, side_v1 = calc_tex_uv(TILE_TEXTURE_DATA[tid].side)
 
                 -- right
                 if get_voxel(x + 1, y, z) == 0 then
