@@ -13,16 +13,13 @@
  </layer>
  <objectgroup id="5" name="Objects">
   <object id="1" name="door_right" x="432" y="144" width="16" height="48"/>
-  <object id="4" name="basic_enemy" type="entity" x="224" y="224">
-   <point/>
-  </object>
   <object id="6" name="basic_enemy" type="entity" x="352" y="224">
    <point/>
   </object>
   <object id="7" name="basic_enemy" type="entity" x="320" y="192">
    <point/>
   </object>
-  <object id="13" name="flying_enemy" type="entity" x="400" y="416">
+  <object id="13" name="flying_enemy" type="entity" x="352" y="144">
    <point/>
   </object>
   <object id="8" name="basic_enemy" type="entity" x="176" y="224">

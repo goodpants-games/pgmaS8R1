@@ -47,6 +47,7 @@ function asm.entity.flying_enemy(e, x, y)
     e.sprite.oy = 13
     e.collision.group = consts.COLGROUP_ENEMY
     e.actor.move_speed = 0.8
+    e.attackable.aerial = true
 end
 
 function asm.entity.player(e, x, y)

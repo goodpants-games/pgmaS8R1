@@ -142,5 +142,6 @@ Concord.component("attackable", function(cmp)
     cmp.hit = nil
     cmp.iframe_length = 20
     cmp.iframes = 0
+    cmp.aerial = false
     -- cmp.on_hit = hit_callback
 end)

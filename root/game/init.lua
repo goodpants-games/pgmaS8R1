@@ -15,6 +15,7 @@ local Collision = require("game.collision")
 ---@field damage number
 ---@field dx number
 ---@field dy number
+---@field ground_only boolean?
 ---@field knockback number?
 ---@field mask integer?
 ---@field owner any?
@@ -132,7 +133,7 @@ function Game:new()
                     -- self.cam_follow = self.player
                 end
             end
-            
+
             ::continue::
         end
     end
@@ -459,17 +460,20 @@ end
 ---Add attack sphere
 ---@param attack Game.Attack
 function Game:add_attack(attack)
-    if not attack.mask then
+    if attack.mask == nil then
         attack.mask = consts.COLGROUP_ALL
     end
-    if not attack.dx then
+    if attack.dx == nil then
         attack.dx = 0.0
     end
-    if not attack.dy then
+    if attack.dy == nil then
         attack.dy = 0.0
     end
-    if not attack.knockback then
+    if attack.knockback == nil then
         attack.knockback = 0.0
+    end
+    if attack.ground_only == nil then
+        attack.ground_only = true
     end
 
     assert(attack.x, "attack does not have required field 'x'")

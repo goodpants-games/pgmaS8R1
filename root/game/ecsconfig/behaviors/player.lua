@@ -27,6 +27,7 @@ function PlayerBehavior:_fire_shoot_scanline()
         dy = dy,
         mask = require("game.consts").COLGROUP_ENEMY,
         knockback = 2.0,
+        ground_only = false,
         owner = self.entity
     })
 end
@@ -150,6 +151,7 @@ function PlayerBehavior:tick()
                     dx = lookx,
                     dy = looky,
                     mask = require("game.consts").COLGROUP_ENEMY,
+                    ground_only = true,
                     knockback = 4.0,
                     owner = ent
                 })

@@ -45,52 +45,63 @@ function Behavior:_flying_mode_update()
     local actor = ent.actor
     local position = ent.position
     local sprite = ent.sprite
+    local attackable = ent.attackable
 
     actor.rigid_velocity = false
     actor.move_speed = self.fly_speed
-
-    local known_player_dx = self.last_known_px - position.x
-    local known_player_dy = self.last_known_py - position.y
-    local known_player_dist = math.length(known_player_dx, known_player_dy)
-    known_player_dx, known_player_dy = math.normalize_v2(known_player_dx, known_player_dy)
+    attackable.aerial = true
 
     sprite.z_offset = self.home_height + math.cos(self.game.frame / 10.0) * 5.0
 
-    if known_player_dist > self.comfort_dist then
-        actor.move_x = known_player_dx
-        actor.move_y = known_player_dy
-    else
-        actor.move_x = -known_player_dx
-        actor.move_y = -known_player_dy
-    end
+    if self:has_player_memory() then
+        local known_player_dx = self.last_known_px - position.x
+        local known_player_dy = self.last_known_py - position.y
+        local known_player_dist = math.length(known_player_dx, known_player_dy)
+        known_player_dx, known_player_dy = math.normalize_v2(known_player_dx, known_player_dy)
 
-    if math.abs(known_player_dist - self.comfort_dist) < 32.0 then
-        if not self.ready_to_dive then
-            self.dive_timer = math.random(120, 240)
+        if not self.is_seeing_player or known_player_dist > self.comfort_dist then
+            actor.move_x = known_player_dx
+            actor.move_y = known_player_dy
+        else
+            actor.move_x = -known_player_dx
+            actor.move_y = -known_player_dy
         end
 
-        self.ready_to_dive = true
+        if known_player_dist < 1.0 and not self.is_seeing_player then
+            self.last_known_px = nil
+            self.last_known_py = nil
+        end
+
+        if math.abs(known_player_dist - self.comfort_dist) < 32.0 then
+            if not self.ready_to_dive then
+                self.dive_timer = math.random(120, 240)
+            end
+
+            self.ready_to_dive = true
+        else
+            self.ready_to_dive = false
+        end
+
+        if self.ready_to_dive then
+            self.dive_timer = self.dive_timer - 1
+            if self.dive_timer == 0 then
+                print("Dive please")
+                self.dive_vx = known_player_dx
+                self.dive_vy = known_player_dy
+                actor.rigid_velocity = true
+                self.dive_progress = 0.0
+                self.dive_windup = 30.0
+                self.dive_start_z = sprite.z_offset
+                self.mode = "diving"
+            end
+        end
     else
+        actor.move_x = 0.0
+        actor.move_y = 0.0
+    end
+
+    if not self.is_seeing_player then
         self.ready_to_dive = false
-    end
-
-    if self.ready_to_dive then
-        self.dive_timer = self.dive_timer - 1
-        if self.dive_timer == 0 then
-            print("Dive please")
-            self.dive_vx = known_player_dx
-            self.dive_vy = known_player_dy
-            actor.rigid_velocity = true
-            self.dive_progress = 0.0
-            self.dive_windup = 30.0
-            self.dive_start_z = sprite.z_offset
-            self.mode = "diving"
-        end
-    end
-
-    if known_player_dist < 1.0 and not self.is_seeing_player then
-        self.last_known_px = nil
-        self.last_known_py = nil
     end
 end
 
@@ -114,7 +125,6 @@ function Behavior:_diving_mode_update()
     actor.rigid_velocity = true
 
     if attackable.hit then
-        print("oww!!!")
         self.mode = "flying"
         self.ready_to_dive = false
         actor.rigid_velocity = false
@@ -133,6 +143,7 @@ function Behavior:_diving_mode_update()
 
         self.dive_windup = self.dive_windup - 1
     else
+        attackable.aerial = false
         actor.move_speed = self.dive_speed
         actor.move_x = self.dive_vx
         actor.move_y = self.dive_vy
@@ -196,34 +207,18 @@ function Behavior:tick()
             self.dead_vz = self.dead_vz * -0.3
         end
 
+        ent.attackable.aerial = false
         return
     end
 
     self.__super.tick(self)
 
-    if self:has_player_memory() then
-        if self.mode == "flying" then
-            self:_flying_mode_update()
-        elseif self.mode == "diving" then
-            self:_diving_mode_update()
-        else
-            error("unknown control mode " .. self.mode)
-        end
-
-        -- game:add_attack({
-        --     x = position.x,
-        --     y = position.y,
-        --     radius = 4,
-        --     damage = 10,
-        --     dx = actor.move_x,
-        --     dy = actor.move_y,
-        --     mask = game_consts.COLGROUP_PLAYER,
-        --     -- mask = require("game.consts").COLGROUP_PLAYER,
-        --     owner = ent
-        -- })
+    if self.mode == "flying" then
+        self:_flying_mode_update()
+    elseif self.mode == "diving" then
+        self:_diving_mode_update()
     else
-        actor.move_x = 0.0
-        actor.move_y = 0.0
+        error("unknown control mode " .. self.mode)
     end
 end
 
