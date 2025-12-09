@@ -18,6 +18,8 @@ end
 ---@field map_height integer Map height in tiles
 ---@field tile_width integer Tile width in pixels
 ---@field tile_height integer Tile height in pixels
+---@field player_spawn_x number?
+---@field player_spawn_y number?
 ---@field private _colmap integer[]
 ---@field private _map game.Map
 ---@field private _map_model r3d.Model
@@ -87,6 +89,11 @@ function Room:new(game, map_path, closed_room_sides)
                     end
                 end
             end
+        
+        elseif obj.type == "special" and obj.name == "player_spawn" then
+            assert(obj.shape == "point", "player_spawn must be a point!")
+            self.player_spawn_x = obj.x
+            self.player_spawn_y = obj.y
         end
     end
 
@@ -157,8 +164,8 @@ function Room:new(game, map_path, closed_room_sides)
                 local y = obj.y + obj.height / 2.0
                 new_ent = game:new_entity()
                 new_ent:give("position", x, y)
-                        :give("collision", obj.width, obj.height)
-                        :give("room_transport", transport_dir)
+                       :give("collision", obj.width, obj.height)
+                       :give("room_transport", transport_dir)
                 
                 new_ent.collision.group = 0
             end
@@ -192,6 +199,7 @@ function Room:release()
     for _, ent in ipairs(self._entities) do
         ent:destroy()
     end
+    table.clear(self._entities)
     
     self.game.r3d_world:remove_object(self._map_model)
     self._map_model:release()

@@ -74,10 +74,10 @@ function Game:new()
     self.layout_y = 0
 
     self.layout = {
-        {"01", "02", "01", "02"},
-        {"02", "01", "02", "01"},
-        {"01", "02", "01", "02"},
-        {"02", "01", "02", "01"},
+        {"start", "units/02", "units/01", "units/02"},
+        {"units/02", "units/03", "units/02", "units/01"},
+        {"units/01", "units/02", "units/01", "units/02"},
+        {"units/02", "units/01", "units/02", "units/01"},
     }
 
     self.layout_visited = {}
@@ -90,7 +90,15 @@ function Game:new()
 
     -- self.room = Room(self, "res/maps/units/01.lua")
     self:_load_room_at_current()
-    self.player = self:new_entity():assemble(ecsconfig.asm.entity.player, 64, 64)
+
+    if not self.room.player_spawn_x then
+        error("uh how do i spawn the player. HELP")
+    end
+
+    self.player = self:new_entity()
+        :assemble(ecsconfig.asm.entity.player,
+                  self.room.player_spawn_x,
+                  self.room.player_spawn_y)
 
     ---@private
     self._transport_trans_state = 0
@@ -526,20 +534,42 @@ function Game:room_transport_info()
 end
 
 ---@private
+function Game:_can_room_connect(from_x, from_y, dx, dy)
+    local x = from_x + dx
+    local y = from_y + dy
+    if x < 0 or y < 0 or x >= self.layout_width or y >= self.layout_height then
+        return false
+    end
+
+    if x == 0 and y == 0 then
+        return dx == -1 and dy == 0
+    end
+
+    return true
+end
+
+---@private
 function Game:_load_room_at_current()
-    if self.layout_x < 0 or self.layout_y < 0 or
-       self.layout_x >= self.layout_width or self.layout_y >= self.layout_height
+    local x = self.layout_x
+    local y = self.layout_y
+
+    if x < 0 or y < 0 or
+       x >= self.layout_width or y >= self.layout_height
     then
         error("outside of layout")
     end
 
-    local room = self.layout[self.layout_y+1][self.layout_x+1]
+    if self.room then
+        self.room:release()
+    end
 
-    self.room = Room(self, "res/maps/units/"..room..".lua", {
-        left  = self.layout_x == 0,
-        up    = self.layout_y == 0,
-        right = self.layout_x == self.layout_width - 1,
-        down  = self.layout_y == self.layout_height - 1
+    local room = self.layout[y+1][x+1]
+
+    self.room = Room(self, "res/maps/"..room..".lua", {
+        left  = not self:_can_room_connect(x,y, -1, 0),
+        up    = not self:_can_room_connect(x,y, 0, -1),
+        right = not self:_can_room_connect(x,y, 1, 0),
+        down  = not self:_can_room_connect(x,y, 0, 1)
     })
 end
 
@@ -565,7 +595,8 @@ function Game:_complete_room_transport(dx, dy)
     collectgarbage("collect")
 
     -- place player at opposite room transport object
-    for _, obj in ipairs(self.ecs_world:getEntities()) do
+    self.ecs_world:__flush() -- Bruh.
+    for _, obj in ipairs(self.ecs_world:getEntities()) do        
         if not obj.room_transport then
             goto continue
         end
@@ -590,7 +621,7 @@ function Game:_complete_room_transport(dx, dy)
         if obj_dx == -dx and obj_dy == -dy then
             self.player.position.x = obj_pos.x + dx * obj_col.w / 2.0
             self.player.position.y = obj_pos.y + dy * obj_col.h / 2.0
-            break
+            -- break
         end
 
         ::continue::
