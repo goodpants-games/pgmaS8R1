@@ -13,7 +13,10 @@ for _, v in pairs({"left", "right", "up", "down"}) do
     VALID_TRANSPORT_DIRS[v] = true
 end
 
----@class Room
+---@class game.RoomMemory
+---@field entities {type:string, x:number, y:number, health:number?}[]
+
+---@class game.Room
 ---@field map_width integer Map width in tiles
 ---@field map_height integer Map height in tiles
 ---@field tile_width integer Tile width in pixels
@@ -23,15 +26,15 @@ end
 ---@field private _colmap integer[]
 ---@field private _map game.Map
 ---@field private _map_model r3d.Model
----@overload fun(game:Game, map_path:string, closed_room_sides:{[string]:boolean}):Room
+---@overload fun(game:Game, map_path:string, data:{closed_room_sides:{[string]:boolean}, memory:game.RoomMemory?}):game.Room
 local Room = batteries.class({ name = "Room" })
 
 ---@param game Game
 ---@param map_path string
----@param closed_room_sides {[string]:boolean}
-function Room:new(game, map_path, closed_room_sides)
+---@param data {closed_room_sides:{[string]:boolean}, memory:game.RoomMemory?}
+function Room:new(game, map_path, data)
     self.game = game
-    closed_room_sides = closed_room_sides or {}
+    data = data or { closed_room_sides = {} }
 
     self.cam = {
         x = 0.0,
@@ -61,13 +64,16 @@ function Room:new(game, map_path, closed_room_sides)
 
     ---@private
     self._entities = {}
+    ---@private
+    ---@type {[any]:string}
+    self._entity_types = {}
 
     -- apply dynamic geo
     for _, obj in ipairs(obj_layer.objects) do
         if obj.type == "special" and obj.name == "dynamic_geo" then
             assert(obj.shape == "rectangle", "special dynamic_geo object must be a rect!")
 
-            if closed_room_sides[obj.properties.side] then
+            if data.closed_room_sides[obj.properties.side] then
                 local ox = math.round(obj.x / tw)
                 local oy = math.round(obj.y / th)
                 local ow = math.round(obj.width / tw)
@@ -144,7 +150,7 @@ function Room:new(game, map_path, closed_room_sides)
 
             new_ent = game:new_entity()
                             :assemble(ecsconfig.asm.entity[obj.name], x, y)
-            
+            self._entity_types[new_ent] = obj.name
             -- if obj.name == "player" then
             --     assert(not game.player, "there can not be more than one player in a level")
             --     game.player = e
@@ -176,6 +182,43 @@ function Room:new(game, map_path, closed_room_sides)
         end
 
         ::continue::
+    end
+
+    if data.memory then
+        -- load entities from memory
+        for _, ent_data in ipairs(data.memory.entities) do
+            local new_ent =
+                game:new_entity()
+                    :assemble(ecsconfig.asm.entity[ent_data.type], ent_data.x, ent_data.y)
+            
+            if ent_data.health then
+                new_ent.health.value = ent_data.health
+            end
+        end
+    else
+        -- randomly spawn enemies
+        local entity_type_list = {"basic_enemy", "flying_enemy", "weeping_angel"}
+
+        local enemy_count = love.math.random(3, 7)
+        for _=1, enemy_count do
+            while true do
+                local tx = love.math.random(0, self.map_width - 1)
+                local ty = love.math.random(0, self.map_height - 1)
+                if self:get_col(tx, ty) == 0 then
+                    local x = tx * self.tile_width + 8
+                    local y = ty * self.tile_height + 8
+                    local type = table.pick_random(entity_type_list)
+
+                    local new_ent =
+                        game:new_entity()
+                            :assemble(ecsconfig.asm.entity[type], x, y)
+                    
+                    table.insert(self._entities, new_ent)
+                    self._entity_types[new_ent] = type
+                    break
+                end
+            end
+        end
     end
 
     -- assert(self.player, "level must have a player")
@@ -228,6 +271,11 @@ function Room:get_col(x, y)
     end
     
     return self._colmap[y * self.map_width + x + 1]
+end
+
+---Get a list of entities created by the room load process.
+function Room:get_entities()
+    return self._entities
 end
 
 ---@private
@@ -366,6 +414,29 @@ function Room:raycast(x, y, dx, dy, col_flags, entity_ignore)
     else
         return
     end
+end
+
+---@return game.RoomMemory
+function Room:create_memory()
+    local entities = {}
+
+    for ent, ent_type in pairs(self._entity_types) do
+        local position = ent.position
+        local health = ent.health
+
+        assert(position, "entity does not have position")
+
+        table.insert(entities, {
+            type = ent_type,
+            x = position.x,
+            y = position.y,
+            health = health and health.value
+        })
+    end
+
+    return {
+        entities = entities
+    }
 end
 
 return Room

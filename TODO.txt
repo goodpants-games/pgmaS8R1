@@ -2,6 +2,8 @@
   upwards, so it doesn't clip through the ground. although this does require
   a bit of a rework with the rendering system
 - Spider web decor
+- BUG: when reloading a room (with memory), enemies sometimes get placed in
+  walls or something idk. Please fix this!!!!!!!!!!!!1
 
 - two weapons:
     melee attack: long windup you need to time, but takes no battery

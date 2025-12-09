@@ -80,11 +80,17 @@ function Game:new()
         {"units/02", "units/01", "units/02", "units/01"},
     }
 
+    ---@type boolean[][]
     self.layout_visited = {}
+    ---@type (game.RoomMemory|boolean|nil)[][]
+    self.room_memory = {}
+
     for y=1, self.layout_height do
         self.layout_visited[y] = {}
+        self.room_memory[y] = {}
         for x=1, self.layout_width do
             self.layout_visited[y][x] = false
+            self.room_memory[y][x] = false
         end
     end
 
@@ -564,12 +570,20 @@ function Game:_load_room_at_current()
     end
 
     local room = self.layout[y+1][x+1]
+    local room_memory = self.room_memory[y+1][x+1]
+    if not room_memory then
+        room_memory = nil
+    end
+    ---@cast room_memory game.RoomMemory?
 
     self.room = Room(self, "res/maps/"..room..".lua", {
-        left  = not self:_can_room_connect(x,y, -1, 0),
-        up    = not self:_can_room_connect(x,y, 0, -1),
-        right = not self:_can_room_connect(x,y, 1, 0),
-        down  = not self:_can_room_connect(x,y, 0, 1)
+        memory = room_memory,
+        closed_room_sides = {
+            left  = not self:_can_room_connect(x,y, -1, 0),
+            up    = not self:_can_room_connect(x,y, 0, -1),
+            right = not self:_can_room_connect(x,y, 1, 0),
+            down  = not self:_can_room_connect(x,y, 0, 1)
+        }
     })
 end
 
@@ -582,11 +596,11 @@ function Game:_complete_room_transport(dx, dy)
     self._transport_trans_state = 2
     self._transport_debounce = true
 
-    self.room:release()
-    -- self.player:destroy()
-
+    self.room_memory[self.layout_y+1][self.layout_x+1] = self.room:create_memory()
     self.layout_visited[self.layout_y+1][self.layout_x+1] = true
 
+    self.room:release()
+    
     self.layout_x = self.layout_x + dx
     self.layout_y = self.layout_y + dy
     
