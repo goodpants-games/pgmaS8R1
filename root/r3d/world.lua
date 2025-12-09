@@ -2,11 +2,13 @@ local mat4 = require("r3d.mat4")
 local mat3 = require("r3d.mat3")
 local Object = require("r3d.object")
 local Drawable = require("r3d.drawable")
-local Light = require("r3d.light").light
-local SpotLight = require("r3d.light").spotlight
+local Light = require("r3d.light")
+local SpotLight = Light.spotlight
+local PointLight = Light.point
 
 -- these are inserted as defines into the shader files
-local SPOTLIGHT_COUNT = 4
+local SPOTLIGHT_COUNT = 2
+local POINT_LIGHT_COUNT = 2
 
 local SHADER_SOURCE_SHADED = [[
 #include <res/shaders/r3d/lighting.glsl>
@@ -42,7 +44,8 @@ local function shader_preproc(path)
     end
 
     local lines = {
-        "#define SPOTLIGHT_COUNT " .. SPOTLIGHT_COUNT,
+        "#define SPOT_LIGHT_COUNT " .. SPOTLIGHT_COUNT,
+        "#define POINT_LIGHT_COUNT " .. POINT_LIGHT_COUNT
     }
 
     if love.filesystem.getInfo(path) then
@@ -189,11 +192,25 @@ function World:new()
         control = {}
     }
 
+    ---@private
+    ---@type {pos:number[][], color_pow:number[][], control:number[][]}
+    self._u_pointlights = {
+        pos = {},
+        color_pow = {},
+        control = {}
+    }
+
     for i=1, SPOTLIGHT_COUNT do
         self._u_spotlights.pos[i] = { 0.0, 0.0, 0.0 }
         self._u_spotlights.dir_angle[i] = { 0.0, 0.0, 0.0, 0.0 }
         self._u_spotlights.color_pow[i] = { 0.0, 0.0, 0.0, 0.0 }
         self._u_spotlights.control[i] = { 0.0, 0.0, 0.0, 0.0 }
+    end
+
+    for i=1, POINT_LIGHT_COUNT do
+        self._u_pointlights.pos[i] = { 0.0, 0.0, 0.0 }
+        self._u_pointlights.color_pow[i] = { 0.0, 0.0, 0.0, 0.0 }
+        self._u_pointlights.control[i] = { 0.0, 0.0, 0.0, 0.0 }
     end
 end
 
@@ -324,16 +341,13 @@ function World:draw()
                                 :transpose(self:_push_mat())
                                 :to_mat3(self._tmp_mat3)
     
-    -- update spotlights
+    -- update lights
     do
         local spotlight_i = 1
-        for _, obj in ipairs(self.objects) do
-            -- ran out of slots
-            if spotlight_i > SPOTLIGHT_COUNT then
-                break
-            end
+        local pointlight_i = 1
 
-            if obj:is(SpotLight) then
+        for _, obj in ipairs(self.objects) do
+            if spotlight_i <= SPOTLIGHT_COUNT and obj:is(SpotLight) then
                 ---@cast obj r3d.SpotLight
                 if not obj.enabled then
                     goto continue
@@ -358,6 +372,26 @@ function World:draw()
                 u_control[1], u_control[2], u_control[3] = obj.constant, obj.linear, obj.quadratic
 
                 spotlight_i = spotlight_i + 1
+
+            elseif pointlight_i <= POINT_LIGHT_COUNT and obj:is(PointLight) then
+                ---@cast obj r3d.PointLight
+                if not obj.enabled then
+                    goto continue
+                end
+
+                local px, py, pz = obj:get_position()
+
+                local u_pos       = self._u_pointlights.pos[pointlight_i]
+                local u_color_pow = self._u_pointlights.color_pow[pointlight_i]
+                local u_control   = self._u_pointlights.control[pointlight_i]
+                
+                u_pos[1], u_pos[2], u_pos[3] = view_mat:mul_vec(px, py, pz)
+                u_color_pow[1], u_color_pow[2], u_color_pow[3] = obj.r, obj.g, obj.b
+                u_color_pow[4] = obj.power
+
+                u_control[1], u_control[2], u_control[3] = obj.constant, obj.linear, obj.quadratic
+
+                pointlight_i = pointlight_i + 1
             end
 
             ::continue::
@@ -375,6 +409,16 @@ function World:draw()
             u_color_pow[1], u_color_pow[2], u_color_pow[3], u_color_pow[4] = 0, 0, 0, 0
             u_control[1], u_control[2], u_control[3], u_control[4] = 1, 0, 0, 0
         end
+
+        for i=pointlight_i, POINT_LIGHT_COUNT do
+            local u_pos       = self._u_pointlights.pos[i]
+            local u_color_pow = self._u_pointlights.color_pow[i]
+            local u_control   = self._u_pointlights.control[i]
+
+            u_pos[1], u_pos[2], u_pos[3] = 0, 0, 0
+            u_color_pow[1], u_color_pow[2], u_color_pow[3], u_color_pow[4] = 0, 0, 0, 0
+            u_control[1], u_control[2], u_control[3], u_control[4] = 1, 0, 0, 0
+        end
     end
 
     -- send light information to shaders
@@ -387,6 +431,10 @@ function World:draw()
         shader_try_send(shader, "u_light_spot_dir_angle", unpack(self._u_spotlights.dir_angle))
         shader_try_send(shader, "u_light_spot_color_pow", unpack(self._u_spotlights.color_pow))
         shader_try_send(shader, "u_light_spot_control", unpack(self._u_spotlights.control))
+
+        shader_try_send(shader, "u_light_point_pos", unpack(self._u_pointlights.pos))
+        shader_try_send(shader, "u_light_point_color_pow", unpack(self._u_pointlights.color_pow))
+        shader_try_send(shader, "u_light_point_control", unpack(self._u_pointlights.control))
     end
     
     self:_restore_mat_stack(sp)

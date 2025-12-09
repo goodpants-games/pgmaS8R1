@@ -87,4 +87,17 @@ function asm.entity.player(e, x, y)
     e.light.quadratic = 0.0002
 end
 
+function asm.entity.heart(e, x, y)
+    e:give("position", x, y)
+     :give("light", "point")
+
+    e.light.r = 1
+    e.light.g = 0
+    e.light.b = 0
+
+    e.light.power = 2.0
+    e.light.linear = 0.022
+    e.light.quadratic = 0.0019
+end
+
 return asm

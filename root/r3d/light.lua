@@ -17,11 +17,16 @@ function Light:new()
     self.quadratic = 0.0019
 end
 
+---@class r3d.PointLight: r3d.Light
+---@overload fun():r3d.PointLight
+local PointLight = batteries.class({ name = "r3d.PointLight", extends = Light })
+
 ---@class r3d.SpotLight: r3d.Light
 ---@overload fun():r3d.SpotLight
-local SpotLight = batteries.class({ name = "r3d.SpotLight", extends = object })
+local SpotLight = batteries.class({ name = "r3d.SpotLight", extends = Light })
 
 function SpotLight:new()
+    self:super()
     self.angle = math.rad(60)
 end
 
@@ -39,5 +44,6 @@ end
 
 return {
     light = Light,
-    spotlight = SpotLight
+    spotlight = SpotLight,
+    point = PointLight
 }

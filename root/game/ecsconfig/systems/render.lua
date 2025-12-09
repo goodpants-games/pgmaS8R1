@@ -72,6 +72,8 @@ local function sync_light(world, light, info, pos)
     if light then
         if light:is(Light.spotlight) then
             old_type = "spot"
+        elseif light:is(Light.point) then
+            old_type = "point"
         end
     end
 
@@ -82,8 +84,10 @@ local function sync_light(world, light, info, pos)
 
         if info.type == "spot" then
             light = Light.spotlight()
+        elseif info.type == "point" then
+            light = Light.point()
         else
-            error(("unknown light type '%s', expected 'spot'"):format(tostring(info.type)))
+            error(("unknown light type '%s', expected 'spot' or 'point'"):format(tostring(info.type)))
         end
 
         world:add_object(light)

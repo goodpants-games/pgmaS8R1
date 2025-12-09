@@ -485,12 +485,14 @@ function Game:get_entities_touching(ent, out_list)
             local other_pos = e.position
             local other_col = e.collision
 
-            local col = Collision.rect_rect_intersection(
-                my_pos.x, my_pos.y, my_col.w, my_col.h,
-                other_pos.x, other_pos.y, other_col.w, other_col.h)
-            
-            if col then
-                table.insert(out_list, e)
+            if other_pos and other_col then
+                local col = Collision.rect_rect_intersection(
+                    my_pos.x, my_pos.y, my_col.w, my_col.h,
+                    other_pos.x, other_pos.y, other_col.w, other_col.h)
+                
+                if col then
+                    table.insert(out_list, e)
+                end
             end
         end
     end
@@ -578,6 +580,7 @@ function Game:_load_room_at_current()
 
     self.room = Room(self, "res/maps/"..room..".lua", {
         memory = room_memory,
+        spawn_enemies = room ~= "start",
         closed_room_sides = {
             left  = not self:_can_room_connect(x,y, -1, 0),
             up    = not self:_can_room_connect(x,y, 0, -1),

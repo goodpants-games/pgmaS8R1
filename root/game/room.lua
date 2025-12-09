@@ -16,6 +16,11 @@ end
 ---@class game.RoomMemory
 ---@field entities {type:string, x:number, y:number, health:number?}[]
 
+---@class game.RoomCreationData
+---@field closed_room_sides {[string]:boolean}
+---@field memory game.RoomMemory?
+---@field spawn_enemies boolean
+
 ---@class game.Room
 ---@field map_width integer Map width in tiles
 ---@field map_height integer Map height in tiles
@@ -26,12 +31,12 @@ end
 ---@field private _colmap integer[]
 ---@field private _map game.Map
 ---@field private _map_model r3d.Model
----@overload fun(game:Game, map_path:string, data:{closed_room_sides:{[string]:boolean}, memory:game.RoomMemory?}):game.Room
+---@overload fun(game:Game, map_path:string, data:game.RoomCreationData):game.Room
 local Room = batteries.class({ name = "Room" })
 
 ---@param game Game
 ---@param map_path string
----@param data {closed_room_sides:{[string]:boolean}, memory:game.RoomMemory?}
+---@param data game.RoomCreationData
 function Room:new(game, map_path, data)
     self.game = game
     data = data or { closed_room_sides = {} }
@@ -230,7 +235,7 @@ function Room:new(game, map_path, data)
                 new_ent.health.value = ent_data.health
             end
         end
-    else
+    elseif data.spawn_enemies then
         -- randomly spawn enemies
         local entity_type_list = {"basic_enemy", "flying_enemy", "weeping_angel"}
         local enemy_count = love.math.random(3, 7)
