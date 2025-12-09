@@ -119,6 +119,7 @@ function PlayerBehavior:tick()
             player.state = "move"
             movement_lock = false
             was_attack_triggered = false
+            battery_drain_scale = 0.0
         end
     end
 
