@@ -88,7 +88,8 @@ function Game:new()
         end
     end
 
-    self.room = Room(self, "res/maps/units/01.lua")
+    -- self.room = Room(self, "res/maps/units/01.lua")
+    self:_load_room_at_current()
     self.player = self:new_entity():assemble(ecsconfig.asm.entity.player, 64, 64)
 
     ---@private
@@ -525,6 +526,24 @@ function Game:room_transport_info()
 end
 
 ---@private
+function Game:_load_room_at_current()
+    if self.layout_x < 0 or self.layout_y < 0 or
+       self.layout_x >= self.layout_width or self.layout_y >= self.layout_height
+    then
+        error("outside of layout")
+    end
+
+    local room = self.layout[self.layout_y+1][self.layout_x+1]
+
+    self.room = Room(self, "res/maps/units/"..room..".lua", {
+        left  = self.layout_x == 0,
+        up    = self.layout_y == 0,
+        right = self.layout_x == self.layout_width - 1,
+        down  = self.layout_y == self.layout_height - 1
+    })
+end
+
+---@private
 ---@param dx number
 ---@param dy number
 function Game:_complete_room_transport(dx, dy)
@@ -540,17 +559,8 @@ function Game:_complete_room_transport(dx, dy)
 
     self.layout_x = self.layout_x + dx
     self.layout_y = self.layout_y + dy
-
-    if self.layout_x < 0 or self.layout_y < 0 or
-       self.layout_x >= self.layout_width or self.layout_y >= self.layout_height
-    then
-        error("outside of layout")
-    end
-
-    local room = self.layout[self.layout_y+1][self.layout_x+1]
-
-    self.room = Room(self, "res/maps/units/"..room..".lua")
-
+    
+    self:_load_room_at_current()
     collectgarbage("collect")
     collectgarbage("collect")
 

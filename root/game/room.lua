@@ -21,13 +21,15 @@ end
 ---@field private _colmap integer[]
 ---@field private _map game.Map
 ---@field private _map_model r3d.Model
----@overload fun(game:Game, map_path:string):Room
+---@overload fun(game:Game, map_path:string, closed_room_sides:{[string]:boolean}):Room
 local Room = batteries.class({ name = "Room" })
 
 ---@param game Game
 ---@param map_path string
-function Room:new(game, map_path)
+---@param closed_room_sides {[string]:boolean}
+function Room:new(game, map_path, closed_room_sides)
     self.game = game
+    closed_room_sides = closed_room_sides or {}
 
     self.cam = {
         x = 0.0,
@@ -50,8 +52,43 @@ function Room:new(game, map_path)
     self.map_width, self.map_height = w, h
     self.tile_width, self.tile_height = tw, th
 
+    local obj_layer = self._map.tiled_map:getLayerByName("Objects") --[[@as pklove.tiled.ObjectLayer]]
+    if not obj_layer then
+        error("level has no object layer (the layer must be named \"Objects\")")
+    end
+
     ---@private
     self._entities = {}
+
+    -- apply dynamic geo
+    for _, obj in ipairs(obj_layer.objects) do
+        if obj.type == "special" and obj.name == "dynamic_geo" then
+            assert(obj.shape == "rectangle", "special dynamic_geo object must be a rect!")
+
+            if closed_room_sides[obj.properties.side] then
+                local ox = math.round(obj.x / tw)
+                local oy = math.round(obj.y / th)
+                local ow = math.round(obj.width / tw)
+                local oh = math.round(obj.height / th)
+                local height = obj.properties.height
+                if not height then
+                    height = 1
+                end
+                assert(type(height) == "number" and height > 0, "dynamic_geo.height must be a positive non-zero integer!")
+
+                local tile = obj.properties.tile
+                assert(type(tile) == "number" and tile > 0, "dynamic_geo.tile must be a positive non-zero integer!")
+
+                for z=2, height+1 do
+                    for y=oy, oy+oh-1  do
+                        for x=ox, ox+ow-1 do
+                            map.data[z][y*map.w+x+1] = tile
+                        end
+                    end
+                end
+            end
+        end
+    end
 
     -- get collision data
     self._colmap = {}
@@ -85,58 +122,53 @@ function Room:new(game, map_path)
     end
 
     -- create actors
-    local obj_layer = self._map.tiled_map:getLayerByName("Objects") --[[@as pklove.tiled.ObjectLayer]]
-    if not obj_layer then
-        error("level has no object layer (the layer must be named \"Objects\")")
-    else
-        for _, obj in ipairs(obj_layer.objects) do
-            local new_ent
+    for _, obj in ipairs(obj_layer.objects) do
+        local new_ent
 
-            if obj.type == "entity" then
-                assert(obj.shape == "point")
-                local x = obj.x
-                local y = obj.y
+        if obj.type == "entity" then
+            assert(obj.shape == "point")
+            local x = obj.x
+            local y = obj.y
 
-                if not ecsconfig.asm.entity[obj.name] then
-                    print(("WARN: no entity assembler for '%s'"):format(obj.name))
-                    goto continue
-                end
+            if not ecsconfig.asm.entity[obj.name] then
+                print(("WARN: no entity assembler for '%s'"):format(obj.name))
+                goto continue
+            end
 
-                new_ent = game:new_entity()
-                              :assemble(ecsconfig.asm.entity[obj.name], x, y)
-                
-                -- if obj.name == "player" then
-                --     assert(not game.player, "there can not be more than one player in a level")
-                --     game.player = e
-                --     -- self.cam_follow = self.player
-                -- end
+            new_ent = game:new_entity()
+                            :assemble(ecsconfig.asm.entity[obj.name], x, y)
             
-            elseif obj.type == "special" then
-                if obj.name == "room_transport" then
-                    local transport_dir = obj.properties.direction
-                    if not VALID_TRANSPORT_DIRS[transport_dir] then
-                        error(("invalid room_transport direction '%s'"):format(transport_dir))
-                    end
-
-                    assert(obj.shape == "rectangle", "room_transport object is not a rect!")
-
-                    local x = obj.x + obj.width / 2.0
-                    local y = obj.y + obj.height / 2.0
-                    new_ent = game:new_entity()
-                    new_ent:give("position", x, y)
-                           :give("collision", obj.width, obj.height)
-                           :give("room_transport", transport_dir)
-                    
-                    new_ent.collision.group = 0
+            -- if obj.name == "player" then
+            --     assert(not game.player, "there can not be more than one player in a level")
+            --     game.player = e
+            --     -- self.cam_follow = self.player
+            -- end
+        
+        elseif obj.type == "special" then
+            if obj.name == "room_transport" then
+                local transport_dir = obj.properties.direction
+                if not VALID_TRANSPORT_DIRS[transport_dir] then
+                    error(("invalid room_transport direction '%s'"):format(transport_dir))
                 end
-            end
 
-            if new_ent then
-                table.insert(self._entities, new_ent)
-            end
+                assert(obj.shape == "rectangle", "room_transport object is not a rect!")
 
-            ::continue::
+                local x = obj.x + obj.width / 2.0
+                local y = obj.y + obj.height / 2.0
+                new_ent = game:new_entity()
+                new_ent:give("position", x, y)
+                        :give("collision", obj.width, obj.height)
+                        :give("room_transport", transport_dir)
+                
+                new_ent.collision.group = 0
+            end
         end
+
+        if new_ent then
+            table.insert(self._entities, new_ent)
+        end
+
+        ::continue::
     end
 
     -- assert(self.player, "level must have a player")

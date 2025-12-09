@@ -31,24 +31,28 @@
    <properties>
     <property name="height" type="int" value="1"/>
     <property name="side" value="up"/>
+    <property name="tile" type="int" value="1"/>
    </properties>
   </object>
   <object id="8" name="dynamic_geo" type="special" x="448" y="208" width="64" height="64">
    <properties>
     <property name="height" type="int" value="1"/>
     <property name="side" value="right"/>
+    <property name="tile" type="int" value="1"/>
    </properties>
   </object>
   <object id="9" name="dynamic_geo" type="special" x="224" y="448" width="64" height="64">
    <properties>
     <property name="height" type="int" value="1"/>
     <property name="side" value="down"/>
+    <property name="tile" type="int" value="1"/>
    </properties>
   </object>
   <object id="10" name="dynamic_geo" type="special" x="0" y="208" width="64" height="64">
    <properties>
     <property name="height" type="int" value="1"/>
     <property name="side" value="left"/>
+    <property name="tile" type="int" value="1"/>
    </properties>
   </object>
  </objectgroup>
