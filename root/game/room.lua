@@ -134,23 +134,41 @@ function Room:new(game, map_path, data)
         end
     end
 
+    ---@param x number
+    ---@param y number
+    ---@param type string?
+    local function create_entity(x, y, type)
+        local ent = game:new_entity()
+
+        if type then
+            if not ecsconfig.asm.entity[type] then
+                print(("WARN: no entity assembler for '%s"):format(type))
+            else
+                ent:assemble(ecsconfig.asm.entity[type], x, y)
+            end
+        else
+            ent:give("position", x, y )
+        end
+
+        if ent then
+            table.insert(self._entities, ent)
+
+            if type then
+                self._entity_types[ent] = type
+            end
+        end
+
+        return ent
+    end
+
     -- create actors
     for _, obj in ipairs(obj_layer.objects) do
-        local new_ent
-
         if obj.type == "entity" then
             assert(obj.shape == "point")
             local x = obj.x
             local y = obj.y
 
-            if not ecsconfig.asm.entity[obj.name] then
-                print(("WARN: no entity assembler for '%s'"):format(obj.name))
-                goto continue
-            end
-
-            new_ent = game:new_entity()
-                            :assemble(ecsconfig.asm.entity[obj.name], x, y)
-            self._entity_types[new_ent] = obj.name
+            create_entity(x, y, obj.name)
             -- if obj.name == "player" then
             --     assert(not game.player, "there can not be more than one player in a level")
             --     game.player = e
@@ -168,17 +186,13 @@ function Room:new(game, map_path, data)
 
                 local x = obj.x + obj.width / 2.0
                 local y = obj.y + obj.height / 2.0
-                new_ent = game:new_entity()
-                new_ent:give("position", x, y)
-                       :give("collision", obj.width, obj.height)
-                       :give("room_transport", transport_dir)
+                local new_ent = create_entity(x, y)
+                    :give("position", x, y)
+                    :give("collision", obj.width, obj.height)
+                    :give("room_transport", transport_dir)
                 
                 new_ent.collision.group = 0
             end
-        end
-
-        if new_ent then
-            table.insert(self._entities, new_ent)
         end
 
         ::continue::
@@ -187,9 +201,7 @@ function Room:new(game, map_path, data)
     if data.memory then
         -- load entities from memory
         for _, ent_data in ipairs(data.memory.entities) do
-            local new_ent =
-                game:new_entity()
-                    :assemble(ecsconfig.asm.entity[ent_data.type], ent_data.x, ent_data.y)
+            local new_ent = create_entity(ent_data.x, ent_data.y, ent_data.type)
             
             if ent_data.health then
                 new_ent.health.value = ent_data.health
@@ -198,8 +210,8 @@ function Room:new(game, map_path, data)
     else
         -- randomly spawn enemies
         local entity_type_list = {"basic_enemy", "flying_enemy", "weeping_angel"}
-
         local enemy_count = love.math.random(3, 7)
+        
         for _=1, enemy_count do
             while true do
                 local tx = love.math.random(0, self.map_width - 1)
@@ -209,12 +221,7 @@ function Room:new(game, map_path, data)
                     local y = ty * self.tile_height + 8
                     local type = table.pick_random(entity_type_list)
 
-                    local new_ent =
-                        game:new_entity()
-                            :assemble(ecsconfig.asm.entity[type], x, y)
-                    
-                    table.insert(self._entities, new_ent)
-                    self._entity_types[new_ent] = type
+                    create_entity(x, y, type)
                     break
                 end
             end

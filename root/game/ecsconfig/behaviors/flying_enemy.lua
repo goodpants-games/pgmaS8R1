@@ -38,6 +38,15 @@ function Behavior:init(ent, game)
     actor.move_speed = self.fly_speed
     actor.rigid_velocity = false
     actor.velocity_damping = 0.9
+    
+    if ent.health and ent.health.value <= 0.0 then
+        self.mode = "dead"
+        local sprite = ent.sprite
+
+        if sprite and sprite.anim ~= "dead" then
+            sprite:play("dead")
+        end
+    end
 end
 
 function Behavior:_flying_mode_update()
