@@ -7,29 +7,45 @@
   </data>
  </layer>
  <objectgroup id="4" name="Objects">
-  <object id="2" name="transport_up" type="game" x="224" y="0" width="48" height="48"/>
-  <object id="3" name="transport_right" type="game" x="464" y="224" width="48" height="48"/>
-  <object id="4" name="transport_down" type="game" x="224" y="464" width="48" height="48"/>
-  <object id="5" name="transport_left" type="game" x="0" y="224" width="48" height="48"/>
-  <object id="7" name="dynamic_geo" type="game" x="224" y="0" width="64" height="64">
+  <object id="2" name="room_transport" type="special" x="224" y="0" width="48" height="48">
+   <properties>
+    <property name="direction" value="up"/>
+   </properties>
+  </object>
+  <object id="3" name="room_transport" type="special" x="464" y="224" width="48" height="48">
+   <properties>
+    <property name="direction" value="right"/>
+   </properties>
+  </object>
+  <object id="4" name="room_transport" type="special" x="224" y="464" width="48" height="48">
+   <properties>
+    <property name="direction" value="down"/>
+   </properties>
+  </object>
+  <object id="5" name="room_transport" type="special" x="0" y="224" width="48" height="48">
+   <properties>
+    <property name="direction" value="left"/>
+   </properties>
+  </object>
+  <object id="7" name="dynamic_geo" type="special" x="224" y="0" width="64" height="64">
    <properties>
     <property name="height" type="int" value="1"/>
     <property name="side" value="up"/>
    </properties>
   </object>
-  <object id="8" name="dynamic_geo" type="game" x="448" y="208" width="64" height="64">
+  <object id="8" name="dynamic_geo" type="special" x="448" y="208" width="64" height="64">
    <properties>
     <property name="height" type="int" value="1"/>
     <property name="side" value="right"/>
    </properties>
   </object>
-  <object id="9" name="dynamic_geo" type="game" x="224" y="448" width="64" height="64">
+  <object id="9" name="dynamic_geo" type="special" x="224" y="448" width="64" height="64">
    <properties>
     <property name="height" type="int" value="1"/>
     <property name="side" value="down"/>
    </properties>
   </object>
-  <object id="10" name="dynamic_geo" type="game" x="0" y="208" width="64" height="64">
+  <object id="10" name="dynamic_geo" type="special" x="0" y="208" width="64" height="64">
    <properties>
     <property name="height" type="int" value="1"/>
     <property name="side" value="left"/>

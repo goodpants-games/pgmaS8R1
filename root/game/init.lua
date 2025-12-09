@@ -2,6 +2,7 @@ local Concord = require("concord")
 local r3d = require("r3d")
 local Sprite = require("sprite")
 local Room = require("game.room")
+local Collision = require("game.collision")
 
 local ecsconfig = require("game.ecsconfig")
 local consts = require("game.consts")
@@ -41,6 +42,7 @@ function Game:new()
         ecsconfig.systems.attack,
         ecsconfig.systems.physics,
         ecsconfig.systems.gun_sight,
+        ecsconfig.systems.special,
         ecsconfig.systems.render)
 
     ---@type table?
@@ -66,9 +68,41 @@ function Game:new()
     self._ui_icons_sprite = Sprite.new("res/sprites/ui_icons.json")
     self._font = Lg.newFont("res/fonts/DepartureMono-Regular.otf", 11, "mono", 1.0)
 
-    self.room = Room(self, "res/maps/units/01.lua")
+    self.layout_width = 4
+    self.layout_height = 4
+    self.layout_x = 0
+    self.layout_y = 0
 
-    self.player = self:new_entity():assemble(ecsconfig.asm.entity.player, 48, 48)
+    self.layout = {
+        {"01", "02", "01", "02"},
+        {"02", "01", "02", "01"},
+        {"01", "02", "01", "02"},
+        {"02", "01", "02", "01"},
+    }
+
+    self.layout_visited = {}
+    for y=1, self.layout_height do
+        self.layout_visited[y] = {}
+        for x=1, self.layout_width do
+            self.layout_visited[y][x] = false
+        end
+    end
+
+    self.room = Room(self, "res/maps/units/01.lua")
+    self.player = self:new_entity():assemble(ecsconfig.asm.entity.player, 64, 64)
+
+    ---@private
+    self._transport_trans_state = 0
+    ---@private
+    self._transport_dx = 0
+    ---@private
+    self._transport_dy = 0
+    ---@private
+    self._transport_timer = 0.0
+    ---@private
+    self._transport_debounce = false
+    ---@private
+    self._transport_triggered = false
 
     -- ---@type pklove.tiled.TileLayer?
     -- local col_layer
@@ -177,6 +211,24 @@ function Game:tick()
     cam.x = focus_x + cam.offset_x
     cam.y = focus_y + cam.offset_y
 
+    if self._transport_trans_state == 1 then
+        self._transport_timer = self._transport_timer + (1.0 / 40.0)
+        if self._transport_timer >= 1.0 then
+            self:_complete_room_transport(self._transport_dx, self._transport_dy)
+        end
+    elseif self._transport_trans_state == 2 then
+        self._transport_timer = self._transport_timer - (1.0 / 40.0)
+        if self._transport_timer <= 0.0 then
+            self._transport_dx = 0
+            self._transport_dy = 0
+            self._transport_trans_state = 0
+        end
+    elseif self._transport_debounce and not self._transport_triggered then
+        self._transport_debounce = false
+    end
+
+    self._transport_triggered = false
+
     -- if self.cam_follow then
     --     local pos = self.cam_follow.position
     --     if pos then
@@ -273,6 +325,11 @@ function Game:draw()
 
     self:_draw_ui()
 
+    if self._transport_trans_state > 0 then
+        Lg.setColor(0, 0, 0, self._transport_timer)
+        Lg.rectangle("fill", 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT)
+    end
+
     -- local tl = self._tiled_map.layers[1] --[[@as pklove.tiled.TileLayer]]
     -- tl:draw()
     -- self.ecs_world:emit("draw")
@@ -334,6 +391,42 @@ function Game:_draw_ui()
     end
     self._ui_icons_sprite:drawCel(3, sprite_ox + 54, text_origin_y + sprite_oy)
 
+    -- map
+    local MAP_CELL_SIZE = 5
+    Lg.push()
+    Lg.translate(DISPLAY_WIDTH - self.layout_width * MAP_CELL_SIZE - 4,
+                 DISPLAY_HEIGHT - self.layout_height * MAP_CELL_SIZE - 4)
+
+    for ly=0, self.layout_height - 1 do
+        for lx=0, self.layout_width - 1 do
+            local room_visited = self.layout_visited[ly+1][lx+1]
+
+            if self.layout_x == lx and self.layout_y == ly then
+                if not room_visited then
+                    if self.frame % 30 < 15 then
+                        Lg.setColor(1, 1, 1)
+                    else
+                        Lg.setColor(batteries.color.unpack_rgb(0x4266f5))
+                    end
+                else
+                    Lg.setColor(1, 1, 1)
+                end
+            else
+                if room_visited then
+                    Lg.setColor(0.3, 0.3, 0.3)
+                else
+                    Lg.setColor(0.1, 0.1, 0.1)
+                end
+            end
+
+            Lg.rectangle("fill",
+                         lx * MAP_CELL_SIZE, ly * MAP_CELL_SIZE,
+                         MAP_CELL_SIZE - 1, MAP_CELL_SIZE - 1)
+        end
+    end
+
+    Lg.pop()
+
     Lg.setFont(old_font)
 end
 
@@ -363,6 +456,135 @@ function Game:add_attack(attack)
 
     local attack_system = self.ecs_world:getSystem(ecsconfig.systems.attack)
     table.insert(attack_system.attacks, attack)
+end
+
+---@param ent any
+---@param out_list any[]?
+function Game:get_entities_touching(ent, out_list)
+    out_list = out_list or {}
+
+    local my_pos = ent.position
+    local my_col = ent.collision
+    if my_pos and my_col then
+        for _, e in ipairs(self.ecs_world:getEntities()) do
+            local other_pos = e.position
+            local other_col = e.collision
+
+            local col = Collision.rect_rect_intersection(
+                my_pos.x, my_pos.y, my_col.w, my_col.h,
+                other_pos.x, other_pos.y, other_col.w, other_col.h)
+            
+            if col then
+                table.insert(out_list, e)
+            end
+        end
+    end
+
+    return out_list
+end
+
+---comment
+---@param transport_dir "right"|"up"|"left"|"down"
+function Game:initiate_room_transport(transport_dir)
+    self._transport_triggered = true
+
+    if self._transport_trans_state ~= 0 or self._transport_debounce then
+        return
+    end
+
+    assert(self._transport_trans_state == 0)
+    print("initiate room transport!", transport_dir)
+
+    if transport_dir == "right" then
+        self._transport_dx = 1.0
+        self._transport_dy = 0.0
+    elseif transport_dir == "left" then
+        self._transport_dx = -1.0
+        self._transport_dy = 0.0
+    elseif transport_dir == "up" then
+        self._transport_dx = 0.0
+        self._transport_dy = -1.0
+    elseif transport_dir == "down" then
+        self._transport_dx = 0.0
+        self._transport_dy = 1.0
+    else
+        error("invalid room transport direction")
+    end
+
+    self._transport_trans_state = 1
+    self._transport_timer = 0.0
+end
+
+---@return boolean is_active, number? dx, number? dy
+function Game:room_transport_info()
+    if self._transport_trans_state > 0 then
+        return true, self._transport_dx, self._transport_dy
+    else
+        return false
+    end
+end
+
+---@private
+---@param dx number
+---@param dy number
+function Game:_complete_room_transport(dx, dy)
+    print("its done. Stop.")
+    self._transport_timer = 1.0
+    self._transport_trans_state = 2
+    self._transport_debounce = true
+
+    self.room:release()
+    -- self.player:destroy()
+
+    self.layout_visited[self.layout_y+1][self.layout_x+1] = true
+
+    self.layout_x = self.layout_x + dx
+    self.layout_y = self.layout_y + dy
+
+    if self.layout_x < 0 or self.layout_y < 0 or
+       self.layout_x >= self.layout_width or self.layout_y >= self.layout_height
+    then
+        error("outside of layout")
+    end
+
+    local room = self.layout[self.layout_y+1][self.layout_x+1]
+
+    self.room = Room(self, "res/maps/units/"..room..".lua")
+
+    collectgarbage("collect")
+    collectgarbage("collect")
+
+    -- place player at opposite room transport object
+    for _, obj in ipairs(self.ecs_world:getEntities()) do
+        if not obj.room_transport then
+            goto continue
+        end
+
+        local transport = obj.room_transport.dir
+        local obj_pos = assert(obj.position, "room_transport does not have position")
+        local obj_col = assert(obj.collision, "room transport does not have collision")
+
+        local obj_dx, obj_dy
+        if transport == "right" then
+            obj_dx, obj_dy = 1, 0
+        elseif transport == "left" then
+            obj_dx, obj_dy = -1, 0
+        elseif transport == "up" then
+            obj_dx, obj_dy = 0, -1
+        elseif transport == "down" then
+            obj_dx, obj_dy = 0, 1
+        else
+            error("invalid room_transport direction")
+        end
+
+        if obj_dx == -dx and obj_dy == -dy then
+            self.player.position.x = obj_pos.x + dx * obj_col.w / 2.0
+            self.player.position.y = obj_pos.y + dy * obj_col.h / 2.0
+            break
+        end
+
+        ::continue::
+    end
 end
 
 return Game

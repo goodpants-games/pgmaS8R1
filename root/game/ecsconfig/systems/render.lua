@@ -136,7 +136,7 @@ function render_system:sync_lights()
     end
     
     -- prune entities no longer in world
-    for ent, _ in ipairs(ents_to_remove) do
+    for ent, _ in pairs(ents_to_remove) do
         print("destroy a light")
         world:remove_object(self.lights[ent])
         self.lights[ent] = nil

@@ -145,3 +145,7 @@ Concord.component("attackable", function(cmp)
     cmp.aerial = false
     -- cmp.on_hit = hit_callback
 end)
+
+Concord.component("room_transport", function(cmp, dir)
+    cmp.dir = dir
+end)

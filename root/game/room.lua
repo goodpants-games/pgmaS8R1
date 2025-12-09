@@ -8,6 +8,11 @@ local map_loader = require("game.map_loader")
 local consts = require("game.consts")
 local Collision = require("game.collision")
 
+local VALID_TRANSPORT_DIRS = {}
+for _, v in pairs({"left", "right", "up", "down"}) do
+    VALID_TRANSPORT_DIRS[v] = true
+end
+
 ---@class Room
 ---@field map_width integer Map width in tiles
 ---@field map_height integer Map height in tiles
@@ -85,6 +90,8 @@ function Room:new(game, map_path)
         error("level has no object layer (the layer must be named \"Objects\")")
     else
         for _, obj in ipairs(obj_layer.objects) do
+            local new_ent
+
             if obj.type == "entity" then
                 assert(obj.shape == "point")
                 local x = obj.x
@@ -95,7 +102,7 @@ function Room:new(game, map_path)
                     goto continue
                 end
 
-                local e = game:new_entity()
+                new_ent = game:new_entity()
                               :assemble(ecsconfig.asm.entity[obj.name], x, y)
                 
                 -- if obj.name == "player" then
@@ -103,8 +110,29 @@ function Room:new(game, map_path)
                 --     game.player = e
                 --     -- self.cam_follow = self.player
                 -- end
+            
+            elseif obj.type == "special" then
+                if obj.name == "room_transport" then
+                    local transport_dir = obj.properties.direction
+                    if not VALID_TRANSPORT_DIRS[transport_dir] then
+                        error(("invalid room_transport direction '%s'"):format(transport_dir))
+                    end
 
-                table.insert(self._entities, e)
+                    assert(obj.shape == "rectangle", "room_transport object is not a rect!")
+
+                    local x = obj.x + obj.width / 2.0
+                    local y = obj.y + obj.height / 2.0
+                    new_ent = game:new_entity()
+                    new_ent:give("position", x, y)
+                           :give("collision", obj.width, obj.height)
+                           :give("room_transport", transport_dir)
+                    
+                    new_ent.collision.group = 0
+                end
+            end
+
+            if new_ent then
+                table.insert(self._entities, new_ent)
             end
 
             ::continue::
@@ -129,6 +157,10 @@ function Room:new(game, map_path)
 end
 
 function Room:release()
+    for _, ent in ipairs(self._entities) do
+        ent:destroy()
+    end
+    
     self.game.r3d_world:remove_object(self._map_model)
     self._map_model:release()
 end

@@ -105,6 +105,23 @@ function PlayerBehavior:tick()
         actor.move_speed = 1.4
     end
 
+    -- room transport behavior override
+    do
+        local is_transport, transport_dx, transport_dy
+            = game:room_transport_info()
+        
+        if is_transport then
+            actor.move_x = transport_dx
+            actor.move_y = transport_dy
+            player.move_x = transport_dx
+            player.move_y = transport_dy
+            actor.move_speed = 0.5
+            player.state = "move"
+            movement_lock = false
+            was_attack_triggered = false
+        end
+    end
+
     local input_move_len =
         math.sqrt(player.move_x * player.move_x + player.move_y * player.move_y)
     local move_min = 0.1
@@ -182,7 +199,7 @@ function PlayerBehavior:tick()
         else
             local anim = "idle"
 
-            if cur_move_speed > 1.0 then
+            if cur_move_speed > 0.2 then
                 anim = "walk"
             end
 
