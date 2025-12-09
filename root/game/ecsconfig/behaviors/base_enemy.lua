@@ -22,6 +22,26 @@ function Behavior:has_player_memory()
     return self.last_known_px ~= nil
 end
 
+function Behavior:calc_wall_redirect(dx, dy)
+    local ent = self.entity
+    local collision = ent.collision
+
+    if dx == 0.0 and dy == 0.0 then
+        return dx, dy
+    end
+
+    if collision.wall_hit_count ~= 1 then
+        return dx, dy
+    end
+
+    local px, py = -collision.wall_dy, collision.wall_dx
+    local pdot = px * dx + py * dy
+    dx = px * pdot
+    dy = py * pdot
+
+    return math.normalize_v2(dx, dy)
+end
+
 function Behavior:tick()
     local ent = self.entity
     local game = self.game

@@ -76,6 +76,9 @@ function Behavior:_flying_mode_update()
             actor.move_y = -known_player_dy
         end
 
+        actor.move_x, actor.move_y =
+            self:calc_wall_redirect(actor.move_x, actor.move_y)
+
         if known_player_dist < 1.0 and not self.is_seeing_player then
             self.last_known_px = nil
             self.last_known_py = nil
@@ -83,7 +86,7 @@ function Behavior:_flying_mode_update()
 
         if math.abs(known_player_dist - self.comfort_dist) < 32.0 then
             if not self.ready_to_dive then
-                self.dive_timer = math.random(120, 240)
+                self.dive_timer = math.random(80, 150)
             end
 
             self.ready_to_dive = true
@@ -93,8 +96,15 @@ function Behavior:_flying_mode_update()
 
         if self.ready_to_dive then
             self.dive_timer = self.dive_timer - 1
-            if self.dive_timer == 0 then
+
+            if known_player_dist < self.comfort_dist - 16 then
+                print("Scary!")
+                self.dive_timer = self.dive_timer - 1 
+            end
+
+            if self.dive_timer <= 0 then
                 print("Dive please")
+                self.dive_timer = 0
                 self.dive_vx = known_player_dx
                 self.dive_vy = known_player_dy
                 actor.rigid_velocity = true

@@ -182,7 +182,7 @@ function PlayerBehavior:tick()
                 player.state = "move"
                 sprite:play("idle")
             elseif anim_frame_changed and sprite_anim_frame == 5 then
-                battery_drain = battery_drain + 300.0
+                battery_drain = battery_drain + 400.0
                 self:_fire_shoot_scanline()
 
                 if ent.gun_sight then

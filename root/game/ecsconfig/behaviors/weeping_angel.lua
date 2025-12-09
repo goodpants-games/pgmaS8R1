@@ -39,6 +39,9 @@ function Behavior:tick()
         actor.move_x = known_player_dx
         actor.move_y = known_player_dy
 
+        actor.move_x, actor.move_y =
+            self:calc_wall_redirect(actor.move_x, actor.move_y)
+
         local ang_to_player = math.atan2(known_player_dy, known_player_dx)
         local ang_diff = math.angle_difference(game.player.rotation.ang, ang_to_player + math.pi)
 

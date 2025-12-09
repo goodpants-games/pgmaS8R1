@@ -20,6 +20,19 @@ Concord.component("collision", function(cmp, w, h)
     cmp.w = w
     cmp.h = h
     cmp.group = consts.COLGROUP_DEFAULT
+
+    -- collision response info
+    cmp.wall_hit_count = 0
+
+    -- collision information for the last handled collision reponse
+    cmp.wall_dx = 0
+    cmp.wall_dy = 0
+
+    -- well this information only exists for actors to be able to move
+    -- perpendicularly to a wall when running towards it, since im too lazy to
+    -- make enemy pathfinding. so it's not particularly useful for when there's
+    -- multiple collisions happening simultaneously because that would mean that
+    -- they are in a corner.
 end)
 
 Concord.component("actor", function(cmp)

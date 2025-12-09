@@ -37,6 +37,9 @@ function Behavior:tick()
         actor.move_x = known_player_dx
         actor.move_y = known_player_dy
 
+        actor.move_x, actor.move_y =
+            self:calc_wall_redirect(actor.move_x, actor.move_y)
+
         if known_player_dist < 1.0 and not self.is_seeing_player then
             self.last_known_px = nil
             self.last_known_py = nil

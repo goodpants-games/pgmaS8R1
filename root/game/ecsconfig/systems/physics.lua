@@ -35,6 +35,7 @@ local function resolve_tilemap_collisions(ent, game)
 
     local tw, th = game.room.tile_width, game.room.tile_height
     local margin = collision.margin
+    collider.wall_hit_count = 0
 
     for _=1, 4 do
         local minx = math.floor((pos.x - cxe + margin) / tw)
@@ -113,6 +114,10 @@ local function resolve_tilemap_collisions(ent, game)
             local penetration, nx, ny = col_pn, col_nx, col_ny
 
             if penetration then
+                collider.wall_hit_count = collider.wall_hit_count + 1
+                collider.wall_dx = col_nx
+                collider.wall_dy = col_ny
+                
                 pos.x = pos.x + nx * penetration
                 pos.y = pos.y + ny * penetration
 

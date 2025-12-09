@@ -161,6 +161,14 @@ function Room:new(game, map_path, data)
         return ent
     end
 
+    ---@type boolean[]
+    local enemy_spawn_map = {}
+    for y=0, h-1 do
+        for x=0, w-1 do
+            enemy_spawn_map[y*w+x + 1] = self:get_col(x, y) == 0
+        end
+    end
+
     -- create actors
     for _, obj in ipairs(obj_layer.objects) do
         if obj.type == "entity" then
@@ -192,6 +200,21 @@ function Room:new(game, map_path, data)
                     :give("room_transport", transport_dir)
                 
                 new_ent.collision.group = 0
+
+                -- mark nearby tiles as places where enemies cannot spawn
+                local obj_tx = math.round(obj.x / tw)
+                local obj_ty = math.round(obj.y / th)
+                local obj_tw = math.round(obj.width / tw)
+                local obj_th = math.round(obj.height / th)
+                local buffer_space = 6
+
+                for ty = obj_ty - buffer_space, (obj_ty+obj_th) + buffer_space do
+                    for tx = obj_tx - buffer_space, (obj_tx+obj_tw) + buffer_space do
+                        if self:is_tile_in_bounds(tx, ty) then
+                            enemy_spawn_map[ty*w+tx + 1] = false
+                        end
+                    end
+                end
             end
         end
 
@@ -212,19 +235,29 @@ function Room:new(game, map_path, data)
         local entity_type_list = {"basic_enemy", "flying_enemy", "weeping_angel"}
         local enemy_count = love.math.random(3, 7)
         
-        for _=1, enemy_count do
-            while true do
-                local tx = love.math.random(0, self.map_width - 1)
-                local ty = love.math.random(0, self.map_height - 1)
-                if self:get_col(tx, ty) == 0 then
-                    local x = tx * self.tile_width + 8
-                    local y = ty * self.tile_height + 8
-                    local type = table.pick_random(entity_type_list)
-
-                    create_entity(x, y, type)
-                    break
+        ---@type {x:number, y:number}[]
+        local spawn_tiles = {}
+        for y=0, h-1 do
+            for x=0, w-1 do
+                if enemy_spawn_map[y*w+x + 1] then
+                    table.insert(spawn_tiles, { x=x, y=y })
                 end
             end
+        end
+
+        assert(spawn_tiles[1], "no possible tiles for enemies to spawn")
+        print(#spawn_tiles, "# of enemy spawn tiles")
+        
+        for _=1, enemy_count do
+            local loc = spawn_tiles[table.random_index(spawn_tiles)]
+            local tx = loc.x
+            local ty = loc.y
+            
+            local x = tx * self.tile_width + 8
+            local y = ty * self.tile_height + 8
+            local type = table.pick_random(entity_type_list)
+
+            create_entity(x, y, type)
         end
     end
 
