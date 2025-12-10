@@ -41,12 +41,28 @@ local TOP_TEXTURES = {
         edge_all              = 16,
         top                   = 0,
     },
+    concrete = {
+        edge_bottom           = 1,
+        edge_left             = 2,
+        edge_bl_corner_in     = 3,
+        edge_bl_corner_out    = 4,
+        edge_all              = 16,
+        top                   = 0,
+    },
     mesh_chain = {
         edge_bottom           = 8,
         edge_left             = 8,
         edge_bl_corner_in     = 8,
         edge_bl_corner_out    = 8,
         edge_all              = 8,
+        top                   = 8,
+    },
+    flesh = {
+        edge_bottom           = 96,
+        edge_left             = 97,
+        edge_bl_corner_in     = 98,
+        edge_bl_corner_out    = 99,
+        edge_all              = 100,
         top                   = 8,
     }
 }
@@ -64,7 +80,7 @@ local TILE_TEXTURE_DATA = {
     },
     [4] = {
         side                  = 37,
-        top                  = "metal"
+        top                  = "concrete"
     },
     [5] = {
         side  = -1,
@@ -73,23 +89,43 @@ local TILE_TEXTURE_DATA = {
     },
     [6] = {
         side = 9,
-        top = "metal",
+        top = "concrete",
     },
     [7] = {
         side = 10,
-        top = "metal",
+        top = "concrete",
     },
     [8] = {
         side = 11,
-        top = "metal",
+        top = "concrete",
     },
     [9] = {
         side = 12,
-        top = "metal",
+        top = "concrete",
     },
     [10] = {
         side = 13,
-        top = "metal",
+        top = "concrete",
+    },
+    [11] = {
+        side = 14,
+        top = "concrete",
+    },
+    [12] = {
+        side = 15,
+        top = "concrete",
+    },
+    [13] = {
+        side = 11,
+        top = "flesh",
+    },
+    [14] = {
+        side = 14,
+        top = "flesh",
+    },
+    [15] = {
+        side = 15,
+        top = "flesh",
     },
     [64] = {
         transparent = true,

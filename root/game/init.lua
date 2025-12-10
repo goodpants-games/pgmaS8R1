@@ -82,7 +82,7 @@ function Game:new()
     self.layout_y = 0
 
     self.layout = {
-        {"start", "units/05", "units/01", "units/03"},
+        {"start", "units/10", "units/07", "units/03"},
         {"units/02", "units/03", "units/02", "units/01"},
         {"units/01", "units/02", "units/01", "units/02"},
     }
