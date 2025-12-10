@@ -89,7 +89,15 @@ end
 
 function asm.entity.heart(e, x, y)
     e:give("position", x, y)
+     :give("rotation", 0)
+     :give("collision", 24, 24)
+     :give("velocity")
+     :give("attackable")
      :give("light", "point")
+     :give("health", 30)
+     :give("behavior", "heart")
+
+    e.collision.group = consts.COLGROUP_ENEMY
 
     e.light.r = 1
     e.light.g = 0

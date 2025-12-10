@@ -325,6 +325,7 @@ function Batch:draw(draw_ctx)
     local draw_start = 1
     
     self.mesh:setVertexMap(self._vtx_map)
+    Lg.setColor(1, 1, 1)
     local last_shader
 
     for i=1, #draw_calls, 3 do

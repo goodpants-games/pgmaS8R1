@@ -1,11 +1,13 @@
 local Concord = require("concord")
 local Sprite = require("sprite")
+local r3d = require("r3d")
 local mat4 = require("r3d.mat4")
 local Light = require("r3d.light")
 local consts = require("game.consts")
 
 local render_system = Concord.system({
     sprite_pool = {"position", "sprite"},
+    r3d_model_pool = {"position", "r3d_model"},
     gun_sight_pool = {"position", "gun_sight"},
     light_pool = {"position", "light"},
     dbgdraw_pool = {"position", "collision"}
@@ -46,6 +48,8 @@ function render_system:init(world)
     self.known_entities = {}
     self.texture_cache = {}
     self.lights = {}
+
+    self._known_model_ents = {}
 
     -- TODO: maybe add circle drawing function to sprite batch renderer
     --       but i think this should be good enough
@@ -335,6 +339,45 @@ function render_system:draw_sprites()
     end
 end
 
+function render_system:sync_models()
+    -- sync models
+    local game = self:getWorld().game --[[@as Game]]
+    local r3d_world = game.r3d_world
+
+    local ents_to_remove = {}
+    for ent, _ in pairs(self._known_model_ents) do
+        ents_to_remove[ent] = true
+    end
+
+    for _, ent in ipairs(self.r3d_model_pool) do
+        local position = ent.position
+        local model = ent.r3d_model
+        local r3d_model = model.model --[[@as r3d.Model]]
+        local rotation = ent.rotation and ent.rotation.ang or 0
+
+        r3d_world:add_object(r3d_model)
+        self._known_model_ents[ent] = true
+        ents_to_remove[ent] = nil
+
+        r3d_model.r = model.r
+        r3d_model.g = model.g
+        r3d_model.b = model.b
+
+        r3d_model.transform = 
+              mat4.rotation_z(nil, rotation)
+            * mat4.scale(nil, model.sx, model.sy, model.sz)
+            * mat4.translation(nil,
+                 position.x + model.ox,
+                 position.y + model.oy,
+                 model.oz)
+    end
+
+    for ent, _ in pairs(ents_to_remove) do
+        r3d_world:remove_object(ent.r3d_model.model)
+        self._known_model_ents[ent] = nil
+    end
+end
+
 function render_system:draw_gun_sights()
     ---@type Game
     local game = self:getWorld().game
@@ -373,6 +416,7 @@ function render_system:draw()
     self:draw_gun_sights()
     self:draw_sprites()
     self:sync_lights()
+    self:sync_models()
 
     if Debug.enabled then
         for _, entity in ipairs(self.dbgdraw_pool) do

@@ -1,5 +1,6 @@
 local Concord = require("concord")
 local consts = require("game.consts")
+local r3d = require("r3d")
 
 Concord.component("position", function(cmp, x, y)
     cmp.x = x or 0
@@ -112,6 +113,21 @@ Concord.component("sprite", function(cmp, img)
 
     cmp.play = sprite_play
     cmp.stop = sprite_stop
+end)
+
+Concord.component("r3d_model", function(cmp, model)
+    assert(model and model.is and model:is(r3d.model), "must be given an r3d.Model")
+    cmp.model = model
+    
+    cmp.r = 1.0
+    cmp.g = 1.0
+    cmp.b = 1.0
+    cmp.sx = 1.0
+    cmp.sy = 1.0
+    cmp.sz = 1.0
+    cmp.ox = 0.0
+    cmp.oy = 0.0
+    cmp.oz = 0.0
 end)
 
 Concord.component("light", function(cmp, type)

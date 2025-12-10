@@ -65,6 +65,10 @@ function Game:new()
     self.r3d_world:add_object(self.r3d_batch)
     self.r3d_world:add_object(self.r3d_sprite_batch)
 
+    local heart_mesh = r3d.mesh.load_obj("res/heart_model.obj")
+    self.heart_model = r3d.model(heart_mesh)
+    self.heart_model.shader = "basic"
+
     self._ui_icons_sprite = Sprite.new("res/sprites/ui_icons.json")
     self._font = Lg.newFont("res/fonts/DepartureMono-Regular.otf", 11, "mono", 1.0)
 
@@ -173,6 +177,7 @@ end
 
 function Game:release()
     self.room:release()
+    self.heart_model:release()
     self.r3d_world:release()
     self.r3d_batch:release()
     self.r3d_sprite_batch:release()
@@ -182,6 +187,14 @@ end
 
 function Game:new_entity()
     return Concord.entity(self.ecs_world)
+end
+
+function Game:destroy_entity(ent)
+    if self.room then
+        self.room:remove_entity(ent)
+    end
+    
+    ent:destroy()
 end
 
 function Game:tick()

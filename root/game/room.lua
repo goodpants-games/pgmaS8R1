@@ -150,6 +150,19 @@ function Room:new(game, map_path, data)
                 print(("WARN: no entity assembler for '%s"):format(type))
             else
                 ent:assemble(ecsconfig.asm.entity[type], x, y)
+
+                -- this is a kind of stupid way of doing this i know but I
+                -- i have only four days left. Give me some slack.
+                if type == "heart" then
+                    ent:give("r3d_model", game.heart_model)
+                    ent.r3d_model.sx = 16
+                    ent.r3d_model.sy = 16
+                    ent.r3d_model.sz = 16
+                    ent.r3d_model.oz = 16
+                    ent.r3d_model.r = 0.1
+                    ent.r3d_model.g = 0.0
+                    ent.r3d_model.b = 0.0
+                end
             end
         else
             ent:give("position", x, y )
@@ -291,6 +304,15 @@ function Room:release()
     
     self.game.r3d_world:remove_object(self._map_model)
     self._map_model:release()
+end
+
+function Room:remove_entity(ent)
+    local idx = table.index_of(self._entities, ent)
+    if idx then
+        table.remove(self._entities, idx)
+    end
+
+    self._entity_types[ent] = nil
 end
 
 ---@param x integer 0-based

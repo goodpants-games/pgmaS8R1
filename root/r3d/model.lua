@@ -9,6 +9,11 @@ function Model:new(mesh)
     self.shader = "shaded"
     self.mesh = mesh
     self.transform = mat4.new()
+
+    self.r = 1.0
+    self.g = 1.0
+    self.b = 1.0
+    self.a = 1.0
 end
 
 function Model:release()
@@ -20,6 +25,7 @@ end
 
 function Model:draw(draw_ctx)
     draw_ctx:activate_shader(self.shader)
+    Lg.setColor(self.r, self.g, self.b, self.a)
     Lg.draw(self.mesh)
 end
 
