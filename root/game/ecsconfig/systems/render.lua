@@ -411,6 +411,7 @@ function render_system:tick()
         local sprite = ent.sprite._spr --[[@as pklove.Sprite?]]
         if sprite then
             sprite:update(consts.TICK_LEN)
+            ent.sprite.anim_frame = sprite:getAnimFrame()
         end
     end
 end

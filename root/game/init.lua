@@ -7,6 +7,9 @@ local Collision = require("game.collision")
 local ecsconfig = require("game.ecsconfig")
 local consts = require("game.consts")
 
+---@class Game.Progression
+---@field rooms {heart_color:integer, heart_visible:boolean, room_id:string}[]
+
 ---@class Game.Attack
 ---@field x number
 ---@field y number
@@ -79,7 +82,7 @@ function Game:new()
     self.layout_y = 0
 
     self.layout = {
-        {"start", "units/02", "units/01", "units/03"},
+        {"start", "units/05", "units/01", "units/03"},
         {"units/02", "units/03", "units/02", "units/01"},
         {"units/01", "units/02", "units/01", "units/02"},
     }

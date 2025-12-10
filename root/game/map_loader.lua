@@ -32,42 +32,67 @@ local ADJBIT_TL = 0x20
 local ADJBIT_BL = 0x40
 local ADJBIT_BR = 0x80
 
-local TILE_TEXTURE_DATA = {
-    [1] = {
-        side                  = 5,
+local TOP_TEXTURES = {
+    metal = {
         edge_bottom           = 1,
         edge_left             = 2,
         edge_bl_corner_in     = 3,
         edge_bl_corner_out    = 4,
         edge_all              = 16,
         top                   = 0,
+    },
+    mesh_chain = {
+        edge_bottom           = 8,
+        edge_left             = 8,
+        edge_bl_corner_in     = 8,
+        edge_bl_corner_out    = 8,
+        edge_all              = 8,
+        top                   = 8,
+    }
+}
+
+local TILE_TEXTURE_DATA = {
+    [1] = {
+        side =   5,
+        top     = "metal"
     },
     [2] = {
         side                  = 6,
-        edge_bottom           = 6,
-        edge_left             = 6,
-        edge_bl_corner_in     = 6,
-        edge_bl_corner_out    = 6,
-        top                   = 6,
-        edge_all              = 6,
     },
     [3] = {
         side                  = 7,
-        edge_bottom           = 7,
-        edge_left             = 7,
-        edge_bl_corner_in     = 7,
-        edge_bl_corner_out    = 7,
-        top                   = 7,
-        edge_all              = 7,
     },
     [4] = {
         side                  = 37,
-        edge_bottom           = 1,
-        edge_left             = 2,
-        edge_bl_corner_in     = 3,
-        edge_bl_corner_out    = 4,
-        edge_all              = 16,
-        top                   = 0,
+        top                  = "metal"
+    },
+    [5] = {
+        side  = -1,
+        top = "mesh_chain",
+        transparent           = true,
+    },
+    [6] = {
+        side = 9,
+        top = "metal",
+    },
+    [7] = {
+        side = 10,
+        top = "metal",
+    },
+    [8] = {
+        side = 11,
+        top = "metal",
+    },
+    [9] = {
+        side = 12,
+        top = "metal",
+    },
+    [10] = {
+        side = 13,
+        top = "metal",
+    },
+    [64] = {
+        transparent = true,
     }
 }
 
@@ -315,19 +340,44 @@ function map_loader.create_mesh(map)
         return map.data[z+1][y * map.w + x + 1]
     end
 
+    local function voxel_trans(x, y, z)
+        local tid = get_voxel(x, y, z)
+        if tid == 0 then return true end
+
+        return TILE_TEXTURE_DATA[tid].transparent
+    end
+
+    ---@param tid integer
+    ---@return string|integer|nil
+    local function get_adj_connection_id(tid)
+        if tid == 0 then
+            return nil
+        end
+
+        ---@type string|integer
+        local cn_type = TILE_TEXTURE_DATA[tid].top
+        if not cn_type then
+            cn_type = tid
+        end
+
+        return cn_type
+    end
+
     local function calc_adjacency(x, y, z)
         local tid = get_voxel(x, y, z)
         if tid == 0 then return 0 end
 
+        local cn_tp = get_adj_connection_id(tid)
+
         -- true if open, false if closed
-        local r = get_voxel(x+1, y, z) ~= tid
-        local l = get_voxel(x-1, y, z) ~= tid
-        local u = get_voxel(x, y-1, z) ~= tid
-        local d = get_voxel(x, y+1, z) ~= tid
-        local br = get_voxel(x+1, y+1, z) ~= tid
-        local bl = get_voxel(x-1, y+1, z) ~= tid
-        local tl = get_voxel(x-1, y-1, z) ~= tid
-        local tr = get_voxel(x+1, y-1, z) ~= tid
+        local r  = get_adj_connection_id(get_voxel(x+1, y, z)) ~= cn_tp
+        local l  = get_adj_connection_id(get_voxel(x-1, y, z)) ~= cn_tp
+        local u  = get_adj_connection_id(get_voxel(x, y-1, z)) ~= cn_tp
+        local d  = get_adj_connection_id(get_voxel(x, y+1, z)) ~= cn_tp
+        local br = get_adj_connection_id(get_voxel(x+1, y+1, z)) ~= cn_tp
+        local bl = get_adj_connection_id(get_voxel(x-1, y+1, z)) ~= cn_tp
+        local tl = get_adj_connection_id(get_voxel(x-1, y-1, z)) ~= cn_tp
+        local tr = get_adj_connection_id(get_voxel(x+1, y-1, z)) ~= cn_tp
 
         local out = 0
 
@@ -348,8 +398,14 @@ function map_loader.create_mesh(map)
         local tid = get_voxel(x, y, z)
         if tid == 0 then return end
 
-        local tinfo = TILE_TEXTURE_DATA[tid]
-        if not tinfo then return end
+        local tile_info = TILE_TEXTURE_DATA[tid]
+        if not tile_info then return end
+
+        if not tile_info.top then
+            return tile_info.side
+        end
+
+        local tinfo = TOP_TEXTURES[tile_info.top]
 
         -- if not adj then
         --     adj = calc_adjacency(x, y, z)
@@ -438,7 +494,17 @@ function map_loader.create_mesh(map)
         -- end
     end
 
+    ---@param id integer
+    ---@param flip string?
+    ---@return number?
+    ---@return number?
+    ---@return number?
+    ---@return number?
     local function calc_tex_uv(id, flip)
+        if id == -1 then
+            return
+        end
+
         local cols = 16
         local rows = 16
         local tw = 1.0 / cols
@@ -499,7 +565,7 @@ function map_loader.create_mesh(map)
         for y=0, map.h-1 do
             for x=0, map.w-1 do
                 local tid = get_voxel(x, y, z)
-                if tid == 0 then
+                if tid == 0 or tid == 64 then
                     goto continue
                 end
 
@@ -507,7 +573,7 @@ function map_loader.create_mesh(map)
                 local side_u0, side_u1, side_v0, side_v1 = calc_tex_uv(TILE_TEXTURE_DATA[tid].side)
 
                 -- right
-                if get_voxel(x + 1, y, z) == 0 then
+                if side_u0 and voxel_trans(x + 1, y, z) then
                     local u0, v0, u1, v1 = side_u0, side_u1, side_v0, side_v1
 
                     tappend(vertices,
@@ -546,7 +612,7 @@ function map_loader.create_mesh(map)
                 end
 
                 -- left
-                if get_voxel(x - 1, y, z) == 0 then
+                if side_u0 and voxel_trans(x - 1, y, z) then
                     local u0, v0, u1, v1 = side_u0, side_u1, side_v0, side_v1
                     
                     tappend(vertices,
@@ -585,7 +651,7 @@ function map_loader.create_mesh(map)
                 end
 
                 -- front
-                if get_voxel(x, y + 1, z) == 0 then
+                if side_u0 and voxel_trans(x, y + 1, z) then
                     local u0, v0, u1, v1 = side_u0, side_u1, side_v0, side_v1
 
                     tappend(vertices,
@@ -624,7 +690,7 @@ function map_loader.create_mesh(map)
                 end
 
                 -- back
-                if get_voxel(x, y - 1, z) == 0 then
+                if side_u0 and voxel_trans(x, y - 1, z) then
                     local u0, v0, u1, v1 = side_u0, side_u1, side_v0, side_v1
 
                     tappend(vertices,
@@ -663,7 +729,7 @@ function map_loader.create_mesh(map)
                 end
 
                 -- top
-                if get_voxel(x, y, z + 1) == 0 then                    
+                if voxel_trans(x, y, z + 1) then                    
                     local adj = calc_adjacency(x, y, z)
                     local id, flip = calc_tex_id(x, y, z, adj)
                     local u0, v0, u1, v1 = calc_tex_uv(id, flip)

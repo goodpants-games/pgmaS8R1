@@ -14,17 +14,22 @@ local font = Lg.newFont("res/fonts/ProggyClean.ttf", 16, "none", 1.0)
 
 function love.load(args)
     love.keyboard.setTextInput(false)
+
+    local quick_start = false
     
     for _, arg in ipairs(args) do
         if arg == "--debug" then
             Debug.enabled = true
             print("enable debug")
+        
+        elseif arg == "--quickstart" then
+            quick_start = true
         end
     end
 
     Lg.setFont(font)
 
-    if Debug.enabled then
+    if Debug.enabled or quick_start then
         sceneman.switchScene("game")
     else
         sceneman.switchScene("terminal")

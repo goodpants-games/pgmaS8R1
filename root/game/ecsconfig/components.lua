@@ -82,12 +82,14 @@ local function sprite_play(cmp, anim_name)
     if spr then
         spr:play(anim_name)
         cmp.anim = spr.curAnim
+        cmp.anim_frame = spr:getAnimFrame()
     else
         -- sprite does not exist yet; need to wait for render system to
         -- create it.
         cmp._cmd = "play"
         cmp._cmd_arg = anim_name
         cmp.anim = anim_name
+        cmp.anim_frame = 1
     end
 end
 
@@ -96,12 +98,14 @@ local function sprite_stop(cmp)
     if spr then
         spr:stop()
         cmp.anim = spr.curAnim
+        cmp.anim_frame = spr:getAnimFrame()
     else
         -- sprite does not exist yet; need to wait for render system to create
         -- it.
         cmp._cmd = "stop"
         cmp._cmd_arg = nil
         cmp.anim = nil
+        cmp.anim_frame = 0
     end
 end
 
@@ -119,6 +123,7 @@ Concord.component("sprite", function(cmp, img)
     
     cmp.unshaded = false
     cmp.anim = nil
+    cmp.anim_frame = 0
     cmp.drop_shadow = true
     cmp.visible = true
 

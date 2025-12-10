@@ -41,7 +41,7 @@
     <property name="tile" type="int" value="1"/>
    </properties>
   </object>
-  <object id="53" name="dynamic_geo" type="special" x="224" y="368" width="32" height="144">
+  <object id="53" name="dynamic_geo" type="special" x="224" y="336" width="32" height="176">
    <properties>
     <property name="height" type="int" value="1"/>
     <property name="side" value="down"/>

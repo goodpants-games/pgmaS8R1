@@ -151,7 +151,7 @@ function PlayerBehavior:tick()
         * actor.move_speed
     
     if sprite then
-        local sprite_anim_frame = sprite._spr:getAnimFrame()
+        local sprite_anim_frame = sprite.anim_frame
         local anim_frame_changed = sprite_anim_frame ~= self._sprite_last_anim_frame
 
         if player.state == "melee_attack" then
@@ -160,7 +160,7 @@ function PlayerBehavior:tick()
             elseif not sprite.anim then
                 player.state = "move"
                 sprite:play("idle")
-            elseif sprite._spr:getAnimFrame() == 10 then
+            elseif sprite.anim_frame == 10 then
                 game:add_attack({
                     x = position.x + lookx * 14,
                     y = position.y + looky * 14,
@@ -209,7 +209,7 @@ function PlayerBehavior:tick()
             end
         end
 
-        self._sprite_last_anim_frame = sprite._spr:getAnimFrame()
+        self._sprite_last_anim_frame = sprite.anim_frame
     end
 
     -- update camera
