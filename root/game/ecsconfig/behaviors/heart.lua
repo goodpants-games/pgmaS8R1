@@ -1,8 +1,16 @@
+local game_consts = require("game.consts")
+
 ---@class game.HeartBehavior: game.Behavior
 ---@overload fun()
 local Behavior = batteries.class {
     name = "game.HeartBehavior",
     extends = require("game.ecsconfig.behaviors.base")
+}
+
+local HEART_COLORS = {
+    { batteries.colour.unpack_rgb(0xb20000) },
+    { batteries.colour.unpack_rgb(0x0415cf) },
+    { batteries.colour.unpack_rgb(0x04d423) },
 }
 
 function Behavior:new()
@@ -19,8 +27,14 @@ function Behavior:init(ent, game)
     local position = self.entity.position
     self.home_x = position.x
     self.home_y = position.y
+
+    ent.light.r, ent.light.g, ent.light.b =
+        table.unpack3(HEART_COLORS[ent.heart.color])
+
+    self:_update_visibility()
 end
 
+---@private
 ---@param ang number
 ---@param dz number
 function Behavior:_spawn_particle(ang, dz)
@@ -41,6 +55,8 @@ function Behavior:_spawn_particle(ang, dz)
         :give("particle", 180)
         :give("collision", 5, 5)
         :give("sprite", "res/img/white1x1.png")
+        :give("behavior", "heart_particle_flash",
+              HEART_COLORS[self.entity.heart.color], love.math.random() * 50.0)
     
     e.particle.vel_z = dz * particle_speed
     e.sprite.sx = 4
@@ -55,6 +71,29 @@ function Behavior:_spawn_particle(ang, dz)
     return e
 end
 
+---@private
+function Behavior:_update_visibility()
+    local ent = self.entity
+    local visible = ent.heart.visible
+
+    ent.light.enabled = visible
+    ent.r3d_model.visible = visible
+
+    if visible then
+        ent.collision.group = game_consts.COLGROUP_ENEMY
+
+        if not ent:has("attackable") then
+            ent:give("attackable")
+        end
+    else
+        ent.collision.group = 0
+
+        if ent:has("attackable") then
+            ent:remove("attackable")
+        end
+    end
+end
+
 local function rand()
     return love.math.random() * 2.0 - 1.0
 end
@@ -67,8 +106,8 @@ function Behavior:tick()
     local position = ent.position
     local health = ent.health
 
-    if attackable.hit then
-        self.beat_speed = 2.0
+    if attackable and attackable.hit then
+        self.beat_speed = self.beat_speed * 2.0
         local attack = attackable.hit --[[@as Game.Attack]]
         velocity.x = attack.dx * 4.0
         velocity.y = attack.dy * 4.0
@@ -78,6 +117,7 @@ function Behavior:tick()
                 self:_spawn_particle(love.math.random() * math.tau, 1.0 + rand() * 0.2)
             end
 
+            self.game.room.has_heart = false
             self.game:destroy_entity(ent)
             return
         else
@@ -108,7 +148,10 @@ function Behavior:tick()
     -- model.sy = 16 + pulse * 4.0
     -- model.sz = 16 + pulse * 4.0
 
-    model.r = math.lerp(0.1, 0.7, pulse)
+    local color = HEART_COLORS[ent.heart.color]
+    model.r = math.lerp(0.0, color[1], pulse)
+    model.g = math.lerp(0.0, color[2], pulse)
+    model.b = math.lerp(0.0, color[3], pulse)
 end
 
 return Behavior

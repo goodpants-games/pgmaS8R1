@@ -214,6 +214,10 @@ function table.pick_random(t, r)
 end
 
 --take a random value from a table (or nil if it's empty)
+---@generic T
+---@param t T[]
+---@param r any?
+---@return T?
 function table.take_random(t, r)
 	if #t == 0 then
 		return nil

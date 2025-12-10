@@ -86,15 +86,35 @@ function Game:new()
 
     ---@type boolean[][]
     self.layout_visited = {}
-    ---@type (game.RoomMemory|boolean|nil)[][]
-    self.room_memory = {}
+    ---@type {memory:game.RoomMemory?, heart_color:integer?, heart_visible:boolean?}[][]
+    self.room_data = {}
 
+    ---@type {x:number, y:number}[]
+    local heart_candidate_rooms = {}
     for y=1, self.layout_height do
         self.layout_visited[y] = {}
-        self.room_memory[y] = {}
+        self.room_data[y] = {}
         for x=1, self.layout_width do
             self.layout_visited[y][x] = false
-            self.room_memory[y][x] = false
+            self.room_data[y][x] = {}
+
+            if not (x == 0 and y == 0) then
+                table.insert(heart_candidate_rooms, { x=x-1, y=y-1 })
+            end
+        end
+    end
+
+    -- place hearts
+    for col=1, 3 do
+        for _=1, 3 do
+            local pos = table.take_random(heart_candidate_rooms)
+            if not pos then
+                error("not enough rooms to place all hearts")
+            end
+
+            local room_data = self.room_data[pos.y+1][pos.x+1]
+            room_data.heart_color = col
+            room_data.heart_visible = true
         end
     end
 
@@ -585,14 +605,12 @@ function Game:_load_room_at_current()
     end
 
     local room = self.layout[y+1][x+1]
-    local room_memory = self.room_memory[y+1][x+1]
-    if not room_memory then
-        room_memory = nil
-    end
-    ---@cast room_memory game.RoomMemory?
+    local room_data = self.room_data[y+1][x+1]
 
     self.room = Room(self, "res/maps/"..room..".lua", {
-        memory = room_memory,
+        memory = room_data.memory,
+        heart_color = room_data.heart_color,
+        heart_visible = room_data.heart_visible,
         spawn_enemies = room ~= "start",
         closed_room_sides = {
             left  = not self:_can_room_connect(x,y, -1, 0),
@@ -612,7 +630,7 @@ function Game:_complete_room_transport(dx, dy)
     self._transport_trans_state = 2
     self._transport_debounce = true
 
-    self.room_memory[self.layout_y+1][self.layout_x+1] = self.room:create_memory()
+    self.room_data[self.layout_y+1][self.layout_x+1].memory = self.room:create_memory()
     self.layout_visited[self.layout_y+1][self.layout_x+1] = true
 
     self.room:release()

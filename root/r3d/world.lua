@@ -293,6 +293,10 @@ end
 ---@param obj r3d.Drawable
 ---@param view_mat mat4
 function World:_draw_object(obj, view_mat)
+    if not obj.visible then
+        return
+    end
+    
     self._draw_ctx._processed_shaders = {}
     local sp = self._tmp_mat_i
 
@@ -444,7 +448,7 @@ function World:draw()
     for _, obj in ipairs(self.objects) do
         if obj:is(Drawable) then
             ---@cast obj r3d.Drawable
-            if obj.opaque then
+            if obj.opaque and obj.visible then
                 self:_draw_object(obj, view_mat)
             end
         end
@@ -455,7 +459,7 @@ function World:draw()
     for _, obj in ipairs(self.objects) do
         if obj:is(Drawable) then
             ---@cast obj r3d.Drawable
-            if not obj.opaque then
+            if not obj.opaque and obj.visible then
                 self:_draw_object(obj, view_mat)
             end
         end

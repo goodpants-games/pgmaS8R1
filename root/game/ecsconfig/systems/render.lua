@@ -364,6 +364,7 @@ function render_system:sync_models()
         r3d_model.r = model.r
         r3d_model.g = model.g
         r3d_model.b = model.b
+        r3d_model.visible = model.visible
 
         r3d_model.transform = 
               mat4.rotation_z(nil, rotation)

@@ -87,7 +87,7 @@ function asm.entity.player(e, x, y)
     e.light.quadratic = 0.0002
 end
 
-function asm.entity.heart(e, x, y)
+function asm.entity.heart(e, x, y, model)
     e:give("position", x, y)
      :give("rotation", 0)
      :give("collision", 24, 24)
@@ -96,6 +96,8 @@ function asm.entity.heart(e, x, y)
      :give("light", "point")
      :give("health", 30)
      :give("behavior", "heart")
+     :give("r3d_model", model)
+     :give("heart")
 
     e.collision.group = consts.COLGROUP_ENEMY
 
@@ -106,6 +108,14 @@ function asm.entity.heart(e, x, y)
     e.light.power = 2.0
     e.light.linear = 0.022
     e.light.quadratic = 0.0019
+
+    e.r3d_model.sx = 16
+    e.r3d_model.sy = 16
+    e.r3d_model.sz = 16
+    e.position.z = 16
+    e.r3d_model.r = 0.1
+    e.r3d_model.g = 0.0
+    e.r3d_model.b = 0.0
 end
 
 return asm

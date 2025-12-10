@@ -8,6 +8,7 @@ function Drawable:new()
     --- True if fully opaque, false if not.
     self.opaque = true
     self.double_sided = false
+    self.visible = true
 end
 
 ---@param draw_ctx r3d.DrawContext

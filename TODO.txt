@@ -2,8 +2,16 @@
   upwards, so it doesn't clip through the ground. although this does require
   a bit of a rework with the rendering system
 - Spider web decor
-- BUG: when reloading a room (with memory), enemies sometimes get placed in
-  walls or something idk. Please fix this!!!!!!!!!!!!1
+
+- three runs, three hearts per run, totaling 9 hearts
+  all hearts are visible at start, and turn invisible on the next run once you
+  visit that room. except one destroyable heart is guaranteed to be visible.
+- you can "ping" (emit a electromagnetic pulse) in a room to reveal a heart.
+  if there is no destroyable heart in that room, it deducts 30% of your battery
+  (may need to adjust this number. also maybe it scales up on the third run.)
+- you get a letter grade at the end depending on how many hearts you've
+  destroyed. (and/or maybe it's like a bad/good/best ending. would just be
+  lore/text)
 
 - two weapons:
     melee attack: long windup you need to time, but takes no battery

@@ -120,6 +120,7 @@ Concord.component("sprite", function(cmp, img)
     cmp.unshaded = false
     cmp.anim = nil
     cmp.drop_shadow = true
+    cmp.visible = true
 
     cmp.play = sprite_play
     cmp.stop = sprite_stop
@@ -138,6 +139,7 @@ Concord.component("r3d_model", function(cmp, model)
     cmp.ox = 0.0
     cmp.oy = 0.0
     cmp.oz = 0.0
+    cmp.visible = true
 end)
 
 Concord.component("light", function(cmp, type)
@@ -172,9 +174,9 @@ Concord.component("gun_sight", function(cmp, r, g, b)
     cmp.target_zoff = 0.0
 end)
 
-Concord.component("behavior", function(cmp, behav_name)
+Concord.component("behavior", function(cmp, behav_name, ...)
     local behav = require("game.ecsconfig.behaviors." .. behav_name)
-    cmp.inst = behav()
+    cmp.inst = behav(...)
 end)
 
 Concord.component("attackable", function(cmp)
@@ -187,4 +189,9 @@ end)
 
 Concord.component("room_transport", function(cmp, dir)
     cmp.dir = dir
+end)
+
+Concord.component("heart", function(cmp, color, visible)
+    cmp.color = color
+    cmp.visible = visible
 end)

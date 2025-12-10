@@ -20,6 +20,8 @@ end
 ---@field closed_room_sides {[string]:boolean}
 ---@field memory game.RoomMemory?
 ---@field spawn_enemies boolean
+---@field heart_visible boolean?
+---@field heart_color integer?
 
 ---@class game.Room
 ---@field map_width integer Map width in tiles
@@ -72,6 +74,7 @@ function Room:new(game, map_path, data)
     ---@private
     ---@type {[any]:string}
     self._entity_types = {}
+    self.has_heart = false
 
     -- apply dynamic geo
     for _, obj in ipairs(obj_layer.objects) do
@@ -142,30 +145,18 @@ function Room:new(game, map_path, data)
     ---@param x number
     ---@param y number
     ---@param type string?
-    local function create_entity(x, y, type)
+    ---@param ... any
+    local function create_entity(x, y, type, ...)
         local ent = game:new_entity()
 
         if type then
             if not ecsconfig.asm.entity[type] then
                 print(("WARN: no entity assembler for '%s"):format(type))
             else
-                ent:assemble(ecsconfig.asm.entity[type], x, y)
-
-                -- this is a kind of stupid way of doing this i know but I
-                -- i have only four days left. Give me some slack.
-                if type == "heart" then
-                    ent:give("r3d_model", game.heart_model)
-                    ent.r3d_model.sx = 16
-                    ent.r3d_model.sy = 16
-                    ent.r3d_model.sz = 16
-                    ent.position.z = 16
-                    ent.r3d_model.r = 0.1
-                    ent.r3d_model.g = 0.0
-                    ent.r3d_model.b = 0.0
-                end
+                ent:assemble(ecsconfig.asm.entity[type], x, y, ...)
             end
         else
-            ent:give("position", x, y )
+            ent:give("position", x, y)
         end
 
         if ent then
@@ -194,7 +185,14 @@ function Room:new(game, map_path, data)
             local x = obj.x
             local y = obj.y
 
-            create_entity(x, y, obj.name)
+            -- debug heart force place
+            if obj.name == "heart" then
+                local e = create_entity(x, y, obj.name, game.heart_model)
+                e.heart.color = 1
+                e.heart.visible = true
+            else
+                create_entity(x, y, obj.name)
+            end
             -- if obj.name == "player" then
             --     assert(not game.player, "there can not be more than one player in a level")
             --     game.player = e
@@ -202,7 +200,14 @@ function Room:new(game, map_path, data)
             -- end
         
         elseif obj.type == "special" then
-            if obj.name == "room_transport" then
+            if obj.name == "heart" and data.heart_color then
+                assert(obj.shape == "point")
+                local e = create_entity(obj.x, obj.y, "heart", game.heart_model)
+                e.heart.color = data.heart_color
+                e.heart.visible = data.heart_visible
+                self.has_heart = true
+                self._entity_types[e] = nil -- this is a game jam game. I need some horrible code somewhere.
+            elseif obj.name == "room_transport" then
                 local transport_dir = obj.properties.direction
                 if not VALID_TRANSPORT_DIRS[transport_dir] then
                     error(("invalid room_transport direction '%s'"):format(transport_dir))

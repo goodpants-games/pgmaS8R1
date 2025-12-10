@@ -55,7 +55,7 @@
     <property name="tile" type="int" value="1"/>
    </properties>
   </object>
-  <object id="55" name="heart" type="entity" x="368" y="96">
+  <object id="55" name="heart" type="special" x="368" y="96">
    <point/>
   </object>
  </objectgroup>
