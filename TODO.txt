@@ -9,6 +9,8 @@
 - you can "ping" (emit a electromagnetic pulse) in a room to reveal a heart.
   if there is no destroyable heart in that room, it deducts 30% of your battery
   (may need to adjust this number. also maybe it scales up on the third run.)
+- the map will also indicate whether or not you already destroyed the heart in
+  the room you are in.
 - you get a letter grade at the end depending on how many hearts you've
   destroyed. (and/or maybe it's like a bad/good/best ending. would just be
   lore/text)
