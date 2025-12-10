@@ -60,7 +60,7 @@ function Behavior:_flying_mode_update()
     actor.move_speed = self.fly_speed
     attackable.aerial = true
 
-    sprite.z_offset = self.home_height + math.cos(self.game.frame / 10.0) * 5.0
+    position.z = self.home_height + math.cos(self.game.frame / 10.0) * 5.0
 
     if self:has_player_memory() then
         local known_player_dx = self.last_known_px - position.x
@@ -110,7 +110,7 @@ function Behavior:_flying_mode_update()
                 actor.rigid_velocity = true
                 self.dive_progress = 0.0
                 self.dive_windup = 30.0
-                self.dive_start_z = sprite.z_offset
+                self.dive_start_z = position.z
                 self.mode = "diving"
             end
         end
@@ -158,8 +158,8 @@ function Behavior:_diving_mode_update()
         actor.move_speed = self.dive_speed * backup_speed
         actor.move_x = -self.dive_vx
         actor.move_y = -self.dive_vy
-        sprite.z_offset = sprite.z_offset + backup_speed
-        self.dive_start_z = sprite.z_offset
+        position.z = position.z + backup_speed
+        self.dive_start_z = position.z
 
         self.dive_windup = self.dive_windup - 1
     else
@@ -173,7 +173,7 @@ function Behavior:_diving_mode_update()
                                     self.dive_height,
                                     self.dive_start_z - self.home_height,
                                     0.0)
-        sprite.z_offset = self.home_height + dive_height_offset
+        position.z = self.home_height + dive_height_offset
         
         self.dive_progress = self.dive_progress + (1.0 / self.dive_length)
 
@@ -225,9 +225,9 @@ function Behavior:tick()
         actor.move_y = 0.0
 
         self.dead_vz = self.dead_vz - 0.1
-        sprite.z_offset = sprite.z_offset + self.dead_vz
-        if sprite.z_offset < 0.0 then
-            sprite.z_offset = 0.0
+        position.z = position.z + self.dead_vz
+        if position.z < 0.0 then
+            position.z = 0.0
             self.dead_vz = self.dead_vz * -0.3
         end
 

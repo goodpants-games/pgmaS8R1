@@ -72,7 +72,7 @@ function system:tick()
             local target_position = target_ent.position
 
             if target_sprite then
-                gun_sight.target_zoff = target_sprite.z_offset
+                gun_sight.target_zoff = target_ent.position.z
             end
 
             if target_position then

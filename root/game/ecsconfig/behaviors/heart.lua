@@ -21,6 +21,44 @@ function Behavior:init(ent, game)
     self.home_y = position.y
 end
 
+---@param ang number
+---@param dz number
+function Behavior:_spawn_particle(ang, dz)
+    local game = self.game
+    local position = self.entity.position
+
+    local particle_speed = 1.8
+
+    local dx = math.cos(ang)
+    local dy = math.sin(ang)
+
+    -- local dlen = math.sqrt(dx*dx + dy*dy + dz*dz)
+    -- dx, dy, dz = dx/dlen, dy/dlen, dz/dlen
+
+    local e = game:new_entity()
+        :give("position", position.x, position.y, position.z)
+        :give("velocity", particle_speed * dx, particle_speed * dy)
+        :give("particle", 180)
+        :give("collision", 5, 5)
+        :give("sprite", "res/img/white1x1.png")
+    
+    e.particle.vel_z = dz * particle_speed
+    e.sprite.sx = 4
+    e.sprite.sy = 4
+    e.sprite.unshaded = true
+    e.sprite.drop_shadow = false
+
+    e.sprite.r = 0.6
+    e.sprite.g = 0.0
+    e.sprite.b = 0.0
+
+    return e
+end
+
+local function rand()
+    return love.math.random() * 2.0 - 1.0
+end
+
 function Behavior:tick()
     local ent = self.entity
     local model = ent.r3d_model
@@ -36,8 +74,17 @@ function Behavior:tick()
         velocity.y = attack.dy * 4.0
 
         if health.value <= 0.0 then
+            for i=1, 50 do
+                self:_spawn_particle(love.math.random() * math.tau, 1.0 + rand() * 0.2)
+            end
+
             self.game:destroy_entity(ent)
             return
+        else
+            local ang = math.atan2(attack.dy, attack.dx)
+            for i=1, 10 do
+                self:_spawn_particle(ang + rand() * 0.9, 1.0 + rand() * 0.2)
+            end
         end
     end
 

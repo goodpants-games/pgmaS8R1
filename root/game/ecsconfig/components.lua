@@ -2,9 +2,10 @@ local Concord = require("concord")
 local consts = require("game.consts")
 local r3d = require("r3d")
 
-Concord.component("position", function(cmp, x, y)
+Concord.component("position", function(cmp, x, y, z)
     cmp.x = x or 0
     cmp.y = y or 0
+    cmp.z = z or 0
 end)
 
 Concord.component("rotation", function(cmp, ang)
@@ -47,6 +48,14 @@ Concord.component("actor", function(cmp)
 
     cmp.kb_vx = 0.0
     cmp.kb_vy = 0.0
+end)
+
+Concord.component("particle", function(cmp, life)
+    cmp.life = life or 60
+    cmp.vel_reflect = 0.5
+    cmp.vel_z = 0.0
+    cmp.damping = 0.94
+    cmp.g = -0.1
 end)
 
 Concord.component("player_control", function(cmp)
@@ -106,10 +115,11 @@ Concord.component("sprite", function(cmp, img)
     cmp.sy = 1
     cmp.ox = 0
     cmp.oy = 0
-
-    cmp.z_offset = 0.0
+    cmp.oz = 0
+    
     cmp.unshaded = false
     cmp.anim = nil
+    cmp.drop_shadow = true
 
     cmp.play = sprite_play
     cmp.stop = sprite_stop

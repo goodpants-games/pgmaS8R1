@@ -298,10 +298,12 @@ function render_system:draw_sprites()
         end
 
         -- draw shadow circle
-        local shadow_transform = mat4.translation(nil, px - 8, py - 4, 1.0)
-        draw_batch:set_shader("basic")
-        draw_batch:set_color(0.0, 0.0, 0.0, 0.5)
-        draw_batch:add_image(self._shadow_tex --[[@as love.Texture]], shadow_transform)
+        if sprite.drop_shadow then
+            local shadow_transform = mat4.translation(nil, px - 8, py - 4, 1.0)
+            draw_batch:set_shader("basic")
+            draw_batch:set_color(0.0, 0.0, 0.0, 0.5)
+            draw_batch:add_image(self._shadow_tex --[[@as love.Texture]], shadow_transform)
+        end
 
         -- transform1 =
         --     mat4.translation(nil, -img_ox, -img_oy, 0.0)
@@ -312,16 +314,16 @@ function render_system:draw_sprites()
             tmpmat0:identity():translation(-img_ox, -img_oy, 0)
             :mul(tmpmat1:identity():scale(sx, sy, 1.0), tmpmat2)
             :mul(rot_matrix, tmpmat0)
-            :mul(tmpmat1:identity():translation(px, py, sprite.oy + sprite.z_offset), tmpmat2)
+            :mul(tmpmat1:identity():translation(px, py, sprite.oy + sprite.oz + pos.z), tmpmat2)
 
         if sprite.unshaded then
             draw_batch:set_shader("basic")
-            draw_batch:set_color(sprite.r, sprite.g, sprite.b)
+            draw_batch:set_color(sprite.r, sprite.g, sprite.b, sprite.a)
         else
             draw_batch:set_shader("shaded_ignore_normal")
 
             -- darken sprite so that it's not too bright when close to the light
-            draw_batch:set_color(sprite.r * 0.3, sprite.g * 0.3, sprite.b * 0.3)
+            draw_batch:set_color(sprite.r * 0.3, sprite.g * 0.3, sprite.b * 0.3, sprite.a)
         end
 
         if img_quad then
@@ -369,7 +371,7 @@ function render_system:sync_models()
             * mat4.translation(nil,
                  position.x + model.ox,
                  position.y + model.oy,
-                 model.oz)
+                 position.z + model.oz)
     end
 
     for ent, _ in pairs(ents_to_remove) do

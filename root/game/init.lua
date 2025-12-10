@@ -43,6 +43,7 @@ function Game:new()
         ecsconfig.systems.physics,
         ecsconfig.systems.gun_sight,
         ecsconfig.systems.special,
+        ecsconfig.systems.particle,
         ecsconfig.systems.render)
 
     ---@type table?
@@ -193,7 +194,7 @@ function Game:destroy_entity(ent)
     if self.room then
         self.room:remove_entity(ent)
     end
-    
+
     ent:destroy()
 end
 

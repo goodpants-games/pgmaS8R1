@@ -158,7 +158,7 @@ function Room:new(game, map_path, data)
                     ent.r3d_model.sx = 16
                     ent.r3d_model.sy = 16
                     ent.r3d_model.sz = 16
-                    ent.r3d_model.oz = 16
+                    ent.position.z = 16
                     ent.r3d_model.r = 0.1
                     ent.r3d_model.g = 0.0
                     ent.r3d_model.b = 0.0

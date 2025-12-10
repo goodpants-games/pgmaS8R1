@@ -37,6 +37,11 @@ local function resolve_tilemap_collisions(ent, game)
     local margin = collision.margin
     collider.wall_hit_count = 0
 
+    local vel_reflect = 1.0
+    if ent.particle then
+        vel_reflect = 1.0 + ent.particle.vel_reflect
+    end
+
     for _=1, 4 do
         local minx = math.floor((pos.x - cxe + margin) / tw)
         local maxx = math.ceil((pos.x + cxe - margin) / th)
@@ -117,15 +122,19 @@ local function resolve_tilemap_collisions(ent, game)
                 collider.wall_hit_count = collider.wall_hit_count + 1
                 collider.wall_dx = col_nx
                 collider.wall_dy = col_ny
-                
+
                 pos.x = pos.x + nx * penetration
                 pos.y = pos.y + ny * penetration
 
-                local px, py = -ny, nx
-                local pdot = px * vel.x + py * vel.y
+                local pdot = -nx * vel.x + -ny * vel.y
+                vel.x = vel.x + nx * pdot * vel_reflect
+                vel.y = vel.y + ny * pdot * vel_reflect
 
-                vel.x = px * pdot
-                vel.y = py * pdot
+                -- local px, py = -ny, nx
+                -- local pdot = px * vel.x + py * vel.y
+
+                -- vel.x = px * pdot
+                -- vel.y = py * pdot
             end
         else
             break
