@@ -45,10 +45,10 @@ function Behavior:_spawn_particle(ang, dz)
     e.particle.vel_z = dz * particle_speed
     e.sprite.sx = 4
     e.sprite.sy = 4
-    e.sprite.unshaded = true
+    -- e.sprite.unshaded = true
     e.sprite.drop_shadow = false
 
-    e.sprite.r = 0.6
+    e.sprite.r = 1.0
     e.sprite.g = 0.0
     e.sprite.b = 0.0
 

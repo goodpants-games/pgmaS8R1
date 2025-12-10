@@ -74,15 +74,14 @@ function Game:new()
     self._font = Lg.newFont("res/fonts/DepartureMono-Regular.otf", 11, "mono", 1.0)
 
     self.layout_width = 4
-    self.layout_height = 4
+    self.layout_height = 3
     self.layout_x = 0
     self.layout_y = 0
 
     self.layout = {
-        {"start", "units/02", "units/01", "units/02"},
+        {"start", "units/02", "units/01", "units/03"},
         {"units/02", "units/03", "units/02", "units/01"},
         {"units/01", "units/02", "units/01", "units/02"},
-        {"units/02", "units/01", "units/02", "units/01"},
     }
 
     ---@type boolean[][]
