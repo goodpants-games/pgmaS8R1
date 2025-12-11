@@ -710,4 +710,8 @@ function Game:get_new_progression()
     return self.progression
 end
 
+function Game:suicide()
+    self.player.health.value = 0.0
+end
+
 return Game
