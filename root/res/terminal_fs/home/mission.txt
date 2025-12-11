@@ -1,4 +1,4 @@
-- Destroy the ten energy cores.
+- Destroy the nine energy cores.
 - You can only destroy the
   ones that match your resonant
   frequency (shown in nanometers).

@@ -29,7 +29,7 @@ local function results_proc(term)
         end
     end
 
-    printf("Hearts destroyed: %i/%i\n", hearts_destroyed, 10)
+    printf("Hearts destroyed: %i/%i\n", hearts_destroyed, 9)
     coroutine.yield(1.0)
 
     local destroy_percentage = hearts_destroyed / 10
