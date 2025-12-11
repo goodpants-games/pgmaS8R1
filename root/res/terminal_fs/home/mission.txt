@@ -1,1 +1,14 @@
-your mission is to destroy all the Things
+- Destroy the ten
+  energy distribution cores.
+- You can only destroy the
+  ones that match your resonant
+  frequency.
+- They will hide on the next cycle
+  you see them. Use your ping
+  function to reveal one in the
+  room you are in. This will cost
+  a significant amount of battery;
+  use wisely.
+- Rooms will be rearranged per
+  cycle, but they are still the
+  same rooms.

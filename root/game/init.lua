@@ -53,6 +53,7 @@ function Game:new(progression)
     ---@type table?
     self.player = nil
     self.player_is_dead = false
+    self.player_color = progression.player_color
 
     -- create r3d world
     self.r3d_world = r3d.world()
@@ -697,11 +698,15 @@ end
 
 ---@return Game.Progression
 function Game:get_new_progression()
+    self.progression.player_color = self.player_color + 1
+    
     for y=1, self.layout_height do
         for x=1, self.layout_width do
             local room_data = self.room_data[y][x]
             
-            if self.layout_visited[y][x] and room_data.prog.heart_visible ~= nil then
+            if self.layout_visited[y][x] and
+               room_data.prog and room_data.prog.heart_visible ~= nil
+            then
                 room_data.prog.heart_visible = false
             end
         end

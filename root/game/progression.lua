@@ -8,6 +8,7 @@ local consts = require("game.consts")
 ---@field room_id string
 
 ---@class Game.Progression
+---@field player_color integer
 ---@field rooms Game.ProgressionRoom[]
 
 ---@type Game.Progression?
@@ -21,6 +22,7 @@ function GameProgression.reset_progression()
 
     ---@type Game.Progression
     local out = {
+        player_color = 1,
         rooms = {}
     }
 

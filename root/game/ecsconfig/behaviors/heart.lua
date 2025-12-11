@@ -107,24 +107,29 @@ function Behavior:tick()
     local health = ent.health
 
     if attackable and attackable.hit then
-        self.beat_speed = self.beat_speed * 2.0
         local attack = attackable.hit --[[@as Game.Attack]]
         velocity.x = attack.dx * 4.0
         velocity.y = attack.dy * 4.0
 
-        if health.value <= 0.0 then
-            for i=1, 50 do
-                self:_spawn_particle(love.math.random() * math.tau, 1.0 + rand() * 0.2)
-            end
-
-            -- self.game.room.has_heart = false
-            self.game:heart_destroyed()
-            self.game:destroy_entity(ent)
-            return
+        if self.game.player_color ~= ent.heart.color then
+            health.value = health.max
         else
-            local ang = math.atan2(attack.dy, attack.dx)
-            for i=1, 10 do
-                self:_spawn_particle(ang + rand() * 0.9, 1.0 + rand() * 0.2)
+            self.beat_speed = self.beat_speed * 2.0
+            
+            if health.value <= 0.0 then
+                for i=1, 50 do
+                    self:_spawn_particle(love.math.random() * math.tau, 1.0 + rand() * 0.2)
+                end
+
+                -- self.game.room.has_heart = false
+                self.game:heart_destroyed()
+                self.game:destroy_entity(ent)
+                return
+            else
+                local ang = math.atan2(attack.dy, attack.dx)
+                for i=1, 10 do
+                    self:_spawn_particle(ang + rand() * 0.9, 1.0 + rand() * 0.2)
+                end
             end
         end
     end

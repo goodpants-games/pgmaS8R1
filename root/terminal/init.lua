@@ -41,22 +41,22 @@ function Terminal:new(process_env, no_startup_msg)
     self.process_env.print = function(...) self:print(...) end
 
     if not no_startup_msg then
-        self:puts(
+        self:puts
 [[
 Embedded OS for robot guy v43.13.9
 Loaded modules:
 - Intelligence
 - Sentience
 
-Type "help" to get a list of
-commands. You may also want to
-list the directory.
-
-
-]])
-
-        self:puts(">")
+]]
     end
+
+    self:puts[[Type "help" to get a list of
+commands.
+
+
+]]
+    self:puts(">")
 end
 
 function Terminal:release()

@@ -1,9 +1,12 @@
+local consts = require("game.consts")
+
 ---@class game.PlayerBehavior: game.Behavior
 local PlayerBehavior = batteries.class {
     name = "PlayerBehavior",
     extends = require("game.ecsconfig.behaviors.base")
 }
 
+---@param color integer
 function PlayerBehavior:new()
     self:super() ---@diagnostic disable-line
     self.selected_weapon = 1
@@ -25,11 +28,17 @@ function PlayerBehavior:_fire_shoot_scanline()
         damage = 16,
         dx = dx,
         dy = dy,
-        mask = require("game.consts").COLGROUP_ENEMY,
+        mask = self:_attack_mask(),
         knockback = 2.0,
         ground_only = false,
         owner = self.entity
     })
+end
+
+---@private
+---@return integer
+function PlayerBehavior:_attack_mask()
+    return consts.COLGROUP_ENEMY
 end
 
 function PlayerBehavior:tick()
@@ -168,7 +177,7 @@ function PlayerBehavior:tick()
                     damage = 10,
                     dx = lookx,
                     dy = looky,
-                    mask = require("game.consts").COLGROUP_ENEMY,
+                    mask = self:_attack_mask(),
                     ground_only = true,
                     knockback = 4.0,
                     owner = ent

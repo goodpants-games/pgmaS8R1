@@ -2,6 +2,7 @@ Arrow Keys  Move/Look
 Z           Attack
 X           Sprint
 C           Switch Weapon
+Hold C      Ping
 Shift       Move Lock
 ESC         Pause and Show
             Terminal

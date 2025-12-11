@@ -40,7 +40,7 @@ function scene.load()
             love.keyboard.setKeyRepeat(false)
             love.keyboard.setTextInput(false)
         end
-    })
+    }, true)
 
     scndat.paused = false
 
