@@ -5,13 +5,86 @@ local Terminal = require("terminal")
 
 local self
 
+---@param term Terminal
+local function results_proc(term)
+    local function printf(fmt, ...)
+        local str = string.format(fmt, ...)
+        for i=1, string.len(str) do
+            local ch = str:sub(i, i)
+            term:puts(ch)
+            coroutine.yield(0.04)
+        end
+    end
+
+    printf("MISSION END STATISTICS\n\n")
+    coroutine.yield(1.0)
+
+    local prog = require("game.progression").progression
+    assert(prog)
+
+    local hearts_destroyed = 0
+    for _, room in ipairs(prog.rooms) do
+        if room.heart_destroyed then
+            hearts_destroyed = hearts_destroyed + 1
+        end
+    end
+
+    printf("Hearts destroyed: %i/%i\n", hearts_destroyed, 10)
+    coroutine.yield(1.0)
+
+    local destroy_percentage = hearts_destroyed / 10
+    local grade
+
+    if destroy_percentage == 1.0 then
+        grade = "S !!!"
+    elseif destroy_percentage > 0.8 then
+        grade = "A"
+    elseif destroy_percentage > 0.6 then
+        grade = "B"
+    elseif destroy_percentage > 0.4 then
+        grade = "C"
+    elseif destroy_percentage > 0.2 then
+        grade = "D"
+    else
+        grade = "F"
+    end
+
+    printf("Grade: %s\n\n", grade)
+
+    coroutine.yield(1.0)
+    printf("\n\nmade by pkhead\n")
+    coroutine.yield(1.0)
+    printf("thanks for playing my game!\n")
+    coroutine.yield(2.0)
+
+    term:puts("\n\nPress any key to continue...")
+    self.is_key_pressed = false
+    while not self.is_key_pressed do
+        coroutine.yield(0.1)
+    end
+
+    print("Key is pressed")
+
+    self.terminal = Terminal()
+    self.results = false
+    require("game.progression").reset_progression()
+end
+
 function scene.load()
     Lg.setBackgroundColor(0, 0, 0)
     love.keyboard.setTextInput(true)
     love.keyboard.setKeyRepeat(true)
 
+    local results = require("game.progression").progression.player_color == 4
+
     self = {}
     self.terminal = Terminal()
+    self.results = results
+
+    if self.results then
+        self.terminal:clear(true)
+        self.terminal:execute_process(results_proc, self.terminal)
+    end
 end
 
 function scene.unload()
@@ -24,12 +97,19 @@ end
 
 function scene.textinput(text)
     assert(self)
-    self.terminal:text_input(text)
+    if not self.results then
+        print("send text input")
+        self.terminal:text_input(text)
+    end
 end
 
 function scene.keypressed(key)
     assert(self)
-    self.terminal:key_pressed(key)
+    self.is_key_pressed = true
+    if not self.results then
+        print("send key press")
+        self.terminal:key_pressed(key)
+    end
 end
 
 function scene.update(dt)

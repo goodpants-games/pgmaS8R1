@@ -677,6 +677,7 @@ function Game:heart_destroyed()
     if room_data.prog then
         room_data.prog.heart_color = nil
         room_data.prog.heart_visible = nil
+        room_data.prog.heart_destroyed = true
     end
 
     local health = self.player.health

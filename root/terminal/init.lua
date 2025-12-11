@@ -161,6 +161,17 @@ function Terminal:backspace()
     -- end
 end
 
+---@param no_prompt_string boolean?
+function Terminal:clear(no_prompt_string)
+    self.lines = {""}
+    self.cursor_x = 1
+    self.cursor_y = 1
+
+    if not no_prompt_string then
+        self:puts(">")
+    end
+end
+
 ---@private
 ---@param ... any
 function Terminal:_resume_process(...)
@@ -183,6 +194,18 @@ function Terminal:_resume_process(...)
     self.cur_process_wait_length = wait_time or 0.0
 end
 
+---@return boolean
+function Terminal:is_process_running()
+    return self.cur_process ~= nil
+end
+
+---@param proc function
+---@param ... any
+function Terminal:execute_process(proc, ...)
+    self.cur_process = coroutine.create(proc)
+    self:_resume_process(...)
+end
+
 ---@param cmd string
 function Terminal:execute_command(cmd)
     local args = {}
@@ -195,10 +218,7 @@ function Terminal:execute_command(cmd)
     end
 
     if args[1] == "clear" then
-        self.lines = {""}
-        self.cursor_x = 1
-        self.cursor_y = 1
-        self:puts(">")
+        self:clear()
         return
     end
 

@@ -5,6 +5,7 @@ local consts = require("game.consts")
 ---@class Game.ProgressionRoom
 ---@field heart_color integer?
 ---@field heart_visible boolean?
+---@field heart_destroyed boolean
 ---@field room_id string
 
 ---@class Game.Progression
