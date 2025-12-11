@@ -117,7 +117,8 @@ function Behavior:tick()
                 self:_spawn_particle(love.math.random() * math.tau, 1.0 + rand() * 0.2)
             end
 
-            self.game.room.has_heart = false
+            -- self.game.room.has_heart = false
+            self.game:heart_destroyed()
             self.game:destroy_entity(ent)
             return
         else

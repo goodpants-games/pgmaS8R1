@@ -8,4 +8,7 @@ consts.COLGROUP_PLAYER  = 2
 consts.COLGROUP_ENEMY   = 4
 consts.COLGROUP_ALL     = 0xFFFFFFFF
 
+consts.LAYOUT_WIDTH = 4
+consts.LAYOUT_HEIGHT = 3
+
 return consts

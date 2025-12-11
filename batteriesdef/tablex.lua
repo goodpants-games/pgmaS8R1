@@ -253,6 +253,10 @@ function table.pick_weighted_random(t, w, r)
 end
 
 --shuffle the order of a table
+---@generic T
+---@param t T[]
+---@param r any?
+---@return T[]
 function table.shuffle(t, r)
 	for i = 1, #t do
 		local j = _random(i, #t, r)
@@ -380,6 +384,9 @@ end
 
 -- Copy a table
 --	See shallow_overlay to shallow copy into an existing table to avoid garbage.
+---@generic T
+---@param t T[]
+---@return T[]
 function table.shallow_copy(t)
 	assert:type(t, "table", "table.shallow_copy - t", 1)
 	local into = {}

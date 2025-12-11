@@ -74,7 +74,6 @@ function Room:new(game, map_path, data)
     ---@private
     ---@type {[any]:string}
     self._entity_types = {}
-    self.has_heart = false
 
     -- apply dynamic geo
     for _, obj in ipairs(obj_layer.objects) do
@@ -205,7 +204,6 @@ function Room:new(game, map_path, data)
                 local e = create_entity(obj.x, obj.y, "heart", game.heart_model)
                 e.heart.color = data.heart_color
                 e.heart.visible = data.heart_visible
-                self.has_heart = true
                 self._entity_types[e] = nil -- this is a game jam game. I need some horrible code somewhere.
             elseif obj.name == "room_transport" then
                 local transport_dir = obj.properties.direction

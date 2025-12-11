@@ -1,5 +1,6 @@
 local scene = require("sceneman").scene()
 local Game = require("game")
+local GameProgression = require("game.progression")
 
 ---@type {game:Game, music:love.Source}?
 local scndat
@@ -25,7 +26,7 @@ end
 
 function scene.load()
     scndat = {}
-    scndat.game = Game()
+    scndat.game = Game(GameProgression.progression)
 
     if Debug.enabled then
         -- so i dont go insane lol
@@ -51,32 +52,6 @@ function scene.load()
     -- playerEnt = ent
 
     Lg.setBackgroundColor(0, 0, 0)
-end
-
-function scene.keypressed(key)
-    assert(scndat)
-
-    if Debug.enabled then
-        if key == "h" then
-            local actor = scndat.game.player
-            local e = create_actor(actor.position.x, actor.position.y)
-            e.actor.move_x = math.random(-1, 1)
-            e.actor.move_y = math.random(-1, 1)
-        elseif key == "j" then
-            for i=1, 3 do
-                local entities = scndat.game.ecs_world:getEntities()
-                if #entities > 1 then
-                    while true do
-                        local ent = entities[math.random(1, #entities)]
-                        if ent ~= scndat.game.player then
-                            ent:destroy()
-                            break
-                        end
-                    end
-                end
-            end
-        end
-    end
 end
 
 function scene.unload()

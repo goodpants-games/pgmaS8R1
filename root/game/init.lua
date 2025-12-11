@@ -7,9 +7,6 @@ local Collision = require("game.collision")
 local ecsconfig = require("game.ecsconfig")
 local consts = require("game.consts")
 
----@class Game.Progression
----@field rooms {heart_color:integer, heart_visible:boolean, room_id:string}[]
-
 ---@class Game.Attack
 ---@field x number
 ---@field y number
@@ -29,12 +26,16 @@ local consts = require("game.consts")
 ---@field r3d_sprite_batch r3d.Batch Transparency-allowed draw batch
 ---@field r3d_batch r3d.Batch Opaque draw batch
 ---@field private _dt_accum number
----@overload fun():Game
+---@overload fun(progression:Game.Progression):Game
 local Game = batteries.class({ name = "Game" })
 
-function Game:new()
+---@param progression Game.Progression
+function Game:new(progression)
     self._dt_accum = 0.0
     self.frame = 0
+
+    ---@private
+    self.progression = progression
 
     self.ecs_world = Concord.world()
     self.ecs_world.game = self
@@ -76,48 +77,50 @@ function Game:new()
     self._ui_icons_sprite = Sprite.new("res/sprites/ui_icons.json")
     self._font = Lg.newFont("res/fonts/DepartureMono-Regular.otf", 11, "mono", 1.0)
 
-    self.layout_width = 4
-    self.layout_height = 3
+    self.layout_width = consts.LAYOUT_WIDTH
+    self.layout_height = consts.LAYOUT_HEIGHT
     self.layout_x = 0
     self.layout_y = 0
 
-    self.layout = {
-        {"start", "units/12", "units/07", "units/03"},
-        {"units/02", "units/03", "units/02", "units/01"},
-        {"units/01", "units/02", "units/01", "units/02"},
-    }
+    -- self.layout = {
+    --     {"start", "units/12", "units/07", "units/03"},
+    --     {"units/02", "units/03", "units/02", "units/01"},
+    --     {"units/01", "units/02", "units/01", "units/02"},
+    -- }
 
+    ---@type string[][]
+    self.layout = {}
     ---@type boolean[][]
     self.layout_visited = {}
-    ---@type {memory:game.RoomMemory?, heart_color:integer?, heart_visible:boolean?}[][]
+    ---@type {memory:game.RoomMemory?, heart_color:integer?, heart_visible:boolean?, prog:Game.ProgressionRoom?}[][]
     self.room_data = {}
 
-    ---@type {x:number, y:number}[]
-    local heart_candidate_rooms = {}
+    local progi = 1
+
+    local prog_rooms = table.shuffle(table.copy(progression.rooms))
+
     for y=1, self.layout_height do
+        self.layout[y] = {}
         self.layout_visited[y] = {}
         self.room_data[y] = {}
         for x=1, self.layout_width do
+            if x == 1 and y == 1 then
+                self.layout[y][x] = "start"
+                self.room_data[y][x] = {}
+            else
+                local prog_room = prog_rooms[progi]
+                self.layout[y][x] = "units/" .. prog_room.room_id
+                
+                self.room_data[y][x] = {
+                    heart_color = prog_room.heart_color,
+                    heart_visible = prog_room.heart_visible,
+                    prog = prog_room
+                }
+
+                progi = progi + 1
+            end
+
             self.layout_visited[y][x] = false
-            self.room_data[y][x] = {}
-
-            if not (x == 0 and y == 0) then
-                table.insert(heart_candidate_rooms, { x=x-1, y=y-1 })
-            end
-        end
-    end
-
-    -- place hearts
-    for col=1, 3 do
-        for _=1, 3 do
-            local pos = table.take_random(heart_candidate_rooms)
-            if not pos then
-                error("not enough rooms to place all hearts")
-            end
-
-            local room_data = self.room_data[pos.y+1][pos.x+1]
-            room_data.heart_color = col
-            room_data.heart_visible = true
         end
     end
 
@@ -624,6 +627,19 @@ function Game:_load_room_at_current()
     })
 end
 
+function Game:heart_destroyed()
+    print("HEART WAS DESTROYED")
+    local room_data = self.room_data[self.layout_y+1][self.layout_x+1]
+
+    room_data.heart_color = nil
+    room_data.heart_visible = nil
+
+    if room_data.prog then
+        room_data.prog.heart_color = nil
+        room_data.prog.heart_visible = nil
+    end
+end
+
 ---@private
 ---@param dx number
 ---@param dy number
@@ -677,6 +693,21 @@ function Game:_complete_room_transport(dx, dy)
 
         ::continue::
     end
+end
+
+---@return Game.Progression
+function Game:get_new_progression()
+    for y=1, self.layout_height do
+        for x=1, self.layout_width do
+            local room_data = self.room_data[y][x]
+            
+            if self.layout_visited[y][x] and room_data.prog.heart_visible ~= nil then
+                room_data.prog.heart_visible = false
+            end
+        end
+    end
+
+    return self.progression
 end
 
 return Game
