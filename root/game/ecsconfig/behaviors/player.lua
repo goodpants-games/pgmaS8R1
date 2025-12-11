@@ -55,7 +55,7 @@ function PlayerBehavior:tick()
     local attackable = ent.attackable
 
     local battery_drain_scale = 0.003
-    local battery_drain = 1.0
+    local battery_drain = 0.4
 
     local prev_state = player.state
 

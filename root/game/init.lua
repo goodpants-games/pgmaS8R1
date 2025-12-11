@@ -411,6 +411,21 @@ function Game:draw()
     -- Lg.pop()
 end
 
+local UI_COLOR_TABLE = {
+    {
+        color = { batteries.color.unpack_rgb(0xff3826) },
+        display = "724.2 nm",
+    },
+    {
+        color = { batteries.color.unpack_rgb(0x2fc45e) },
+        display = "541.8 nm",
+    },
+    {
+        color = { batteries.color.unpack_rgb(0x4266f5) },
+        display = "472.3 nm",
+    },
+}
+
 ---@private
 function Game:_draw_ui()
     local old_font = Lg.getFont()
@@ -445,7 +460,7 @@ function Game:_draw_ui()
         Lg.rectangle("fill", 4, DISPLAY_HEIGHT - 5 - height, 5, height)
     end
 
-    Lg.print(("%.0f%%"):format(battery_percentage * 100.0), 12, DISPLAY_HEIGHT - 15)
+    Lg.print(("%.0f%%"):format(battery_percentage * 100.0), 12, text_origin_y)
 
     local selected_weapon = self.player.behavior.inst.selected_weapon
 
@@ -464,6 +479,11 @@ function Game:_draw_ui()
         Lg.setColor(1, 1, 1, 0.5)
     end
     self._ui_icons_sprite:drawCel(3, sprite_ox + 54, text_origin_y + sprite_oy)
+
+    -- resonant frequency (aka player color)
+    local player_color = UI_COLOR_TABLE[self.player_color]
+    Lg.setColor(unpack(player_color.color))
+    Lg.print(player_color.display, 68, text_origin_y)
 
     -- map
     local MAP_CELL_SIZE = 5
@@ -658,6 +678,12 @@ function Game:heart_destroyed()
         room_data.prog.heart_color = nil
         room_data.prog.heart_visible = nil
     end
+
+    local health = self.player.health
+    health.value = health.value + 40.0
+    if health.value > health.max then
+        health.value = health.max
+    end
 end
 
 ---@private
@@ -745,7 +771,7 @@ function Game:player_ping()
     if not already_visible and heart_color ~= self.player_color then
         print("penalize")
         local health = self.player.health
-        health.value = health.value - 40.0
+        health.value = health.value - 30.0
         if health.value < 0.0 then
             health.value = 0.0
         end

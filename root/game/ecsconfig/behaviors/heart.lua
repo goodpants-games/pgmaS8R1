@@ -9,8 +9,8 @@ local Behavior = batteries.class {
 
 local HEART_COLORS = {
     { batteries.colour.unpack_rgb(0xb20000) },
-    { batteries.colour.unpack_rgb(0x0415cf) },
     { batteries.colour.unpack_rgb(0x04d423) },
+    { batteries.colour.unpack_rgb(0x0415cf) },
 }
 
 function Behavior:new()
