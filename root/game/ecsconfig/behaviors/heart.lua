@@ -19,6 +19,7 @@ function Behavior:new()
     self.home_x = 0.0
     self.home_y = 0.0
     self.beat_speed = 1.0
+    self.last_visible = false
 end
 
 function Behavior:init(ent, game)
@@ -31,6 +32,7 @@ function Behavior:init(ent, game)
     ent.light.r, ent.light.g, ent.light.b =
         table.unpack3(HEART_COLORS[ent.heart.color])
 
+    self.last_visible = ent.heart.visible
     self:_update_visibility()
 end
 
@@ -106,6 +108,11 @@ function Behavior:tick()
     local position = ent.position
     local health = ent.health
 
+    if ent.heart.visible ~= self.last_visible then
+        self:_update_visibility()
+        self.last_visible = ent.heart.visible 
+    end
+
     if attackable and attackable.hit then
         local attack = attackable.hit --[[@as Game.Attack]]
         velocity.x = attack.dx * 4.0
@@ -115,7 +122,7 @@ function Behavior:tick()
             health.value = health.max
         else
             self.beat_speed = self.beat_speed * 2.0
-            
+
             if health.value <= 0.0 then
                 for i=1, 50 do
                     self:_spawn_particle(love.math.random() * math.tau, 1.0 + rand() * 0.2)

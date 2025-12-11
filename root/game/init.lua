@@ -150,6 +150,9 @@ function Game:new(progression)
     ---@private
     self._transport_triggered = false
 
+    ---@private
+    self._ping_vis_timer = 0.0
+
     -- ---@type pklove.tiled.TileLayer?
     -- local col_layer
 
@@ -284,6 +287,10 @@ function Game:tick()
 
     self._transport_triggered = false
 
+    if self._ping_vis_timer > 0.0 then
+        self._ping_vis_timer = self._ping_vis_timer - (1.0 / 30.0)
+    end
+
     -- if self.cam_follow then
     --     local pos = self.cam_follow.position
     --     if pos then
@@ -377,6 +384,18 @@ function Game:draw()
     Lg.pop()
 
     r3d_world:draw()
+
+    if self._ping_vis_timer > 0.0 then
+        local colors = {
+            {1, 0, 0},
+            {0, 1, 0},
+            {0, 0, 1}
+        }
+
+        local r, g, b = unpack(colors[self.player_color])
+        Lg.setColor(r, g, b, self._ping_vis_timer)
+        Lg.rectangle("fill", 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT)
+    end
 
     self:_draw_ui()
 
@@ -698,8 +717,9 @@ end
 
 ---@return Game.Progression
 function Game:get_new_progression()
+    self.layout_visited[self.layout_y+1][self.layout_x+1] = true
     self.progression.player_color = self.player_color + 1
-    
+
     for y=1, self.layout_height do
         for x=1, self.layout_width do
             local room_data = self.room_data[y][x]
@@ -717,6 +737,19 @@ end
 
 function Game:suicide()
     self.player.health.value = 0.0
+end
+
+function Game:player_ping()
+    self._ping_vis_timer = 1.0
+    local heart_color, already_visible = self.room:ping_for_heart()
+    if not already_visible and heart_color ~= self.player_color then
+        print("penalize")
+        local health = self.player.health
+        health.value = health.value - 40.0
+        if health.value < 0.0 then
+            health.value = 0.0
+        end
+    end
 end
 
 return Game

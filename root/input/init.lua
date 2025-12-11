@@ -14,7 +14,7 @@ Input.players[1] = baton.new {
         player_attack = {'key:z', 'button:a'},
         player_lock = {'key:lshift', 'button:leftshoulder'},
         player_run = {'key:x', 'button:b'},
-        player_switch_weapon = {'key:c', 'button:x'}
+        player_switch_weapon = {'key:c', 'button:x'},
     },
     pairs = {
         move = {'left', 'right', 'up', 'down'}

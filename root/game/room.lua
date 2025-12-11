@@ -509,4 +509,20 @@ function Room:create_memory()
     }
 end
 
+---@return integer? color
+---@return boolean? already_visible
+function Room:ping_for_heart()
+    for _, ent in ipairs(self._entities) do
+        if ent.heart then
+            if ent.heart.visible then
+                return ent.heart.color, true
+            end
+            ent.heart.visible = true
+            return ent.heart.color
+        end
+    end
+
+    return nil
+end
+
 return Room
