@@ -681,7 +681,7 @@ function Game:heart_destroyed()
     end
 
     local health = self.player.health
-    health.value = health.value + 40.0
+    health.value = health.value + 35.0
     if health.value > health.max then
         health.value = health.max
     end
@@ -772,7 +772,7 @@ function Game:player_ping()
     if not already_visible and heart_color ~= self.player_color then
         print("penalize")
         local health = self.player.health
-        health.value = health.value - 30.0
+        health.value = health.value - 35.0
         if health.value < 0.0 then
             health.value = 0.0
         end

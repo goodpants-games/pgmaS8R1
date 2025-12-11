@@ -1,7 +1,10 @@
 - make tentacles of flying enemy death sprite a separate sprite that faces
   upwards, so it doesn't clip through the ground. although this does require
   a bit of a rework with the rendering system
-- Spider web decor
+- mabye optimize performance? (i think heart particles makes lag)
+- TODO!!!!! add in-game tutorial
+            also indicator for when you've already destroyed a heart in
+            a room?
 
 - three runs, three hearts per run, totaling 9 hearts
   all hearts are visible at start, and turn invisible on the next run once you

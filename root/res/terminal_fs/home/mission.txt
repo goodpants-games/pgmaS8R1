@@ -1,14 +1,14 @@
-- Destroy the ten
-  energy distribution cores.
+- Destroy the ten energy cores.
 - You can only destroy the
   ones that match your resonant
-  frequency.
+  frequency (shown in nanometers).
 - They will hide on the next cycle
   you see them. Use your ping
   function to reveal one in the
   room you are in. This will cost
   a significant amount of battery;
-  use wisely.
+  use wisely. Rely on your memory.
 - Rooms will be rearranged per
-  cycle, but they are still the
-  same rooms.
+  cycle, but which rooms appear
+  is constant. Cores will always
+  appear in the same rooms.

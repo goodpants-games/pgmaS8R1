@@ -39,6 +39,7 @@ function Terminal:new(process_env, no_startup_msg)
     
     self.process_env.puts = function(...) self:puts(...) end
     self.process_env.print = function(...) self:print(...) end
+    self.process_env.log = print
 
     if not no_startup_msg then
         self:puts
@@ -214,6 +215,7 @@ function Terminal:execute_command(cmd)
     end
 
     if not args[1] then
+        self:puts(">")
         return
     end
 

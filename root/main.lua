@@ -14,6 +14,7 @@ local font = Lg.newFont("res/fonts/ProggyClean.ttf", 16, "none", 1.0)
 
 function love.load(args)
     love.keyboard.setTextInput(false)
+    love.mouse.setVisible(false)
 
     local quick_start = false
     
