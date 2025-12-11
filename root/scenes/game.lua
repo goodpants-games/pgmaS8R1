@@ -69,6 +69,7 @@ function scene.load()
     scndat.frame_capture_tex = nil
 
     scndat.image_scramble_i = 0
+    scndat.image_scramble_pasted = false
 
     -- local player = create_actor(100, 100)
     -- player:give("player_control")
@@ -128,7 +129,7 @@ local function update_screen_melt()
     local img_gset = img.getPixel
 
     local t = math.clamp01((scndat.death_timer - 2.0) / 2.0)
-    local power = math.round(t * t * 11.0)
+    local power = math.round(t * t * 7.0)
 
     local s = scndat.image_scramble_i
     for y=s+1, img_height-1, 14 do
@@ -160,8 +161,27 @@ local function update_screen_melt()
     --     end
     -- end
 
+    if not scndat.image_scramble_pasted and scndat.death_timer >= 3.9 then
+        scndat.image_scramble_pasted = true
+
+        local simg = love.image.newImageData("res/img/system_shutdown_imminent.png")
+        local simg_width = simg:getWidth()
+        local simg_height = simg:getHeight()
+        assert(img_width >= simg_width and img_height >= simg_height)
+
+        for y=1, img_height-1 do
+            for x=1, img_width-1 do
+                local r, g, b, a = img_gset(simg, x, y)
+                if a > 0.0 then
+                    img_pset(img, x, y, r, g, b, a)
+                end
+            end
+        end
+
+        simg:release()
+    end
+
     if scndat.frame_capture_tex then
-        print("repl pixels")
         scndat.frame_capture_tex:replacePixels(scndat.frame_capture)
     else
         scndat.frame_capture_tex = Lg.newImage(scndat.frame_capture)

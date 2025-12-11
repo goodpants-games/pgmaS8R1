@@ -1,4 +1,4 @@
-name: System Failure Imminent
+name: System Shutdown Imminent
       (then, this text should be spammed on death animation)
       (also when you manage to destroy all hearts, siren should play
        and a TTS saying this should play on "intercom")

@@ -117,6 +117,14 @@ function scene.keypressed(key)
         print("send key press")
         self.terminal:key_pressed(key)
     end
+
+    if key == "f3" then
+        self.terminal:clear(true)
+    end
+    
+    if key == "f2" then
+        Lg.captureScreenshot("screenshot.png")
+    end
 end
 
 function scene.update(dt)
