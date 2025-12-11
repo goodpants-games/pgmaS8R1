@@ -32,26 +32,33 @@ local function results_proc(term)
     printf("Hearts destroyed: %i/%i\n", hearts_destroyed, 9)
     coroutine.yield(1.0)
 
-    local destroy_percentage = hearts_destroyed / 10
+    -- local destroy_percentage = hearts_destroyed / 9
     local grade
 
-    if destroy_percentage == 1.0 then
+    if hearts_destroyed == 9 then
         grade = "S !!!"
-    elseif destroy_percentage > 0.8 then
+    elseif hearts_destroyed >= 7 then
         grade = "A"
-    elseif destroy_percentage > 0.6 then
+    elseif hearts_destroyed >= 5 then
         grade = "B"
-    elseif destroy_percentage > 0.4 then
+    elseif hearts_destroyed >= 4 then
         grade = "C"
-    elseif destroy_percentage > 0.2 then
+    elseif hearts_destroyed >= 2 then
         grade = "D"
     else
-        grade = "F"
+        grade = "F.\nUtter mission failure.\n"
     end
 
     printf("Grade: %s\n\n", grade)
 
     coroutine.yield(1.0)
+
+    if hearts_destroyed == 0 then
+        printf("\n\nUtter...")
+        coroutine.yield(4.0)
+        printf("Moo...")
+        coroutine.yield(5.0)
+    end
     printf("\n\nmade by pkhead\n")
     coroutine.yield(1.0)
     printf("thanks for playing my game!\n")

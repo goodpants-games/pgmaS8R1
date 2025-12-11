@@ -42,14 +42,14 @@ function Terminal:new(process_env, no_startup_msg)
     self.process_env.log = print
 
     if not no_startup_msg then
-        self:puts
+        local startup_msg =
 [[
-Embedded OS for robot guy v43.13.9
+Unit ID: M016.52.%i
 Loaded modules:
 - Intelligence
-- Sentience
 
 ]]
+        self:puts(startup_msg:format(require("game.progression").progression.player_color + 18))
     end
 
     self:puts[[Type "help" to get a list of

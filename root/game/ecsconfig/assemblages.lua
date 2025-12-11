@@ -24,12 +24,12 @@ function asm.entity.basic_enemy(e, x, y)
         asm.actor,
         x, y,
         13, 8,
-        "res/robot.png")
+        "res/sprites/fleshblob.json")
     :give("behavior", "basic_enemy")
     :give("attackable")
     :give("health", 30)
     
-    e.sprite.oy = 13
+    e.sprite.oy = 16
     e.collision.group = consts.COLGROUP_ENEMY
     e.actor.move_speed = 0.8
 end
@@ -55,7 +55,7 @@ function asm.entity.weeping_angel(e, x, y)
         asm.actor,
         x, y,
         13, 8,
-        "res/robot.png")
+        "res/sprites/infected.json")
     :give("behavior", "weeping_angel")
     :give("attackable")
     :give("health", 300000000)

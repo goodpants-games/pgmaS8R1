@@ -34,6 +34,7 @@ function Behavior:init(ent, game)
     self.__super.init(self, ent, game)
 
     local actor = ent.actor
+    local sprite = ent.sprite
 
     actor.move_speed = self.fly_speed
     actor.rigid_velocity = false
@@ -41,11 +42,12 @@ function Behavior:init(ent, game)
     
     if ent.health and ent.health.value <= 0.0 then
         self.mode = "dead"
-        local sprite = ent.sprite
 
         if sprite and sprite.anim ~= "dead" then
             sprite:play("dead")
         end
+    else
+        sprite:play("idle")
     end
 end
 
@@ -210,13 +212,17 @@ function Behavior:tick()
     local sprite = ent.sprite
 
     if ent.attackable.hit then
-        if health.value <= 0.0 and self.mode ~= "dead" then
-            self.dead_vz = 2.0
-            self.mode = "dead"
+        if health.value <= 0.0 then
+            if self.mode ~= "dead" then
+                self.dead_vz = 2.0
+                self.mode = "dead"
 
-            if sprite.anim ~= "dead" then
-                sprite:play("dead")
+                if sprite.anim ~= "dead" then
+                    sprite:play("dead")
+                end
             end
+        else
+            sprite:play("hurt")
         end
     end
 
@@ -236,6 +242,10 @@ function Behavior:tick()
     end
 
     self.__super.tick(self)
+
+    if not sprite.anim then
+        sprite:play("idle")
+    end
 
     if self.mode == "flying" then
         self:_flying_mode_update()

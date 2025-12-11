@@ -20,10 +20,16 @@ function Behavior:tick()
     local actor = ent.actor
     local position = ent.position
     local health = ent.health
+    local sprite = ent.sprite
 
     if health.value <= 0.0 then
         actor.move_x = 0.0
         actor.move_y = 0.0
+
+        if sprite.anim ~= "dead" then
+            sprite:play("dead")
+        end
+
         return
     end
 
@@ -39,6 +45,10 @@ function Behavior:tick()
 
         actor.move_x, actor.move_y =
             self:calc_wall_redirect(actor.move_x, actor.move_y)
+        
+        if sprite.anim ~= "walk" then
+            sprite:play("walk")
+        end
 
         if known_player_dist < 1.0 and not self.is_seeing_player then
             self.last_known_px = nil
@@ -59,6 +69,10 @@ function Behavior:tick()
     else
         actor.move_x = 0.0
         actor.move_y = 0.0
+
+        if sprite.anim ~= "idle" then
+            sprite:play("idle")
+        end
     end
 end
 

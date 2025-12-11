@@ -38,11 +38,14 @@ function Behavior:tick()
         known_player_dx, known_player_dy = math.normalize_v2(known_player_dx, known_player_dy)
         actor.move_x = known_player_dx
         actor.move_y = known_player_dy
-
+    
         actor.move_x, actor.move_y =
             self:calc_wall_redirect(actor.move_x, actor.move_y)
+        
+        local real_player_dx = player.position.x - position.x
+        local real_player_dy = player.position.y - position.y
 
-        local ang_to_player = math.atan2(known_player_dy, known_player_dx)
+        local ang_to_player = math.atan2(real_player_dy, real_player_dx)
         local ang_diff = math.angle_difference(game.player.rotation.ang, ang_to_player + math.pi)
 
         local is_seen = math.abs(ang_diff) < math.rad(70) and known_player_dist > 2.0
