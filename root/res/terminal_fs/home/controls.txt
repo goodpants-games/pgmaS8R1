@@ -1,0 +1,10 @@
+Arrow Keys  Move/Look
+Z           Attack
+X           Sprint
+C           Switch Weapon
+Shift       Move Lock
+ESC         Pause and Show
+            Terminal
+
+To force a cycle to complete, use
+the shutdown command.

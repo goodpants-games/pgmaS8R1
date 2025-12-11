@@ -22,7 +22,7 @@
     <property name="direction" value="down"/>
    </properties>
   </object>
-  <object id="5" name="room_transport" type="special" x="0" y="240" width="48" height="32">
+  <object id="5" name="room_transport" type="special" x="0" y="224" width="48" height="48">
    <properties>
     <property name="direction" value="left"/>
    </properties>
@@ -31,28 +31,28 @@
    <properties>
     <property name="height" type="int" value="3"/>
     <property name="side" value="up"/>
-    <property name="tile" type="int" value="1"/>
+    <property name="tile" type="int" value="6"/>
    </properties>
   </object>
   <object id="8" name="dynamic_geo" type="special" x="448" y="368" width="64" height="32">
    <properties>
     <property name="height" type="int" value="1"/>
     <property name="side" value="right"/>
-    <property name="tile" type="int" value="1"/>
+    <property name="tile" type="int" value="6"/>
    </properties>
   </object>
   <object id="9" name="dynamic_geo" type="special" x="96" y="448" width="32" height="64">
    <properties>
     <property name="height" type="int" value="1"/>
     <property name="side" value="down"/>
-    <property name="tile" type="int" value="1"/>
+    <property name="tile" type="int" value="6"/>
    </properties>
   </object>
-  <object id="10" name="dynamic_geo" type="special" x="0" y="240" width="64" height="32">
+  <object id="10" name="dynamic_geo" type="special" x="0" y="224" width="64" height="48">
    <properties>
     <property name="height" type="int" value="1"/>
     <property name="side" value="left"/>
-    <property name="tile" type="int" value="1"/>
+    <property name="tile" type="int" value="6"/>
    </properties>
   </object>
   <object id="11" name="heart" type="special" x="320" y="87.5">

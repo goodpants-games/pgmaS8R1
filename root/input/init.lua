@@ -4,6 +4,8 @@ local baton = require("input.baton")
 Input.players = {}
 Input.players[1] = baton.new {
     controls = {
+        pause = {'key:escape', 'button:start'},
+
         left = {'key:left', 'key:a', 'axis:leftx-', 'button:dpleft'},
         right = {'key:right', 'key:d', 'axis:leftx+', 'button:dpright'},
         up = {'key:up', 'key:w', 'axis:lefty-', 'button:dpup'},

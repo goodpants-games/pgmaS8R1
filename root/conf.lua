@@ -25,6 +25,26 @@ if not unpack then
     unpack = table.unpack
 end
 
+if setfenv == nil then
+    ---@param f integer|fun(any...):...unknown
+    ---@param table table
+    ---@return function
+    function setfenv(f, table)
+        if type(f) == "number" then
+            f = debug.getinfo(f, "f").func
+        end
+        ---@cast f function
+
+        local nm = debug.getupvalue(f, 1)
+        if nm ~= "_ENV" then
+           error("could not set function env") 
+        end
+
+        debug.setupvalue(f, 1, table)
+        return f
+    end
+end
+
 DISPLAY_WIDTH = 240
 DISPLAY_HEIGHT = 180
 

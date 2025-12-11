@@ -1,8 +1,9 @@
 local scene = require("sceneman").scene()
 local Game = require("game")
 local GameProgression = require("game.progression")
+local Terminal = require("terminal")
+local Input = require("input")
 
----@type {game:Game, music:love.Source}?
 local scndat
 
 local function create_actor(x, y)
@@ -27,6 +28,11 @@ end
 function scene.load()
     scndat = {}
     scndat.game = Game(GameProgression.progression)
+    scndat.terminal = Terminal({
+        NO_START_COMMAND = true
+    })
+
+    scndat.paused = false
 
     if Debug.enabled then
         -- so i dont go insane lol
@@ -60,6 +66,7 @@ function scene.unload()
     scndat.game:release()
     scndat.music:stop()
     scndat.music:release()
+    scndat.terminal:release()
 
     scndat = nil
 end
@@ -67,13 +74,38 @@ end
 function scene.update(dt)
     assert(scndat)
 
-    scndat.game:update(dt)
+    if Input.players[1]:pressed("pause") then
+        scndat.paused = not scndat.paused
+
+        love.keyboard.setKeyRepeat(scndat.paused)
+        love.keyboard.setTextInput(scndat.paused)
+    end
+
+    if not scndat.paused then
+        scndat.game:update(dt)
+    end
+end
+
+function scene.keypressed(k)
+    if scndat.paused then
+        scndat.terminal:key_pressed(k)
+    end
+end
+
+function scene.textinput(txt)
+    if scndat.paused then
+        scndat.terminal:text_input(txt)
+    end
 end
 
 function scene.draw()
     assert(scndat)
 
     scndat.game:draw()
+
+    if scndat.paused then
+        scndat.terminal:draw(0.8)
+    end
 end
 
 return scene

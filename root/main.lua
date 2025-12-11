@@ -29,7 +29,7 @@ function love.load(args)
 
     Lg.setFont(font)
 
-    if Debug.enabled or quick_start then
+    if quick_start then
         sceneman.switchScene("game")
     else
         sceneman.switchScene("terminal")
@@ -48,11 +48,7 @@ function love.visible(visible)
 end
 
 function love.keypressed(key)
-    if key == "escape" then
-        sceneman.switchScene("voxel_map_view")
-    else
-        sceneman.dispatch("keypressed", key)
-    end
+    sceneman.dispatch("keypressed", key)
 end
 
 function love.textinput(...)
