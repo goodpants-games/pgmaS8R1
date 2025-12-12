@@ -27,6 +27,10 @@ function GameProgression.reset_progression()
         rooms = {}
     }
 
+    table.insert(out.rooms, {
+        room_id = "start",
+    })
+
     for i=1, consts.LAYOUT_WIDTH * consts.LAYOUT_HEIGHT - 1 do
         local room_id = table.take_random(room_pool)
         assert(room_id, "room pool is empty!")

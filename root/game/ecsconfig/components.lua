@@ -126,6 +126,7 @@ Concord.component("sprite", function(cmp, img)
     cmp.anim_frame = 0
     cmp.drop_shadow = true
     cmp.visible = true
+    cmp.on_floor = false
 
     cmp.play = sprite_play
     cmp.stop = sprite_stop

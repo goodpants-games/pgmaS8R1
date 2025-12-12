@@ -8,21 +8,21 @@ end
 if not Debug.enabled then
     puts("Starting kinematics process.")
     for i=1, math.random(4, 8) do
-        coroutine.yield(0.5)
+        coroutine.yield(0.2)
         puts(".")
     end
     puts("\n")
 
     puts("Starting auditory process.")
     for i=1, math.random(4, 8) do
-        coroutine.yield(0.5)
+        coroutine.yield(0.2)
         puts(".")
     end
     puts("\n")
 
     puts("Starting optical process.")
     for i=1, math.random(4, 8) do
-        coroutine.yield(0.5)
+        coroutine.yield(0.2)
         puts(".")
     end
     puts("\n")

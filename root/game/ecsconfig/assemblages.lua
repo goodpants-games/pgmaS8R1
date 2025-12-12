@@ -118,4 +118,13 @@ function asm.entity.heart(e, x, y, model)
     e.r3d_model.b = 0.0
 end
 
+function asm.entity.tutorial(e, x, y)
+    e:give("position", x, y, 17)
+     :give("sprite", "res/sprites/tutorial.json")
+    
+    e.sprite.unshaded = true
+    e.sprite.on_floor = true
+    e.sprite.drop_shadow = false
+end
+
 return asm

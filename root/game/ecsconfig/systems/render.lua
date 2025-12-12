@@ -300,11 +300,20 @@ function render_system:draw_sprites()
         --     * mat4.scale(nil, sx, sy, 1.0)
         --     * rot_matrix
         --     * mat4.translation(nil, px, py, sprite.oy)
-        local sprite_transform =
-            tmpmat0:identity():translation(-img_ox, -img_oy, 0)
-            :mul(tmpmat1:identity():scale(sx, sy, 1.0), tmpmat2)
-            :mul(rot_matrix, tmpmat0)
-            :mul(tmpmat1:identity():translation(px, py, sprite.oy + sprite.oz + pos.z), tmpmat2)
+        local sprite_transform
+
+        if sprite.on_floor then
+            sprite_transform =
+                mat4.new():translation(-img_ox, -img_oy, 0)
+                * mat4.new():scale(sx, sy, 1.0)
+                * mat4.new():translation(px, py, sprite.oy + sprite.oz + pos.z)
+        else
+            sprite_transform =
+                tmpmat0:identity():translation(-img_ox, -img_oy, 0)
+                :mul(tmpmat1:identity():scale(sx, sy, 1.0), tmpmat2)
+                :mul(rot_matrix, tmpmat0)
+                :mul(tmpmat1:identity():translation(px, py, sprite.oy + sprite.oz + pos.z), tmpmat2)
+        end
 
         if sprite.unshaded then
             draw_batch:set_shader("basic")

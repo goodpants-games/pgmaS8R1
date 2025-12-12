@@ -32,7 +32,7 @@ end
 
 ---@param a mat4
 ---@param b mat4
----@param res mat4
+---@param res mat4?
 ---@return mat4
 function mat4.mul(a, b, res)
     if res == nil then

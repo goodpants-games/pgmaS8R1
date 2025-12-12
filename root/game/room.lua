@@ -185,12 +185,22 @@ function Room:new(game, map_path, data)
             local y = obj.y
 
             -- debug heart force place
-            if obj.name == "heart" then
-                local e = create_entity(x, y, obj.name, game.heart_model)
-                e.heart.color = 1
-                e.heart.visible = true
-            else
-                create_entity(x, y, obj.name)
+            -- if obj.name == "heart" then
+            --     local e = create_entity(x, y, obj.name, game.heart_model)
+            --     e.heart.color = 1
+            --     e.heart.visible = true
+            -- else
+            if obj.name == "tutorial" or not data.memory then
+                local e = create_entity(x, y, obj.name)
+
+                if obj.name == "tutorial" then
+                    self._entity_types[e] = nil
+                end
+
+                local init_anim = obj.properties.anim
+                if init_anim and e.sprite then
+                    e.sprite:play(init_anim)
+                end
             end
             -- if obj.name == "player" then
             --     assert(not game.player, "there can not be more than one player in a level")

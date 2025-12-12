@@ -100,30 +100,39 @@ function Game:new(progression)
     self.room_data = {}
 
     local progi = 1
-
     local prog_rooms = table.shuffle(table.copy(progression.rooms))
+
+    -- make sure start room is always first
+    for i, v in ipairs(prog_rooms) do
+        if v.room_id == "start" then
+            table.remove(prog_rooms, i)
+            table.insert(prog_rooms, 1, v)
+            break
+        end
+    end
 
     for y=1, self.layout_height do
         self.layout[y] = {}
         self.layout_visited[y] = {}
         self.room_data[y] = {}
         for x=1, self.layout_width do
+            local prog_room = prog_rooms[progi]
+
             if x == 1 and y == 1 then
+                assert(prog_room.room_id == "start")
                 self.layout[y][x] = "start"
-                self.room_data[y][x] = {}
             else
-                local prog_room = prog_rooms[progi]
                 self.layout[y][x] = "units/" .. prog_room.room_id
-                
-                self.room_data[y][x] = {
-                    heart_color = prog_room.heart_color,
-                    heart_visible = prog_room.heart_visible,
-                    prog = prog_room
-                }
-
-                progi = progi + 1
             end
+            
+            self.room_data[y][x] = {
+                heart_color = prog_room.heart_color,
+                heart_visible = prog_room.heart_visible,
+                prog = prog_room
+            }
 
+            progi = progi + 1
+            
             self.layout_visited[y][x] = false
         end
     end
@@ -380,7 +389,7 @@ function Game:draw()
     r3d_world.cam.transform:identity()
     r3d_world.cam:set_position(cam_x, cam_y, 0.0)
 
-    if love.keyboard.isDown("e") then
+    if Debug.enabled and love.keyboard.isDown("e") then
         r3d_world.cam.transform =
             mat4.rotation_z(nil, (MOUSE_Y - DISPLAY_HEIGHT / 2) / 40) *
             r3d_world.cam.transform

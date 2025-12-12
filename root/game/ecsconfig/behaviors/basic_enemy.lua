@@ -22,18 +22,23 @@ function Behavior:tick()
     local health = ent.health
     local sprite = ent.sprite
 
+    if ent.attackable.hit then
+        if health.value <= 0.0 then
+            game:sound_quick_play("fleshblob_kill", ent)
+        else
+            game:sound_quick_play("fleshblob_hurt", ent)
+        end
+    end
+
     if health.value <= 0.0 then
         actor.move_x = 0.0
         actor.move_y = 0.0
 
         if sprite.anim ~= "dead" then
-            game:sound_quick_play("fleshblob_kill", ent)
             sprite:play("dead")
         end
 
         return
-    elseif ent.attackable.hit then
-        game:sound_quick_play("fleshblob_hurt", ent)
     end
 
     self.__super.tick(self)
