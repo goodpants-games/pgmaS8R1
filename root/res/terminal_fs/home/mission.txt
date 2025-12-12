@@ -1,14 +1,17 @@
-- Destroy the nine energy cores.
-- You can only destroy the
-  ones that match your resonant
-  frequency (shown in nanometers).
-- They will hide on the next cycle
-  you see them. Use your ping
-  function to reveal one in the
-  room you are in. This will cost
-  a significant amount of battery;
-  use wisely. Rely on your memory.
-- Rooms will be rearranged per
-  cycle, but which rooms appear
-  is constant. Cores will always
-  appear in the same rooms.
+TL;DR:
+- Destroy the nine Cores. They
+  must match your color, shown
+  in nanometers on your HUD.
+- Sometimes they are hidden, so
+  use your ping function (hold
+  down the "Switch Weapon"
+  key).
+- Rooms rearrange per cycle.
+  But Cores do not change which
+  room they are in.
+
+You are one of three units deployed to deactivate the nine cores of this facility. Each room may hold a core.
+
+You can only destroy cores that match your resonant frequency, and as an individual unit you cannot change this. Some cores may be hidden when you enter. Use your ping function (hold the C key) to emit a strong electromagnetic pulse that will reveal the heart in the room you are in, if it is present. Be wary that if the resonant frequency does not match, you will lose a significant amount of your limited battery; use this wisely.
+
+It may be important to note that per cycle, the rooms of this part of the facility rearrange through unknown methods. Furthermore, we cannot guarantee that after you shut down, we will be able to recover you. We can not recover your hard drive, and we do not know exactly what lays down there.

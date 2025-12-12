@@ -39,9 +39,9 @@ local function results_proc(term)
         grade = "S !!!"
     elseif hearts_destroyed >= 7 then
         grade = "A"
-    elseif hearts_destroyed >= 5 then
+    elseif hearts_destroyed >= 6 then
         grade = "B"
-    elseif hearts_destroyed >= 4 then
+    elseif hearts_destroyed >= 5 then
         grade = "C"
     elseif hearts_destroyed >= 2 then
         grade = "D"
@@ -121,7 +121,7 @@ function scene.keypressed(key)
     if key == "f3" then
         self.terminal:clear(true)
     end
-    
+
     if key == "f2" then
         Lg.captureScreenshot("screenshot.png")
     end

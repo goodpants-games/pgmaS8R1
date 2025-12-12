@@ -6,21 +6,21 @@ if NO_START_COMMAND then
 end
 
 if not Debug.enabled then
-    puts("Starting kinematics process.")
+    puts("Starting kinematics processor.")
     for i=1, math.random(4, 8) do
         coroutine.yield(0.2)
         puts(".")
     end
     puts("\n")
 
-    puts("Starting auditory process.")
+    puts("Starting volumetric pressure sensor.")
     for i=1, math.random(4, 8) do
         coroutine.yield(0.2)
         puts(".")
     end
     puts("\n")
 
-    puts("Starting optical process.")
+    puts("Starting photon receptor matrix.")
     for i=1, math.random(4, 8) do
         coroutine.yield(0.2)
         puts(".")
