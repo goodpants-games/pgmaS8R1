@@ -49,11 +49,11 @@ DISPLAY_WIDTH = 240
 DISPLAY_HEIGHT = 180
 
 function love.conf(t)
-    t.identity = "pkhead_PGMAS8R1"
-    t.window.resizable = false
+    t.identity = "pkhead_SystemShutdownImminent"
     t.window.width = DISPLAY_WIDTH * 3
     t.window.height = DISPLAY_HEIGHT * 3
     t.window.resizable = true
     t.window.vsync = 1
     t.window.highdpi = true
+    t.window.title = "SYSTEM SHUTDOWN IMMINENT"
 end

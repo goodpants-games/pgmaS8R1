@@ -50,6 +50,18 @@ end
 
 function love.keypressed(key)
     sceneman.dispatch("keypressed", key)
+
+    if not LOVEJS and Debug.enabled and key == "f12" then
+        Lg.captureScreenshot(function(img)
+            ---@cast img love.ImageData
+            local png_data = img:encode("png")
+            local dat = png_data:getString()
+
+            local f = assert(io.open("screenshot.png", "wb"), "could not open file")
+            f:write(dat)
+            f:close()
+        end)
+    end
 end
 
 function love.textinput(...)
