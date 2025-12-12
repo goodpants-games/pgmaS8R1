@@ -23,7 +23,7 @@ local arg_errors = false
 for i=1, select("#", ...) do
     local arg = select(i, ...)
 
-    if arg == "-h" or arg == "--help" then
+    if arg == "-h" or arg == "--help" or arg == "/?" then
         display_help()
         return
     elseif arg:sub(1, 1) == "-" then
@@ -74,10 +74,6 @@ for line in love.filesystem.lines(real_file_path) do
             break
         end
     end
-end
-
-for i, v in ipairs(lines) do
-    log(i,v)
 end
 
 local line_scroll = 1

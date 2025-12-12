@@ -9,6 +9,8 @@ TL;DR:
 - Rooms rearrange per cycle.
   But Cores do not change which
   room they are in.
+- All cores are visible on the
+  first cycle.
 
 You are one of three units deployed to deactivate the nine cores of this facility. Each room may hold a core.
 

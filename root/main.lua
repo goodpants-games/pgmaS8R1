@@ -105,11 +105,13 @@ function love.draw()
     local draw_frametime = love.timer.getTime() - draw_ts
 
     -- debug text
-    Lg.setColor(1, 1, 1)
-    Lg.setFont(font)
-    Lg.print(("%.1f Kb"):format(collectgarbage("count")), 1, 1)
-    Lg.print(("update: %.1f ms"):format(update_frametime * 1000), 1, 11)
-    Lg.print(("draw: %.1f ms"):format(draw_frametime * 1000), 1, 21)
+    if Debug.enabled then
+        Lg.setColor(1, 1, 1)
+        Lg.setFont(font)
+        Lg.print(("%.1f Kb"):format(collectgarbage("count")), 1, 1)
+        Lg.print(("update: %.1f ms"):format(update_frametime * 1000), 1, 11)
+        Lg.print(("draw: %.1f ms"):format(draw_frametime * 1000), 1, 21)
+    end
 end
 
 function love.run()

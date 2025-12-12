@@ -105,7 +105,6 @@ end
 function scene.textinput(text)
     assert(self)
     if not self.results then
-        print("send text input")
         self.terminal:text_input(text)
     end
 end
@@ -114,7 +113,6 @@ function scene.keypressed(key)
     assert(self)
     self.is_key_pressed = true
     if not self.results then
-        print("send key press")
         self.terminal:key_pressed(key)
     end
 
