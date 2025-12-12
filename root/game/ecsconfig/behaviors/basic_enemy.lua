@@ -27,10 +27,13 @@ function Behavior:tick()
         actor.move_y = 0.0
 
         if sprite.anim ~= "dead" then
+            game:sound_quick_play("fleshblob_kill", ent)
             sprite:play("dead")
         end
 
         return
+    elseif ent.attackable.hit then
+        game:sound_quick_play("fleshblob_hurt", ent)
     end
 
     self.__super.tick(self)

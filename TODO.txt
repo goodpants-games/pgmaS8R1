@@ -7,9 +7,8 @@ name: System Shutdown Imminent
   upwards, so it doesn't clip through the ground. although this does require
   a bit of a rework with the rendering system
 - mabye optimize performance? (i think heart particles makes lag)
+- FIX tile outlines
 - TODO!!!!! add in-game tutorial
-            also indicator for when you've already destroyed a heart in
-            a room?
             Also camera shake i think. battery shake when decrease.
 
 - three runs, three hearts per run, totaling 9 hearts

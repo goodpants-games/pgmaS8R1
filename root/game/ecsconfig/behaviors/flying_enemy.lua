@@ -106,6 +106,7 @@ function Behavior:_flying_mode_update()
 
             if self.dive_timer <= 0 then
                 print("Dive please")
+                self.game:sound_quick_play("octopus_alert", self.entity)
                 self.dive_timer = 0
                 self.dive_vx = known_player_dx
                 self.dive_vy = known_player_dy
@@ -216,12 +217,14 @@ function Behavior:tick()
             if self.mode ~= "dead" then
                 self.dead_vz = 2.0
                 self.mode = "dead"
+                self.game:sound_quick_play("octopus_kill", self.entity)
 
                 if sprite.anim ~= "dead" then
                     sprite:play("dead")
                 end
             end
         else
+            self.game:sound_quick_play("octopus_hurt", self.entity)
             sprite:play("hurt")
         end
     end

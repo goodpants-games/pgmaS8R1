@@ -6,7 +6,6 @@ local PlayerBehavior = batteries.class {
     extends = require("game.ecsconfig.behaviors.base")
 }
 
----@param color integer
 function PlayerBehavior:new()
     self:super() ---@diagnostic disable-line
     self.selected_weapon = 1
@@ -20,7 +19,6 @@ function PlayerBehavior:_fire_shoot_scanline()
 
     local dx, dy = math.normalize_v2(gun_sight.cur_dx, gun_sight.cur_dy)
 
-    print("fire!")
     self.game:add_attack({
         x = position.x + gun_sight.cur_dx,
         y = position.y + gun_sight.cur_dy,
@@ -33,12 +31,29 @@ function PlayerBehavior:_fire_shoot_scanline()
         ground_only = false,
         owner = self.entity
     })
+
+    self.game:sound_quick_play("player_shoot")
 end
 
 ---@private
 ---@return integer
 function PlayerBehavior:_attack_mask()
     return consts.COLGROUP_ENEMY
+end
+
+function PlayerBehavior:init(ent, game)
+    self.__super.init(self, ent, game)
+
+    self.footstep_sounds = {
+        self.game:new_sound("footstep1"),
+        self.game:new_sound("footstep2"),
+        self.game:new_sound("footstep3"),
+    }
+
+    for _, snd in ipairs(self.footstep_sounds) do
+        snd.src:setVolume(0.5)
+        snd:attach_to(self.entity)
+    end
 end
 
 function PlayerBehavior:tick()
@@ -86,7 +101,6 @@ function PlayerBehavior:tick()
         local last_selected_weapon = self.selected_weapon
 
         self.selected_weapon = self.selected_weapon % 2 + 1
-        print(self.selected_weapon)
         player.trigger_weapon_switch = false
 
         if self.selected_weapon == 2 and last_selected_weapon ~= 2 then
@@ -170,6 +184,7 @@ function PlayerBehavior:tick()
                 player.state = "move"
                 sprite:play("idle")
             elseif sprite.anim_frame == 10 then
+                game:sound_quick_play("player_swing", ent)
                 game:add_attack({
                     x = position.x + lookx * 14,
                     y = position.y + looky * 14,
@@ -215,6 +230,13 @@ function PlayerBehavior:tick()
 
             if sprite.anim ~= anim then
                 sprite:play(anim)
+            end
+
+            if anim_frame_changed and (sprite_anim_frame == 2 or sprite_anim_frame == 4) then
+                print("play footstep sound")
+                local snd = table.pick_random(self.footstep_sounds)
+                assert(snd)
+                snd.src:play()
             end
         end
 

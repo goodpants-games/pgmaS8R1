@@ -46,7 +46,6 @@ function system:tick()
             
             local attack_height_match = not (attack.ground_only and ent_attackable.aerial)
             if col and ent_attackable.iframes == 0 and attack_height_match then
-                print("attack hit something")
                 ent_attackable.hit = attack
                 ent_attackable.iframes = ent_attackable.iframe_length
 

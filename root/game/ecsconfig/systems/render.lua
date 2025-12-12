@@ -145,7 +145,6 @@ function render_system:sync_lights()
     
     -- prune entities no longer in world
     for ent, _ in pairs(ents_to_remove) do
-        print("destroy a light")
         world:remove_object(self.lights[ent])
         self.lights[ent] = nil
     end
@@ -188,7 +187,6 @@ function render_system:sync_sprite_graphic(sprite, rotation)
         ---@type pklove.Sprite
         local spr = sprite._spr
         if spr == nil or spr.res ~= cached then
-            print("new sprite")
             spr = Sprite.new(cached)
             sprite._spr = spr
         end
@@ -272,14 +270,6 @@ function render_system:draw_sprites()
             table.remove(self.render_list, i)
             newly_removed = newly_removed + 1
         end
-    end
-
-    if newly_added > 0 then
-        print(newly_added .. " new entities")
-    end
-
-    if newly_removed > 0 then
-        print(newly_removed .. " removed entities")
     end
 
     for _, entity in ipairs(self.render_list) do
@@ -399,7 +389,6 @@ function render_system:draw_gun_sights()
             if game.frame % 3 == 0 then
                 batch:set_shader("basic")
                 batch:set_color(gun_sight.r, gun_sight.g, gun_sight.b)
-                print(gun_sight.target_zoff)
                 batch:add_line(position.x, position.y, zpos, end_x, end_y, zpos + gun_sight.target_zoff, 1)
             end
         end

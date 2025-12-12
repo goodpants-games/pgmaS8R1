@@ -3,6 +3,7 @@ local r3d = require("r3d")
 local Sprite = require("sprite")
 local Room = require("game.room")
 local Collision = require("game.collision")
+local SoundManager = require("game.sound_manager")
 
 local ecsconfig = require("game.ecsconfig")
 local consts = require("game.consts")
@@ -36,6 +37,8 @@ function Game:new(progression)
 
     ---@private
     self.progression = progression
+
+    self.sound = SoundManager()
 
     self.ecs_world = Concord.world()
     self.ecs_world.game = self
@@ -213,6 +216,7 @@ function Game:release()
     self.r3d_sprite_batch:release()
     self._ui_icons_sprite:release()
     self._font:release()
+    self.sound:release()
 end
 
 function Game:new_entity()
@@ -225,6 +229,22 @@ function Game:destroy_entity(ent)
     end
 
     ent:destroy()
+end
+
+---@param snd_name string
+function Game:new_sound(snd_name)
+    return self.sound:new_sound(snd_name)
+end
+
+---@param snd_name string
+---@param ent any
+function Game:sound_quick_play(snd_name, ent)
+    local snd = self.sound:new_sound(snd_name)
+    if ent then
+        snd:attach_to(ent)
+    end
+    snd.src:play()
+    snd:release()
 end
 
 function Game:tick()
@@ -344,6 +364,10 @@ function Game:update(dt)
     end
 
     Debug.draw:pop()
+
+    self.sound.listener_x = self.player.position.x
+    self.sound.listener_y = self.player.position.y
+    self.sound:update()
 end
 
 function Game:draw()

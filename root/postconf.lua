@@ -118,11 +118,9 @@ if LOVEJS then
                 local line = vlines[i]
 
                 if string.match(line, "^%s*varying%s.+;%s*$") then
-                    print(line)
                     if is_user_code then
                         assert(insertion_index)
                         local l = table.remove(vlines, i)
-                        -- print(l)
                         table.insert(vlines, insertion_index, l)
                     elseif not insertion_index then
                         insertion_index = i

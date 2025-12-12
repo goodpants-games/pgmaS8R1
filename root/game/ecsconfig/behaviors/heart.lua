@@ -20,6 +20,7 @@ function Behavior:new()
     self.home_y = 0.0
     self.beat_speed = 1.0
     self.last_visible = false
+    self.last_pulse_t = 1.0
 end
 
 function Behavior:init(ent, game)
@@ -34,6 +35,9 @@ function Behavior:init(ent, game)
 
     self.last_visible = ent.heart.visible
     self:_update_visibility()
+
+    self.heartbeat_sound = self.game:new_sound("heartbeat")
+    self.heartbeat_sound:attach_to(self.entity)
 end
 
 ---@private
@@ -120,6 +124,7 @@ function Behavior:tick()
 
         if self.game.player_color ~= ent.heart.color then
             health.value = health.max
+            self.game:sound_quick_play("fleshblob_hurt", self.entity)
         else
             self.beat_speed = self.beat_speed * 2.0
 
@@ -131,8 +136,10 @@ function Behavior:tick()
                 -- self.game.room.has_heart = false
                 self.game:heart_destroyed()
                 self.game:destroy_entity(ent)
+                self.game:sound_quick_play("heart_kill", self.entity)
                 return
             else
+                self.game:sound_quick_play("heart_hurt", self.entity)
                 local ang = math.atan2(attack.dy, attack.dx)
                 for i=1, 10 do
                     self:_spawn_particle(ang + rand() * 0.9, 1.0 + rand() * 0.2)
@@ -149,11 +156,18 @@ function Behavior:tick()
     -- velocity.x = velocity.x * 0.9
     -- velocity.y = velocity.y * 0.9
 
-    local x = self.game.frame / 60 % (1.0 / self.beat_speed) * 30.0
+    local pulse_t = self.game.frame / 60 % (1.0 / self.beat_speed) * 30.0
+    if pulse_t < self.last_pulse_t then
+        if ent.heart.visible then
+            self.heartbeat_sound.src:seek(0)
+            self.heartbeat_sound.src:play()
+        end
+    end
+    self.last_pulse_t = pulse_t
 
     -- local pulse = -((self.game.frame / 60) % 1.0) + 0.1
     -- pulse = math.clamp(pulse, 0.0, 1.0) / 0.1
-    local pulse = 1.065 * (1.0 - math.cos(x)) / (1.3 ^ x)
+    local pulse = 1.065 * (1.0 - math.cos(pulse_t)) / (1.3 ^ pulse_t)
     -- print(pulse)
 
     ent.rotation.ang = ent.rotation.ang + 0.05
