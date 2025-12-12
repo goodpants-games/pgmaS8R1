@@ -43,16 +43,9 @@ function scene.load()
     }, true)
 
     scndat.paused = false
+    scndat.music = love.audio.newSource("res/music/drone.wav", "static")
 
-    if Debug.enabled then
-        -- so i dont go insane lol
-        -- i think once i add sounds the droning will be less annoying
-        scndat.music = love.audio.newSource("res/cemetery.xm", "stream")
-    else
-        scndat.music = love.audio.newSource("res/music/drone.wav", "static")
-    end
-
-    scndat.music:setVolume(0.2)
+    scndat.music:setVolume(0.5)
     scndat.music:setLooping(true)
     scndat.music:play()
 

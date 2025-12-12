@@ -39,6 +39,9 @@ function Behavior:init(ent, game)
     actor.move_speed = self.fly_speed
     actor.rigid_velocity = false
     actor.velocity_damping = 0.9
+
+    self.dive_sound = self.game:new_sound("octopus_dive")
+    self.dive_sound:attach_to(self.entity)
     
     if ent.health and ent.health.value <= 0.0 then
         self.mode = "dead"
@@ -165,6 +168,10 @@ function Behavior:_diving_mode_update()
         self.dive_start_z = position.z
 
         self.dive_windup = self.dive_windup - 1
+        if self.dive_windup == 0 then
+            self.dive_sound.src:seek(0)
+            self.dive_sound.src:play()
+        end
     else
         attackable.aerial = false
         actor.move_speed = self.dive_speed
@@ -213,6 +220,8 @@ function Behavior:tick()
     local sprite = ent.sprite
 
     if ent.attackable.hit then
+        self.dive_sound.src:stop()
+        
         if health.value <= 0.0 then
             if self.mode ~= "dead" then
                 self.dead_vz = 2.0

@@ -37,6 +37,7 @@ function Behavior:init(ent, game)
     self:_update_visibility()
 
     self.heartbeat_sound = self.game:new_sound("heartbeat")
+    self.heartbeat_sound.src:setVolume(0.5)
     self.heartbeat_sound:attach_to(self.entity)
 end
 

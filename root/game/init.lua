@@ -795,11 +795,14 @@ function Game:player_ping()
     local heart_color, already_visible = self.room:ping_for_heart()
     if not already_visible and heart_color ~= self.player_color then
         print("penalize")
+        self:sound_quick_play("player_hurt")
         local health = self.player.health
         health.value = health.value - 35.0
         if health.value < 0.0 then
             health.value = 0.0
         end
+    else
+        self:sound_quick_play("ping")
     end
 end
 

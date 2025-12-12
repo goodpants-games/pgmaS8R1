@@ -51,7 +51,7 @@ function PlayerBehavior:init(ent, game)
     }
 
     for _, snd in ipairs(self.footstep_sounds) do
-        snd.src:setVolume(0.5)
+        snd.src:setVolume(0.3)
         snd:attach_to(self.entity)
     end
 end
@@ -75,6 +75,7 @@ function PlayerBehavior:tick()
     local prev_state = player.state
 
     if attackable and attackable.hit then
+        game:sound_quick_play("player_hurt", self.entity)
         player.state = "hurt"
     end
 
@@ -206,7 +207,7 @@ function PlayerBehavior:tick()
                 player.state = "move"
                 sprite:play("idle")
             elseif anim_frame_changed and sprite_anim_frame == 5 then
-                battery_drain = battery_drain + 400.0
+                battery_drain = battery_drain + 600.0
                 self:_fire_shoot_scanline()
 
                 if ent.gun_sight then
