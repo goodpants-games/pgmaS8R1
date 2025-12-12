@@ -1,0 +1,24 @@
+Director:
+  pkhead
+Game Design:
+  pkhead
+Level Design:
+  pkhead
+Programming:
+  pkhead
+Art:
+  pkhead
+Music:
+  pkhead
+SFX:
+  pkhead
+Enemy Design:
+  pkhead
+Daily Coffee:
+  pkhead
+Playtesters:
+  Jack
+  Ery
+  
+  
+  also pkhead

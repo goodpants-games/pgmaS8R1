@@ -1,18 +1,4 @@
-TL;DR:
-- Destroy the nine Cores. They
-  must match your color, shown
-  in nanometers on your HUD.
-- Sometimes they are hidden, so
-  use your ping function (hold
-  down the "Switch Weapon"
-  key).
-- Rooms rearrange per cycle.
-  But Cores do not change which
-  room they are in.
-- All cores are visible on the
-  first cycle.
-
-You are one of three units deployed to deactivate the nine cores of this facility. Each room may hold a core.
+You are one of the last three units deployed to deactivate the nine cores of this facility.
 
 You can only destroy cores that match your resonant frequency, and as an individual unit you cannot change this. Some cores may be hidden when you enter. Use your ping function (hold the C key) to emit a strong electromagnetic pulse that will reveal the heart in the room you are in, if it is present. Be wary that if the resonant frequency does not match, you will lose a significant amount of your limited battery; use this wisely.
 

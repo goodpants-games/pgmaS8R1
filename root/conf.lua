@@ -56,4 +56,8 @@ function love.conf(t)
     t.window.vsync = 1
     t.window.highdpi = true
     t.window.title = "SYSTEM SHUTDOWN IMMINENT"
+    
+    t.modules.thread = false
+    t.modules.video = false
+    t.modules.physics = false
 end
