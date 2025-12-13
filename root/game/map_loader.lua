@@ -570,6 +570,7 @@ map_loader.create_edge_atlas = create_edge_atlas
 
 ---@param map game.Map
 ---@param edge_data {[string]:{[integer]:{u0:number, v0:number, u1:number, v1:number}}}
+---@return love.Mesh mesh, love.Mesh? edge_mesh
 function map_loader.create_mesh(map, edge_data)
     assert(map.tw == 16)
     assert(map.th == 16)
@@ -999,8 +1000,11 @@ function map_loader.create_mesh(map, edge_data)
     local mesh = r3d.mesh.new(vertices, "triangles", "static")
     mesh:setVertexMap(indices)
 
-    local edge_mesh = r3d.mesh.new(evertices, "triangles", "static")
-    edge_mesh:setVertexMap(eindices)
+    local edge_mesh ---@type love.Mesh?
+    if evi > 1 then
+        edge_mesh = r3d.mesh.new(evertices, "triangles", "static")
+        edge_mesh:setVertexMap(eindices)
+    end
 
     return mesh, edge_mesh
 

@@ -33,6 +33,7 @@ end
 ---@field private _colmap integer[]
 ---@field private _map game.Map
 ---@field private _map_model r3d.Model
+---@field private _map_edge_model r3d.Model?
 ---@overload fun(game:Game, map_path:string, data:game.RoomCreationData):game.Room
 local Room = batteries.class({ name = "Room" })
 
@@ -301,15 +302,16 @@ function Room:new(game, map_path, data)
     self._map_model.shader = "shaded_alpha_discard"
     self._map_model:set_scale(16, 16, 16)
     self._map_model:set_position(0, 0, -16) -- second layer is play layer
-
-    map_edge_mesh:setTexture(game.resources.edge_tileset)
-    self._map_edge_model = r3d.model(map_edge_mesh)
-    self._map_edge_model.shader = "shaded_alpha_influence"
-    self._map_edge_model:set_scale(16, 16, 16)
-    self._map_edge_model:set_position(0, 0, -16)
-
     game.r3d_world:add_object(self._map_model)
-    game.r3d_world:add_object(self._map_edge_model)
+
+    if map_edge_mesh then
+        map_edge_mesh:setTexture(game.resources.edge_tileset)
+        self._map_edge_model = r3d.model(map_edge_mesh)
+        self._map_edge_model.shader = "shaded_alpha_influence"
+        self._map_edge_model:set_scale(16, 16, 16)
+        self._map_edge_model:set_position(0, 0, -16)
+        game.r3d_world:add_object(self._map_edge_model)
+    end
 end
 
 function Room:release()
@@ -318,11 +320,17 @@ function Room:release()
     end
     table.clear(self._entities)
     
-    self.game.r3d_world:remove_object(self._map_model)
-    self._map_model:release()
+    if self._map_model then
+        self.game.r3d_world:remove_object(self._map_model)
+        self._map_model:release()
+        self._map_model = nil
+    end
 
-    self.game.r3d_world:remove_object(self._map_edge_model)
-    self._map_edge_model:release()
+    if self._map_edge_model then
+        self.game.r3d_world:remove_object(self._map_edge_model)
+        self._map_edge_model:release()
+        self._map_edge_model = nil
+    end
 end
 
 function Room:remove_entity(ent)

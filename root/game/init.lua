@@ -172,56 +172,42 @@ function Game:new(progression)
     ---@private
     self._ping_vis_timer = 0.0
 
-    -- ---@type pklove.tiled.TileLayer?
-    -- local col_layer
+    -- test to make sure edge autotiler doesn't crash
+    if true or not Debug.enabled then
+        return
+    end
 
-    -- for _, layer in ipairs(loaded_tmx.layers) do
-        
-    --     if layer.type == "tilelayer" then
-    --         ---@cast layer pklove.tiled.TileLayer
-            
-    --         local is_col_layer = layer.class == "collision"
-    --         if not is_col_layer then
-    --             layer:syncGraphics()
-    --         else
-    --             layer.visible = false
-    --             col_layer = layer
-    --         end
-    --     end
-    -- end
+    ---@param room_name string
+    ---@param l boolean
+    ---@param u boolean
+    ---@param r boolean
+    ---@param d boolean
+    local function room_load_test(room_name, l,u,r,d)
+        local room = Room(self, "res/maps/"..room_name..".lua", {
+            spawn_enemies = false,
+            closed_room_sides = {
+                left  = l,
+                up    = u,
+                right = r,
+                down  = d,
+            }
+        })
 
-    -- -- get collision data
-    -- self._colmap = {}
+        room:release()
+    end
 
-    -- if col_layer then
-    --     local i = 1
-    --     for y=0, h-1 do
-    --         for x=0, w-1 do
-    --             local cellv = col_layer.data[i]
-    --             local gid = bit.band(cellv, 0x0FFFFFFF)
+    local bit = require("bit")
+    for _, room_name in ipairs({ "start", "units/01", "units/02", "units/03", "units/04", "units/05", "units/06", "units/07", "units/08", "units/09", "units/10", "units/11", "units/12" }) do
+        for i=0, 15 do
+            print(room_name, i)
+            local l = bit.band(i, 1)~=0
+            local r = bit.band(i, 2)~=0
+            local u = bit.band(i, 4)~=0
+            local d = bit.band(i, 8)~=0
+            room_load_test(room_name, l, r, u, d)
+        end
+    end
 
-    --             -- collision
-    --             if gid > 0 then
-    --                 local tile_info = loaded_tmx:getTileInfo(gid)
-    --                 self._colmap[i] = tile_info.id
-    --             else
-    --                 self._colmap[i] = 0
-    --             end
-
-    --             i=i+1
-    --         end
-    --     end
-    -- else
-    --     print("warning: no collision map")
-
-    --     local i=1
-    --     for y=0, h-1 do
-    --         for x=0, w-1 do
-    --             self._colmap[i] = 0
-    --             i=i+1
-    --         end
-    --     end
-    -- end
 end
 
 function Game:release()
