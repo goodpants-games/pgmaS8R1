@@ -55,6 +55,8 @@ function Room:new(game, map_path, data)
         offset_target_y = 0.0,
         vel_x = 0.0,
         vel_y = 0.0,
+        shake_ox = 0.0,
+        shake_oy = 0.0,
     }
 
     local map = map_loader.load(map_path)

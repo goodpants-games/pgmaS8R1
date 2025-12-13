@@ -31,6 +31,7 @@ function love.load(args)
     Lg.setFont(font)
 
     if Debug.enabled then
+        require("game.progression").reset_progression(2)
         sceneman.switchScene("game")
     else
         sceneman.switchScene("terminal")

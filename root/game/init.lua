@@ -178,6 +178,14 @@ function Game:new(progression)
     ---@private
     self._ping_vis_timer = 0.0
 
+    self.cam_shake = 0
+    self.battery_shake = 0
+
+    ---@private
+    self._battery_shake_ox = 0
+    ---@private
+    self._battery_shake_oy = 0
+
     -- test to make sure edge autotiler doesn't crash
     if true or not Debug.enabled then
         return
@@ -332,6 +340,26 @@ function Game:tick()
     --     end
     -- end
 
+    if self.frame % 2 == 0 then
+        if self.cam_shake > 0 then
+            self.room.cam.shake_ox = love.math.random(-1, 1)
+            self.room.cam.shake_oy = love.math.random(-1, 1)
+            self.cam_shake = math.max(self.cam_shake - 2, 0)
+        else
+            self.room.cam.shake_ox = 0.0
+            self.room.cam.shake_oy = 0.0
+        end
+
+        if self.battery_shake > 0 then
+            self._battery_shake_ox = love.math.random(-1, 1)
+            self._battery_shake_oy = love.math.random(-1, 1)
+            self.battery_shake = math.max(self.battery_shake - 2, 0)
+        else
+            self._battery_shake_ox = 0.0
+            self._battery_shake_oy = 0.0
+        end
+    end
+
     self.frame = self.frame + 1
 end
 
@@ -387,8 +415,8 @@ function Game:draw()
     local mat4 = require("r3d.mat4")
 
     local r3d_world = self.r3d_world
-    local cam_x = math.round(self.room.cam.x)
-    local cam_y = math.round(self.room.cam.y)
+    local cam_x = math.round(self.room.cam.x + self.room.cam.shake_ox)
+    local cam_y = math.round(self.room.cam.y + self.room.cam.shake_oy)
 
     r3d_world.cam.transform:identity()
     r3d_world.cam:set_position(cam_x, cam_y, 0.0)
@@ -491,6 +519,8 @@ function Game:_draw_ui()
 
     local text_origin_y = DISPLAY_HEIGHT - 15
 
+    Lg.push()
+    Lg.translate(self._battery_shake_ox, self._battery_shake_oy)
     do
         local height = math.round(6.0 * battery_percentage)
         self._ui_icons_sprite:drawCel(1, sprite_ox, text_origin_y + sprite_oy)
@@ -498,6 +528,7 @@ function Game:_draw_ui()
     end
 
     Lg.print(("%.0f%%"):format(battery_percentage * 100.0), 12, text_origin_y)
+    Lg.pop()
 
     local selected_weapon = self.player.behavior.inst.selected_weapon
 
@@ -822,6 +853,7 @@ function Game:player_ping()
         end
 
         health.value = health.value - health.max * health_deduct
+        self.battery_shake = self.battery_shake + 6
         if health.value < 0.0 then
             health.value = 0.0
         end

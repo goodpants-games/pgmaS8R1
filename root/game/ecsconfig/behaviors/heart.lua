@@ -107,6 +107,8 @@ end
 
 function Behavior:tick()
     local ent = self.entity
+    local game = self.game
+
     local model = ent.r3d_model
     local attackable = ent.attackable
     local velocity = ent.velocity
@@ -138,9 +140,11 @@ function Behavior:tick()
                 self.game:heart_destroyed()
                 self.game:destroy_entity(ent)
                 self.game:sound_quick_play("heart_kill", self.entity)
+                game.cam_shake = game.cam_shake + 9
                 return
             else
                 self.game:sound_quick_play("heart_hurt", self.entity)
+                game.cam_shake = game.cam_shake + 3
                 local ang = math.atan2(attack.dy, attack.dx)
                 for i=1, 10 do
                     self:_spawn_particle(ang + rand() * 0.9, 1.0 + rand() * 0.2)

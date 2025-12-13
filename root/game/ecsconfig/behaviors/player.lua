@@ -76,6 +76,8 @@ function PlayerBehavior:tick()
 
     if attackable and attackable.hit then
         game:sound_quick_play("player_hurt", self.entity)
+        game.cam_shake = game.cam_shake + 5
+        game.battery_shake = game.battery_shake + 6
         player.state = "hurt"
     end
 
