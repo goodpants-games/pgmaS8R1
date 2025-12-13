@@ -298,7 +298,7 @@ function Room:new(game, map_path, data)
     local map_mesh, map_edge_mesh = map_loader.create_mesh(map, game.resources.edge_tileset_data)
     map_mesh:setTexture(game.resources.tileset)
     self._map_model = r3d.model(map_mesh)
-    self._map_model.shader = "shaded_alpha_influence"
+    self._map_model.shader = "shaded_alpha_discard"
     self._map_model:set_scale(16, 16, 16)
     self._map_model:set_position(0, 0, -16) -- second layer is play layer
 

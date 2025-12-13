@@ -23,6 +23,21 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
 }
 ]]
 
+local SHADER_SOURCE_SHADED_ALPHA_DISCARD = [[
+#include <res/shaders/r3d/lighting.glsl>
+#include <res/shaders/r3d/frag.glsl>
+
+vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
+{
+    vec3 light_sum = r3d_calc_lighting(v_normal, v_view_pos);
+    vec4 texturecolor = Texel(tex, texture_coords);
+    texturecolor.rgb *= light_sum;
+    vec4 out_color = texturecolor * color;
+    if (out_color.a < 0.5) discard;
+    return out_color;
+}
+]]
+
 local SHADER_SOURCE_SHADED_ALPHA_INFLUENCE = [[
 #include <res/shaders/r3d/lighting.glsl>
 #include <res/shaders/r3d/frag.glsl>
@@ -158,6 +173,8 @@ function World:new()
         new_shader(SHADER_SOURCE_SHADED, vertex_code)
     self.shaders.shaded_ignore_normal =
         new_shader("#define R3D_LIGHT_IGNORE_NORMAL\n" .. SHADER_SOURCE_SHADED, vertex_code)
+    self.shaders.shaded_alpha_discard =
+        new_shader(SHADER_SOURCE_SHADED_ALPHA_DISCARD, vertex_code)
     self.shaders.shaded_alpha_influence =
         new_shader(SHADER_SOURCE_SHADED_ALPHA_INFLUENCE, vertex_code)
     self.shaders.basic =
