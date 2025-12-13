@@ -1,6 +1,8 @@
 #!/bin/bash
 cd root
-zip -FSr ../exports/game.love res `find . -iname '*.lua' -not -path './res/*'`
+cp ../CREDITS.txt .
+zip -FSr ../exports/game.love res CREDITS.txt `find . -iname '*.lua' -not -path './res/*'`
+rm CREDITS.txt
 cd ..
 
 love.js -t "pgma1" -c exports/game.love exports/lovejs
