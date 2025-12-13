@@ -9,8 +9,8 @@ ls          List the files in the
 read <file> Open and read the
             given file.
 start       Fully boot up the
-            robot.
-shutdown    Shut down the robot.
+            machine.
+shutdown    Shut down the machine.
 pref        Adjust preferences.
 
 TIP: The directory has files which
