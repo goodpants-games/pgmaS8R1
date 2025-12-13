@@ -30,7 +30,7 @@ function love.load(args)
 
     Lg.setFont(font)
 
-    if quick_start then
+    if Debug.enabled then
         sceneman.switchScene("game")
     else
         sceneman.switchScene("terminal")

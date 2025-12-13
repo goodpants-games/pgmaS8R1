@@ -22,6 +22,7 @@ end
 
 local bor = bit.bor
 local band = bit.band
+local bnot = bit.bnot
 
 local ADJBIT_R  = 0x1
 local ADJBIT_U  = 0x2
@@ -32,100 +33,65 @@ local ADJBIT_TL = 0x20
 local ADJBIT_BL = 0x40
 local ADJBIT_BR = 0x80
 
-local TOP_TEXTURES = {
-    metal = {
-        edge_bottom           = 1,
-        edge_left             = 2,
-        edge_bl_corner_in     = 3,
-        edge_bl_corner_out    = 4,
-        edge_all              = 16,
-        top                   = 0,
-    },
-    concrete = {
-        edge_bottom           = 1,
-        edge_left             = 2,
-        edge_bl_corner_in     = 3,
-        edge_bl_corner_out    = 4,
-        edge_all              = 16,
-        top                   = 0,
-    },
-    mesh_chain = {
-        edge_bottom           = 8,
-        edge_left             = 8,
-        edge_bl_corner_in     = 8,
-        edge_bl_corner_out    = 8,
-        edge_all              = 8,
-        top                   = 8,
-    },
-    flesh = {
-        edge_bottom           = 96,
-        edge_left             = 97,
-        edge_bl_corner_in     = 98,
-        edge_bl_corner_out    = 99,
-        edge_all              = 100,
-        top                   = 8,
-    }
-}
-
 local TILE_TEXTURE_DATA = {
     [1] = {
-        side =   5,
-        top     = "metal"
+        side = 5,
+        edge = "metal"
     },
     [2] = {
-        side                  = 6,
+        side = 6,
     },
     [3] = {
-        side                  = 7,
+        side = 7,
     },
     [4] = {
-        side                  = 37,
-        top                  = "concrete"
+        side = 37,
+        edge = "concrete"
     },
     [5] = {
-        side  = -1,
-        top = "mesh_chain",
-        transparent           = true,
+        side = -1,
+        top = 8,
+        transparent = true,
     },
     [6] = {
         side = 9,
-        top = "concrete",
+        edge = "concrete",
     },
     [7] = {
         side = 10,
-        top = "concrete",
+        edge = "concrete",
     },
     [8] = {
         side = 11,
-        top = "concrete",
+        edge = "concrete",
     },
     [9] = {
         side = 12,
-        top = "concrete",
+        edge = "concrete",
     },
     [10] = {
         side = 13,
-        top = "concrete",
+        edge = "concrete",
     },
     [11] = {
         side = 14,
-        top = "concrete",
+        edge = "concrete",
     },
     [12] = {
         side = 15,
-        top = "concrete",
+        edge = "concrete",
     },
     [13] = {
         side = 11,
-        top = "flesh",
+        edge = "flesh",
     },
     [14] = {
         side = 14,
-        top = "flesh",
+        edge = "flesh",
     },
     [15] = {
         side = 15,
-        top = "flesh",
+        edge = "flesh",
     },
     [64] = {
         transparent = true,
@@ -148,6 +114,25 @@ local TILE_TEXTURE_DATA = {
 local function edge_calc_rec(out, r,u,l,d, tr,tl,bl,br, u0,v0,u1,v1, depth)
     assert(depth <= 2)
 
+    -- collect inner corners (must be done before diagonal connections are proc)
+    local itr,itl,ibl,ibr = tr,tl,bl,br
+    if l then
+        itl = false
+        ibl = false
+    end
+    if r then
+        itr = false
+        ibr = false
+    end
+    if u then
+        itl = false
+        itr = false
+    end
+    if d then
+        ibl = false
+        ibr = false
+    end
+
     -- handle diagonal connections
     if r and d then
         br = true
@@ -163,6 +148,7 @@ local function edge_calc_rec(out, r,u,l,d, tr,tl,bl,br, u0,v0,u1,v1, depth)
     end
     
     -- open corner count
+    -- (aka outer corner)
     local otr,otl,obl,obr = tr,tl,bl,br
     if not l then
         otl = false
@@ -200,6 +186,11 @@ local function edge_calc_rec(out, r,u,l,d, tr,tl,bl,br, u0,v0,u1,v1, depth)
     if otl then open_corner_count=open_corner_count+1 end
     if obl then open_corner_count=open_corner_count+1 end
     if obr then open_corner_count=open_corner_count+1 end
+    local inner_corner_count = 0
+    if itr then inner_corner_count=inner_corner_count+1 end
+    if itl then inner_corner_count=inner_corner_count+1 end
+    if ibl then inner_corner_count=inner_corner_count+1 end
+    if ibr then inner_corner_count=inner_corner_count+1 end
 
     local edge_dx = (r and 1 or 0) - (l and 1 or 0)
     local edge_dy = (d and 1 or 0) - (u and 1 or 0)
@@ -207,7 +198,7 @@ local function edge_calc_rec(out, r,u,l,d, tr,tl,bl,br, u0,v0,u1,v1, depth)
     -- straght edge (corners:0 edges:1)
     -- (or inside)
     -- only a quad is needed. normal for all vertices is wall direction
-    if (open_corner_count == 0 and edge_count == 1) or (edge_count == 0 and corner_count == 0) then
+    if (edge_count == 1 and inner_corner_count == 0) or (edge_count == 0 and corner_count == 0) then
         tappend(out,
             { u0, v0, edge_dx, edge_dy },
             { u0, v1, edge_dx, edge_dy },
@@ -226,9 +217,11 @@ local function edge_calc_rec(out, r,u,l,d, tr,tl,bl,br, u0,v0,u1,v1, depth)
     -- reference point is at the opposite corner of the open corner
     -- calculate direction from reference point to quad edges
     -- normal of triangle will be the largest axis of the direction
-    local inner_corner = corner_count == 1 and open_corner_count == 0
-    local outer_corner = open_corner_count == 1
-    if (inner_corner or outer_corner) and (edge_count == 2 or edge_count == 0) then
+    -- local inner_corner = corner_count == 1 and open_corner_count == 0
+    -- local outer_corner = open_corner_count == 1
+    local inner_corner = edge_count == 0 and inner_corner_count == 1 and open_corner_count == 0
+    local outer_corner = edge_count == 2 and open_corner_count == 1 and inner_corner_count == 0
+    if inner_corner or outer_corner then
         if inner_corner then
             otr = tr
             otl = tl
@@ -357,8 +350,227 @@ local function edge_calc(out, adj)
     )
 end
 
+---Like ImageData:paste, but with alpha blending
+---@param dst_img love.ImageData
+---@param src_img love.ImageData
+---@param dx integer?
+---@param dy integer?
+---@param sx integer?
+---@param sy integer?
+---@param sw integer?
+---@param sh integer?
+local function img_paste(dst_img, src_img, dx, dy, sx, sy, sw, sh)
+    dx = dx or 0
+    dy = dy or 0
+    sx = sx or 0
+    sy = sy or 0
+    sw = sw or src_img:getWidth()
+    sh = sh or src_img:getHeight()
+
+    -- local src_w = src_img:getWidth()
+    -- local src_h = src_img:getHeight()
+    -- local dst_w = dst_img:getWidth()
+    -- local dst_h = dst_img:getHeight()
+
+    -- if sw < 0 or sh < 0 then
+    --     error("invalid source rect", 2)
+    -- end
+
+    -- if dx >= dst_w or dy >= dst_h then
+    --     return
+    -- end
+
+    -- if sx < 0 then
+    --     sw = sw + sx
+    --     sx = 0
+    -- end
+    -- if sy < 0 then
+    --     sh = sh + sy
+    --     sy = 0
+    -- end
+    -- if sx + sw > src_w then
+        
+    -- end
+    -- if sx >= src_img:getWidth() or
+    --    sy >= src_img:getHeight()
+    -- then
+    --     return
+    -- end
+
+    -- if dx < 0 then
+    --     sx = sx - dx
+    --     sw = sw + dx
+    --     dx = 0
+    -- end
+    -- if dy < 0 then
+    --     sy = sy - dy
+    --     sh = sh + dy
+    --     dy = 0
+    -- end
+    -- if dx + sw > dst_w then
+    --     sw = dst_w - dx
+    -- end
+    -- if dy + sh > dst_h then
+    --     sh = dst_h - dy
+    -- end
+
+    if    dx < 0 or dy < 0
+       or sx < 0 or sy < 0
+       or dx + sw > dst_img:getWidth()
+       or dy + sh > dst_img:getHeight()
+       or sx + sw > src_img:getWidth()
+       or sy + sh > src_img:getHeight()
+    then
+        error("rect out of bounds", 2)
+    end
+
+    local getp = dst_img.getPixel
+    local setp = src_img.setPixel
+    for y=0, sh-1 do
+        local dsty = dy + y
+        local srcy = sy + y
+
+        for x=0, sw-1 do
+            local dstx = dx + x
+            local srcx = sx + x
+
+            local sr, sg, sb, sa = getp(src_img, srcx, srcy)
+            local dr, dg, db, da = getp(dst_img, dstx, dsty)
+            local inv_sa = 1.0 - sa
+
+            local r, g, b, a
+            if da == 0.0 then
+                r, g, b = sr, sg, sb
+            else
+                r = sr * sa + dr * inv_sa
+                g = sg * sa + dg * inv_sa
+                b = sb * sa + db * inv_sa
+            end
+            a = sa + da * inv_sa
+
+            setp(dst_img, dstx, dsty, r, g, b, a)
+        end
+    end
+end
+
+---@param names string[]
+---@return love.Image
+---@return {[string]:{[integer]:{u0:number, v0:number, u1:number, v1:number}}}
+local function create_edge_atlas(names)
+    local cell_rows = 32
+    local cell_cols = 32
+
+    local img_w = cell_cols * 16
+    local img_h = cell_rows * 16
+    local img = love.image.newImageData(img_w, img_h)
+
+    ---@type {[string]:love.ImageData}
+    local sets = {}
+    ---@type {[string]:{[integer]:{u0:number, v0:number, u1:number, v1:number}}}
+    local tex_data = {}
+    for _, name in ipairs(names) do
+        sets[name] = love.image.newImageData(("res/tilesets/edge_sets/%s.png"):format(name))
+        tex_data[name] = {}
+    end
+    
+    local ci = 1 -- leave first cell empty
+
+    for _, set_name in ipairs(names) do
+        tex_data[set_name][0] = {
+            u0 = 0        / img_w,
+            v0 = 0        / img_h,
+            u1 = (0 + 16) / img_w,
+            v1 = (0 + 16) / img_h,
+        }
+
+        for flags=1, 0xFF do
+            -- first, check if configuration is impossible
+            -- note that corners refer to inner corners, not outer corners; outer
+            -- corners are simply a combination of the two adjacent edges being set.
+            -- i must not have ambiguity.
+            if    band(flags, ADJBIT_R)~=0 and band(flags, bor(ADJBIT_BR, ADJBIT_TR))~=0
+               or band(flags, ADJBIT_U)~=0 and band(flags, bor(ADJBIT_TR, ADJBIT_TL))~=0
+               or band(flags, ADJBIT_L)~=0 and band(flags, bor(ADJBIT_TL, ADJBIT_BL))~=0
+               or band(flags, ADJBIT_D)~=0 and band(flags, bor(ADJBIT_BL, ADJBIT_BR))~=0
+            then
+                goto continue
+            end
+
+            local cx = ci % cell_cols
+            local cy = math.floor(ci / cell_cols)
+            local px = cx * 16
+            local py = cy * 16
+
+            local src_img = sets[set_name]
+            tex_data[set_name][flags] = {
+                u0 = px        / img_w,
+                v0 = py        / img_h,
+                u1 = (px + 16) / img_w,
+                v1 = (py + 16) / img_h,
+            }
+            
+            -- edges
+            if band(flags, ADJBIT_R)~=0 then
+                img_paste(img, src_img, px, py, 0, 0, 16, 16)
+            end
+            if band(flags, ADJBIT_U)~=0 then
+                img_paste(img, src_img, px, py, 16, 0, 16, 16)
+            end
+            if band(flags, ADJBIT_L)~=0 then
+                img_paste(img, src_img, px, py, 32, 0, 16, 16)
+            end
+            if band(flags, ADJBIT_D)~=0 then
+                img_paste(img, src_img, px, py, 48, 0, 16, 16)
+            end
+
+            -- edge corners
+            if band(bnot(flags), bor(ADJBIT_R, ADJBIT_D))==0 then
+                img_paste(img, src_img, px, py, 0, 32, 16, 16)
+            end
+            if band(bnot(flags), bor(ADJBIT_R, ADJBIT_U))==0 then
+                img_paste(img, src_img, px, py, 16, 32, 16, 16)
+            end
+            if band(bnot(flags), bor(ADJBIT_L, ADJBIT_U))==0 then
+                img_paste(img, src_img, px, py, 32, 32, 16, 16)
+            end
+            if band(bnot(flags), bor(ADJBIT_L, ADJBIT_D))==0 then
+                img_paste(img, src_img, px, py, 48, 32, 16, 16)
+            end
+
+            -- corners
+            if band(flags, ADJBIT_BR)~=0 then
+                img_paste(img, src_img, px, py, 0, 16, 16, 16)
+            end
+            if band(flags, ADJBIT_TR)~=0 then
+                img_paste(img, src_img, px, py, 16, 16, 16, 16)
+            end
+            if band(flags, ADJBIT_TL)~=0 then
+                img_paste(img, src_img, px, py, 32, 16, 16, 16)
+            end
+            if band(flags, ADJBIT_BL)~=0 then
+                img_paste(img, src_img, px, py, 48, 16, 16, 16)
+            end
+            
+            ci=ci+1
+            ::continue::
+        end
+    end
+
+    for _, v in pairs(sets) do
+        v:release()
+    end
+
+    local out_tex = Lg.newImage(img)
+    img:release()
+
+    return out_tex, tex_data
+end
+
+map_loader.create_edge_atlas = create_edge_atlas
+
 ---@param map game.Map
-function map_loader.create_mesh(map)
+---@param edge_data {[string]:{[integer]:{u0:number, v0:number, u1:number, v1:number}}}
+function map_loader.create_mesh(map, edge_data)
     assert(map.tw == 16)
     assert(map.th == 16)
     
@@ -366,6 +578,13 @@ function map_loader.create_mesh(map)
     local vertices = {}
     ---@type integer[]
     local indices = {}
+    local vi = 1
+
+    ---@type number[][]
+    local evertices = {}
+    ---@type integer[]
+    local eindices = {}
+    local evi = 1
 
     local voxel_depth = #map.data
     local function get_voxel(x, y, z)
@@ -391,7 +610,7 @@ function map_loader.create_mesh(map)
         end
 
         ---@type string|integer
-        local cn_type = TILE_TEXTURE_DATA[tid].top
+        local cn_type = TILE_TEXTURE_DATA[tid].edge
         if not cn_type then
             cn_type = tid
         end
@@ -430,106 +649,6 @@ function map_loader.create_mesh(map)
         return out
     end
 
-    local function calc_tex_id(x, y, z, adj)
-        local tid = get_voxel(x, y, z)
-        if tid == 0 then return end
-
-        local tile_info = TILE_TEXTURE_DATA[tid]
-        if not tile_info then return end
-
-        if not tile_info.top then
-            return tile_info.side
-        end
-
-        local tinfo = TOP_TEXTURES[tile_info.top]
-
-        -- if not adj then
-        --     adj = calc_adjacency(x, y, z)
-        -- end
-
-        -- true if open, false if closed
-        local r  = band(adj, ADJBIT_R) ~= 0
-        local l  = band(adj, ADJBIT_L) ~= 0
-        local u  = band(adj, ADJBIT_U) ~= 0
-        local d  = band(adj, ADJBIT_D) ~= 0
-        local br = band(adj, ADJBIT_BR) ~= 0
-        local bl = band(adj, ADJBIT_BL) ~= 0
-        local tl = band(adj, ADJBIT_TL) ~= 0
-        local tr = band(adj, ADJBIT_TR) ~= 0
-
-        local count = 0
-        if r then count=count+1 end
-        if l then count=count+1 end
-        if u then count=count+1 end
-        if d then count=count+1 end
-
-        local dcount = 0
-        if tr then dcount=dcount+1 end
-        if tl then dcount=dcount+1 end
-        if br then dcount=dcount+1 end
-        if bl then dcount=dcount+1 end
-
-        if count == 0 then
-            if tr then
-                return tinfo.edge_bl_corner_in, "xy"
-            end
-
-            if tl then
-                return tinfo.edge_bl_corner_in, "y"
-            end
-
-            if bl then
-                return tinfo.edge_bl_corner_in
-            end
-
-            if br then
-                return tinfo.edge_bl_corner_in, "x"
-            end
-
-            return tinfo.top
-        elseif count == 1 then
-            if r then
-                return tinfo.edge_left, "x"
-            end
-
-            if u then
-                return tinfo.edge_bottom, "y"
-            end
-
-            if l then
-                return tinfo.edge_left
-            end
-
-            if d then
-                return tinfo.edge_bottom
-            end
-        elseif count == 2 then
-            if u and r then
-                return tinfo.edge_bl_corner_out, "xy"
-            end
-
-            if r and d then
-                return tinfo.edge_bl_corner_out, "x"
-            end
-
-            if d and l then
-                return tinfo.edge_bl_corner_out
-            end
-
-            if l and u then
-                return tinfo.edge_bl_corner_out, "y"
-            end
-        else
-            goto unknown
-        end
-
-        ::unknown::
-        return tinfo.edge_all
-        -- if r and not l and not u and not d then
-        --     return tinfo.edge_left, "x"
-        -- end
-    end
-
     ---@param id integer
     ---@param flip string?
     ---@return number?
@@ -566,7 +685,26 @@ function map_loader.create_mesh(map)
         return u0, v0, u1, v1
     end
 
-    local vi = 1
+    local function calc_edge_uv(edge, adj)
+        -- change meaning of corner flags. it should only mean inner corners,
+        -- not outer corners
+        if band(adj, bor(ADJBIT_R, ADJBIT_D))~=0 then
+            adj = band(adj, bnot(ADJBIT_BR))
+        end
+        if band(adj, bor(ADJBIT_R, ADJBIT_U))~=0 then
+            adj = band(adj, bnot(ADJBIT_TR))
+        end
+        if band(adj, bor(ADJBIT_L, ADJBIT_U))~=0 then
+            adj = band(adj, bnot(ADJBIT_TL))
+        end
+        if band(adj, bor(ADJBIT_L, ADJBIT_D))~=0 then
+            adj = band(adj, bnot(ADJBIT_BL))
+        end
+        
+        local data = edge_data[edge][adj]
+        return data.u0, data.v0, data.u1, data.v1
+    end
+
     local edge_calc_verts = {}
 
     local function edge_calc_push(x, y, z, adj, u0, v0, u1, v1, r, g, b, a)
@@ -581,18 +719,18 @@ function map_loader.create_mesh(map)
             vert[1], vert[2], vert[3] =
                 x + i, y + j, z
             vert[4], vert[5] =
-                math.lerp(u0, u1, i), math.lerp(v0, v1, 1 - j)
+                math.lerp(u0, u1, i), math.lerp(v0, v1, j)
             vert[6], vert[7], vert[8] =
                 nx, ny, (nx == 0 and ny == 0) and 1 or 0
             vert[9], vert[10], vert[11], vert[12] =
                 r, g, b, a
             
-            table.insert(vertices, vert)
+            table.insert(evertices, vert)
         end
 
         for i=1, #edge_calc_verts, 3 do
-            tappend(indices, vi+0, vi+1, vi+2)
-            vi=vi+3
+            tappend(eindices, evi+0, evi+1, evi+2)
+            evi=evi+3
         end
     end
 
@@ -605,8 +743,10 @@ function map_loader.create_mesh(map)
                     goto continue
                 end
 
-                assert(TILE_TEXTURE_DATA[tid])
-                local side_u0, side_u1, side_v0, side_v1 = calc_tex_uv(TILE_TEXTURE_DATA[tid].side)
+                local tex_dat = TILE_TEXTURE_DATA[tid]
+                assert(tex_dat)
+
+                local side_u0, side_u1, side_v0, side_v1 = calc_tex_uv(tex_dat.side)
 
                 -- right
                 if side_u0 and voxel_trans(x + 1, y, z) then
@@ -765,18 +905,10 @@ function map_loader.create_mesh(map)
                 end
 
                 -- top
-                if voxel_trans(x, y, z + 1) then                    
-                    local adj = calc_adjacency(x, y, z)
-                    local id, flip = calc_tex_id(x, y, z, adj)
-                    local u0, v0, u1, v1 = calc_tex_uv(id, flip)
+                if voxel_trans(x, y, z + 1) then
+                    if z == 0 or not tex_dat.edge then
+                        local u0, v0, u1, v1 = calc_tex_uv(tex_dat.top or tex_dat.side)
 
-                    if z >= 1 then
-                        edge_calc_push(
-                            x, y, z + 1,
-                            adj,
-                            u0, v0, u1, v1,
-                            1, 1, 1, 1)
-                    else
                         tappend(vertices,
                             {
                                 x + 1, y + 1, z + 1,
@@ -810,6 +942,15 @@ function map_loader.create_mesh(map)
                         )
 
                         vi = vi + 4
+                    else
+                        local adj = calc_adjacency(x, y, z)
+                        local u0, v0, u1, v1 = calc_edge_uv(tex_dat.edge, adj)
+
+                        edge_calc_push(
+                            x, y, z + 1,
+                            adj,
+                            u0, v0, u1, v1,
+                            1, 1, 1, 1)
                     end
                 end
 
@@ -858,7 +999,10 @@ function map_loader.create_mesh(map)
     local mesh = r3d.mesh.new(vertices, "triangles", "static")
     mesh:setVertexMap(indices)
 
-    return mesh
+    local edge_mesh = r3d.mesh.new(evertices, "triangles", "static")
+    edge_mesh:setVertexMap(eindices)
+
+    return mesh, edge_mesh
 
     -- local out = io.open("../test.obj", "w")
     -- assert(out, "could not open test.obj")

@@ -97,7 +97,7 @@ def scan_tileset_directory(dirpath: str) -> bool:
         path = os.path.join(dirpath, basename)
 
         if os.path.isdir(path) and basename != 'editoronly':
-            scan_tileset_directory(dirpath)
+            scan_tileset_directory(path)
         
         else:
             (_, fileext) = os.path.splitext(basename)

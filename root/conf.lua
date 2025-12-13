@@ -13,6 +13,8 @@ if os.getenv("LOCAL_LUA_DEBUGGER_VSCODE") == "1" then
     function love.errorhandler(msg)
         error(msg, 3)
     end
+else
+    require("error_explorer")
 end
 
 if not package.loaded["bit"] then

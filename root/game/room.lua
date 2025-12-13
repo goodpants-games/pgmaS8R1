@@ -211,7 +211,7 @@ function Room:new(game, map_path, data)
         elseif obj.type == "special" then
             if obj.name == "heart" and data.heart_color then
                 assert(obj.shape == "point")
-                local e = create_entity(obj.x, obj.y, "heart", game.heart_model)
+                local e = create_entity(obj.x, obj.y, "heart", game.resources.heart_model)
                 e.heart.color = data.heart_color
                 e.heart.visible = data.heart_visible
                 self._entity_types[e] = nil -- this is a game jam game. I need some horrible code somewhere.
@@ -295,18 +295,21 @@ function Room:new(game, map_path, data)
     -- assert(self.player, "level must have a player")
 
     -- create map model
-    local map_mesh = map_loader.create_mesh(map)
-    do
-        local tilemap = Lg.newImage("res/tilesets/test_tileset.png")
-        map_mesh:setTexture(tilemap)
-        tilemap:release()
-    end
+    local map_mesh, map_edge_mesh = map_loader.create_mesh(map, game.resources.edge_tileset_data)
+    map_mesh:setTexture(game.resources.tileset)
     self._map_model = r3d.model(map_mesh)
     self._map_model.shader = "shaded_alpha_influence"
     self._map_model:set_scale(16, 16, 16)
     self._map_model:set_position(0, 0, -16) -- second layer is play layer
 
+    map_edge_mesh:setTexture(game.resources.edge_tileset)
+    self._map_edge_model = r3d.model(map_edge_mesh)
+    self._map_edge_model.shader = "shaded_alpha_influence"
+    self._map_edge_model:set_scale(16, 16, 16)
+    self._map_edge_model:set_position(0, 0, -16)
+
     game.r3d_world:add_object(self._map_model)
+    game.r3d_world:add_object(self._map_edge_model)
 end
 
 function Room:release()
@@ -317,6 +320,9 @@ function Room:release()
     
     self.game.r3d_world:remove_object(self._map_model)
     self._map_model:release()
+
+    self.game.r3d_world:remove_object(self._map_edge_model)
+    self._map_edge_model:release()
 end
 
 function Room:remove_entity(ent)

@@ -4,6 +4,7 @@ local Sprite = require("sprite")
 local Room = require("game.room")
 local Collision = require("game.collision")
 local SoundManager = require("game.sound_manager")
+local map_loader = require("game.map_loader")
 
 local ecsconfig = require("game.ecsconfig")
 local consts = require("game.consts")
@@ -74,9 +75,15 @@ function Game:new(progression)
     self.r3d_world:add_object(self.r3d_batch)
     self.r3d_world:add_object(self.r3d_sprite_batch)
 
+    self.resources = {}
+
     local heart_mesh = r3d.mesh.load_obj("res/heart_model.obj")
-    self.heart_model = r3d.model(heart_mesh)
-    self.heart_model.shader = "basic"
+    self.resources.heart_model = r3d.model(heart_mesh)
+    self.resources.heart_model.shader = "basic"
+
+    self.resources.tileset = Lg.newImage("res/tilesets/test_tileset.png")
+    self.resources.edge_tileset, self.resources.edge_tileset_data =
+        map_loader.create_edge_atlas({ "metal", "concrete", "flesh" })
 
     self._ui_icons_sprite = Sprite.new("res/sprites/ui_icons.json")
     self._font = Lg.newFont("res/fonts/DepartureMono-Regular.otf", 11, "mono", 1.0)
@@ -219,13 +226,18 @@ end
 
 function Game:release()
     self.room:release()
-    self.heart_model:release()
     self.r3d_world:release()
     self.r3d_batch:release()
     self.r3d_sprite_batch:release()
     self._ui_icons_sprite:release()
     self._font:release()
     self.sound:release()
+
+    for _, res in pairs(self.resources) do
+        if res.release then
+            res:release()
+        end
+    end
 end
 
 function Game:new_entity()
