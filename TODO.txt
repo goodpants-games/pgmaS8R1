@@ -1,7 +1,11 @@
 IMPORTANT!!!
   Concrete edge set
   Update player shading
-  FIX wasd support
+  FIX wasd support (aka remove it?)
+  difficulty modes?
+    easy: hearts give you 100% of health
+    normal: hearts give you 50% of health
+    hard: hearts give you no health, enemies do more damage
 
 name: System Shutdown Imminent
       (then, this text should be spammed on death animation)

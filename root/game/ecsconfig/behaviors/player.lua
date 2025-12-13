@@ -207,7 +207,7 @@ function PlayerBehavior:tick()
                 player.state = "move"
                 sprite:play("idle")
             elseif anim_frame_changed and sprite_anim_frame == 5 then
-                battery_drain = battery_drain + 600.0
+                battery_drain = battery_drain + 800.0
                 self:_fire_shoot_scanline()
 
                 if ent.gun_sight then
@@ -234,7 +234,6 @@ function PlayerBehavior:tick()
             end
 
             if anim_frame_changed and (sprite_anim_frame == 2 or sprite_anim_frame == 4) then
-                print("play footstep sound")
                 local snd = table.pick_random(self.footstep_sounds)
                 assert(snd)
                 snd.src:play()

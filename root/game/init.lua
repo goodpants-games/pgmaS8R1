@@ -712,7 +712,7 @@ function Game:heart_destroyed()
     end
 
     local health = self.player.health
-    health.value = health.value + 35.0
+    health.value = health.value + 50.0
     if health.value > health.max then
         health.value = health.max
     end

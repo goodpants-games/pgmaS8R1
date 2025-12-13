@@ -51,6 +51,10 @@ end
 function love.keypressed(key)
     sceneman.dispatch("keypressed", key)
 
+    if key == "f1" then
+        Debug.enabled = not Debug.enabled
+    end
+
     if not LOVEJS and Debug.enabled and key == "f12" then
         Lg.captureScreenshot(function(img)
             ---@cast img love.ImageData
