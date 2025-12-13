@@ -15,6 +15,8 @@ NORMAL:  Balanced difficulty.
 HARD:    Destroying cores recovers
          no HP. Enemies do more
          damage.
+EVIL:    For those who are sick
+         in the head.
 
 Type, or "x" to cancel:
 ]]
@@ -26,7 +28,7 @@ Type, or "x" to cancel:
         -- print("HARD: Destroying cores recovers no HP. Enemies do more damage.")
         local input = string.lower(get_line())
 
-        if input:sub(1, 1) == "e" then
+        if input:sub(1, 2) == "ea" then
             game_difficulty = 1
             break
         elseif input:sub(1, 1) == "n" then
@@ -34,6 +36,20 @@ Type, or "x" to cancel:
             break
         elseif input:sub(1, 1) == "h" then
             game_difficulty = 3
+            break
+        elseif input == "evil" then
+            print("Confirm EVIL mode?")
+            print("Notice: We are not responsible for\nany loss of sanity, hair, familial\nreputation, educational\nperformance, or employment\nsecurity.")
+            puts("(y/n): ")
+
+            local c = string.lower(get_line())
+            if c:sub(1,1) == "y" then
+                game_difficulty = 4
+            else
+                print("No? Good.")
+                return
+            end
+
             break
         elseif input == "x" then
             return

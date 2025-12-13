@@ -19,7 +19,7 @@ GameProgression.progression = nil
 ---@param difficulty integer
 ---@return Game.Progression
 function GameProgression.reset_progression(difficulty)
-    assert(difficulty >= 1 and difficulty <= 3)
+    assert(difficulty >= 1 and difficulty <= 4)
 
     local room_pool = {
         "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12",

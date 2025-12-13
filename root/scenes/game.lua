@@ -43,7 +43,12 @@ function scene.load()
     }, true)
 
     scndat.paused = false
-    scndat.music = love.audio.newSource("res/music/drone.wav", "static")
+
+    if scndat.game:get_difficulty() == 4 then
+        scndat.music = love.audio.newSource("res/music/evildrone.ogg", "stream")
+    else
+        scndat.music = love.audio.newSource("res/music/drone.wav", "static")
+    end
 
     scndat.music:setVolume(0.5)
     scndat.music:setLooping(true)

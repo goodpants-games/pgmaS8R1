@@ -69,8 +69,15 @@ function PlayerBehavior:tick()
     local player = ent.player_control
     local attackable = ent.attackable
 
+    local game_evil = game:get_difficulty() == 4
     local battery_drain_scale = 0.003
     local battery_drain = 0.4
+
+    -- since player will have only one health I need to make the game
+    -- actually possible.
+    if game_evil then
+        battery_drain_scale = 0
+    end
 
     local prev_state = player.state
 
@@ -101,16 +108,21 @@ function PlayerBehavior:tick()
     end
 
     if player.trigger_weapon_switch then
-        local last_selected_weapon = self.selected_weapon
+        if not game_evil then
+            local last_selected_weapon = self.selected_weapon
 
-        self.selected_weapon = self.selected_weapon % 2 + 1
-        player.trigger_weapon_switch = false
+            self.selected_weapon = self.selected_weapon % 2 + 1
+            player.trigger_weapon_switch = false
 
-        if self.selected_weapon == 2 and last_selected_weapon ~= 2 then
-            ent:give("gun_sight", 1, 0, 0)
-            ent.gun_sight.auto_aim = true
-        elseif self.selected_weapon ~= 2 and last_selected_weapon == 2 then
-            ent:remove("gun_sight")
+            if self.selected_weapon == 2 and last_selected_weapon ~= 2 then
+                ent:give("gun_sight", 1, 0, 0)
+                ent.gun_sight.auto_aim = true
+            elseif self.selected_weapon ~= 2 and last_selected_weapon == 2 then
+                ent:remove("gun_sight")
+            end
+        else
+            game:sound_quick_play("small_impact")
+            player.trigger_weapon_switch = false
         end
     end
 

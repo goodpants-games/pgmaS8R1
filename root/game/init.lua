@@ -154,6 +154,8 @@ function Game:new(progression)
     local player_health = 150
     if self.progression.difficulty == 3 then
         player_health = 80
+    elseif self.progression.difficulty == 4 then
+        player_health = 1
     end
 
     self.player = self:new_entity()
@@ -162,6 +164,11 @@ function Game:new(progression)
                   self.room.player_spawn_y,
                   player_health)
 
+    if progression.difficulty == 4 then
+        self.player.light.r = 1.0
+        self.player.light.g = 0.6
+        self.player.light.b = 0.6
+    end
     ---@private
     self._transport_trans_state = 0
     ---@private
@@ -860,6 +867,10 @@ function Game:player_ping()
     else
         self:sound_quick_play("ping")
     end
+end
+
+function Game:get_difficulty()
+    return self.progression.difficulty
 end
 
 return Game

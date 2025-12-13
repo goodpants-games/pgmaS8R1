@@ -37,6 +37,8 @@ local function results_proc(term)
         diff = "Normal"
     elseif prog.difficulty == 3 then
         diff = "Hard"
+    elseif prog.difficulty == 4 then
+        diff = "EVIL"
     end
 
     printf("Difficulty: %s\n", diff)
