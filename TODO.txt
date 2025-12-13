@@ -1,3 +1,8 @@
+IMPORTANT!!!
+  Concrete edge set
+  Update player shading
+  FIX wasd support
+
 name: System Shutdown Imminent
       (then, this text should be spammed on death animation)
       (also when you manage to destroy all hearts, siren should play
@@ -7,9 +12,7 @@ name: System Shutdown Imminent
   upwards, so it doesn't clip through the ground. although this does require
   a bit of a rework with the rendering system
 - mabye optimize performance? (i think heart particles makes lag)
-- FIX tile outlines
-- TODO!!!!! add in-game tutorial
-            Also camera shake i think. battery shake when decrease.
+- Also camera shake i think. battery shake when decrease.
 
 - three runs, three hearts per run, totaling 9 hearts
   all hearts are visible at start, and turn invisible on the next run once you
