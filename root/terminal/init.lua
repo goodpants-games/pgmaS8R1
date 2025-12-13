@@ -4,6 +4,8 @@ local Terminal = batteries.class {
     name = "Terminal"
 }
 
+local GameProgression = require("game.progression")
+
 ---@param process_env table?
 ---@param no_startup_msg boolean?
 function Terminal:new(process_env, no_startup_msg)
@@ -23,7 +25,9 @@ function Terminal:new(process_env, no_startup_msg)
     self.cur_process = nil
     self.cur_process_time_accum = nil
     self.cur_process_wait_length = nil
-    self.cur_process_wait_for_char = false
+
+    ---@type nil|"char"|"line"
+    self.cur_process_wait_mode = nil
 
     ---@type table
     self.process_env = nil
@@ -41,6 +45,7 @@ function Terminal:new(process_env, no_startup_msg)
     self.process_env.puts = function(...) self:puts(...) end
     self.process_env.print = function(...) self:print(...) end
     self.process_env.get_char = function() return coroutine.yield("CHAR") end
+    self.process_env.get_line = function() return coroutine.yield("LINE") end
     self.process_env.wait = function(sec) return coroutine.yield(sec) end
     self.process_env.log = print
     self.process_env.term = self
@@ -53,7 +58,12 @@ Loaded modules:
 - Intelligence
 
 ]]
-        self:puts(startup_msg:format(require("game.progression").progression.player_color + 18))
+        local pcol = 1
+        if GameProgression.progression then
+            pcol = GameProgression.progression.player_color
+        end
+
+        self:puts(startup_msg:format(pcol + 18))
     end
 
     self:puts[[Type "help" to get a list of
@@ -182,7 +192,7 @@ end
 function Terminal:_resume_process(...)
     self.cur_process_time_accum = nil
     self.cur_process_wait_length = nil
-    self.cur_process_wait_for_char = false
+    self.cur_process_wait_mode = nil
 
     local s, wait_time = coroutine.resume(self.cur_process, ...)
     if not s then
@@ -198,7 +208,9 @@ function Terminal:_resume_process(...)
     end
 
     if wait_time == "CHAR" then
-        self.cur_process_wait_for_char = true
+        self.cur_process_wait_mode = "char"
+    elseif wait_time == "LINE" then
+        self.cur_process_wait_mode = "line"
     else
         self.cur_process_time_accum = 0.0
         self.cur_process_wait_length = wait_time or 0.0
@@ -256,10 +268,10 @@ end
 
 ---@param text string
 function Terminal:text_input(text)
-    if self.cur_process_wait_for_char then
+    if self.cur_process_wait_mode == "char" then
         local ti = 1
         local strlen = text:len()
-        while ti <= strlen and self.cur_process_wait_for_char do
+        while ti <= strlen and self.cur_process_wait_mode == "char" do
             self:_resume_process(text:sub(ti, ti))
             ti=ti+1
         end
@@ -279,6 +291,9 @@ function Terminal:text_input(text)
             self:puts("\n")
             if self.cur_process == nil then
                 self:execute_command(self.text_buffer)
+                self.text_buffer = ""
+            elseif self.cur_process_wait_mode == "line" then
+                self:_resume_process(self.text_buffer)
                 self.text_buffer = ""
             end
             
@@ -306,7 +321,7 @@ function Terminal:key_pressed(key)
     end
 
     if key == "enter" or key == "return" then
-        if self.cur_process_wait_for_char then
+        if self.cur_process_wait_mode == "char" then
             self:_resume_process("\n")
         else
             self:text_input("\n")
@@ -316,7 +331,7 @@ function Terminal:key_pressed(key)
     end
 
     if key == "backspace" then
-        if self.cur_process_wait_for_char then
+        if self.cur_process_wait_mode == "char" then
             self:_resume_process("backspace")
         elseif self.text_buffer:len() > 0 then
             self:backspace()
@@ -331,7 +346,7 @@ function Terminal:key_pressed(key)
         return
     end
 
-    if self.cur_process_wait_for_char then
+    if self.cur_process_wait_mode == "char" then
         if key == "left" or key == "right" or key == "up" or key == "down" then
             self:_resume_process(key)
         end

@@ -2,6 +2,7 @@ local sceneman = require("sceneman")
 local scene = sceneman.scene()
 
 local Terminal = require("terminal")
+local GameProgression = require("game.progression")
 
 local self
 
@@ -19,7 +20,7 @@ local function results_proc(term)
     printf("MISSION END STATISTICS\n\n")
     coroutine.yield(1.0)
 
-    local prog = require("game.progression").progression
+    local prog = GameProgression.progression
     assert(prog)
 
     local hearts_destroyed = 0
@@ -29,6 +30,17 @@ local function results_proc(term)
         end
     end
 
+    local diff
+    if prog.difficulty == 1 then
+        diff = "Easy"
+    elseif prog.difficulty == 2 then
+        diff = "Normal"
+    elseif prog.difficulty == 3 then
+        diff = "Hard"
+    end
+
+    printf("Difficulty: %s\n", diff)
+    coroutine.yield(1.0)
     printf("Hearts destroyed: %i/%i\n", hearts_destroyed, 9)
     coroutine.yield(1.0)
 
@@ -74,7 +86,7 @@ local function results_proc(term)
 
     self.terminal = Terminal()
     self.results = false
-    require("game.progression").reset_progression()
+    require("game.progression").progression = nil
 end
 
 function scene.load()
@@ -82,7 +94,10 @@ function scene.load()
     love.keyboard.setTextInput(true)
     love.keyboard.setKeyRepeat(true)
 
-    local results = require("game.progression").progression.player_color == 4
+    local results = false
+    if GameProgression.progression then
+        results = GameProgression.progression.player_color == 4
+    end
 
     self = {}
     self.terminal = Terminal()

@@ -9,20 +9,25 @@ local consts = require("game.consts")
 ---@field room_id string
 
 ---@class Game.Progression
+---@field difficulty integer
 ---@field player_color integer
 ---@field rooms Game.ProgressionRoom[]
 
 ---@type Game.Progression?
 GameProgression.progression = nil
 
+---@param difficulty integer
 ---@return Game.Progression
-function GameProgression.reset_progression()
+function GameProgression.reset_progression(difficulty)
+    assert(difficulty >= 1 and difficulty <= 3)
+
     local room_pool = {
         "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12",
     }
 
     ---@type Game.Progression
     local out = {
+        difficulty = difficulty,
         player_color = 1,
         rooms = {}
     }
@@ -61,7 +66,5 @@ function GameProgression.reset_progression()
     GameProgression.progression = out
     return out
 end
-
-GameProgression.reset_progression()
 
 return GameProgression

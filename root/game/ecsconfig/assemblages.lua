@@ -65,13 +65,13 @@ function asm.entity.weeping_angel(e, x, y)
     e.actor.move_speed = 0.8
 end
 
-function asm.entity.player(e, x, y)
+function asm.entity.player(e, x, y, health)
     e:assemble(asm.actor,
                x, y,
                13, 8,
                "res/sprites/robot.json")
     e:give("light", "spot")
-     :give("health", 150)
+     :give("health", health)
      :give("attackable")
      :give("player_control")
      :give("behavior", "player")

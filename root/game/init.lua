@@ -151,10 +151,16 @@ function Game:new(progression)
         error("uh how do i spawn the player. HELP")
     end
 
+    local player_health = 150
+    if self.progression.difficulty == 3 then
+        player_health = 80
+    end
+
     self.player = self:new_entity()
         :assemble(ecsconfig.asm.entity.player,
                   self.room.player_spawn_x,
-                  self.room.player_spawn_y)
+                  self.room.player_spawn_y,
+                  player_health)
 
     ---@private
     self._transport_trans_state = 0
@@ -712,9 +718,11 @@ function Game:heart_destroyed()
     end
 
     local health = self.player.health
-    health.value = health.value + 50.0
-    if health.value > health.max then
-        health.value = health.max
+    if self.progression.difficulty <= 2 then
+        health.value = health.value + 50.0
+        if health.value > health.max then
+            health.value = health.max
+        end
     end
 end
 
@@ -804,7 +812,16 @@ function Game:player_ping()
         print("penalize")
         self:sound_quick_play("player_hurt")
         local health = self.player.health
-        health.value = health.value - 35.0
+
+        ---@type number
+        local health_deduct -- as a percentage
+        if self.progression.difficulty == 1 then
+            health_deduct = 0.10
+        else
+            health_deduct = 0.23
+        end
+
+        health.value = health.value - health.max * health_deduct
         if health.value < 0.0 then
             health.value = 0.0
         end

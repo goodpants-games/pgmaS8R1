@@ -6,4 +6,6 @@ IMPORTANT: You need to memorize the layout of the room you find cores, because t
 
 Cores are visible the first time you enter a room. On the next cycle they will hide. To reveal one in the room you are in, use your ping function (hold down the "Switch Weapon" key).
 
+Rooms rearrange per cycle, but what rooms appear will not.
+
 For more information, use the "ls" command to list all the files in the directory.
