@@ -267,9 +267,7 @@ function scene.draw()
                 scndat.need_frame_capture = false
                 scndat.frame_capture = scndat.canvas:newImageData()
 
-                -- in html5 canvas are always sRGB, so i need to convert them to
-                -- linear space to match up with what it looks like on native.
-                if LOVEJS then
+                if scndat.canvas:getFormat() == "srgba8" then
                     local img = scndat.frame_capture --[[@as love.ImageData]]
                     local imgh = img:getHeight()
                     local imgw = img:getWidth()

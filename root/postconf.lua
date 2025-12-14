@@ -1,8 +1,41 @@
 LOVEJS = love.system.getOS() == "Web"
+Lg = love.graphics
 
-if not love.graphics.getCanvasFormats()["rgba8"] then
+if LOVEJS then
+    print("html5 canvas format check...")
+
+    local supported_formats = Lg.getCanvasFormats()
+    local format_check_list = {
+        "rgba8",
+        "srgba8",
+        "rgba16",
+        "rgba16f",
+        "rgba32f",
+
+        -- seems to unconditionally be supported, but as it is 16-bit color
+        -- the game will look very off. i think.
+        "rgba4",
+    }
+
+    local use_format
+    for _, v in ipairs(format_check_list) do
+        if supported_formats[v] then
+            use_format = v
+            break
+        end
+    end
+
+    print("using: " .. use_format)
+
+    if use_format == "rgba4" then
+        love.window.showMessageBox(
+            "Compatibility Warning",
+            "The game must be rendered in 16-bit color mode. well, i think it's 16-bit color mode.",
+            "warning")
+    end
+
     local orig_newCanvas = love.graphics.newCanvas
-    local default_settings = { format = "srgba8" }
+    local default_settings = { format = use_format }
 
     local function fix_settings(s)
         if s == nil then
@@ -13,7 +46,7 @@ if not love.graphics.getCanvasFormats()["rgba8"] then
             for k,v in pairs(old_s) do
                 s[k] = v
             end
-            s.format = "srgba8"
+            s.format = use_format
         end
 
         return s
@@ -39,9 +72,9 @@ end
 
 
 
-require("batteries"):export()
-Lg = love.graphics
 
+
+require("batteries"):export()
 Lg.setDefaultFilter("nearest")
 
 local sceneman = require("sceneman")
