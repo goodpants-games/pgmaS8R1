@@ -1,6 +1,6 @@
 LOVEJS = love.system.getOS() == "Web"
 
-if LOVEJS then
+if not love.graphics.getCanvasFormats()["rgba8"] then
     local orig_newCanvas = love.graphics.newCanvas
     local default_settings = { format = "srgba8" }
 
