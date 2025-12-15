@@ -51,6 +51,7 @@ DISPLAY_WIDTH = 240
 DISPLAY_HEIGHT = 180
 
 function love.conf(t)
+    t.version = "11.4"
     t.identity = "pkhead_SystemShutdownImminent"
     t.window.width = DISPLAY_WIDTH * 3
     t.window.height = DISPLAY_HEIGHT * 3

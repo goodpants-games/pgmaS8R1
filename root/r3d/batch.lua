@@ -323,6 +323,10 @@ function Batch:draw(draw_ctx)
 
     local draw_calls = self._draw_calls
     local draw_start = 1
+
+    if not self._vtx_map[1] then
+        return
+    end
     
     self.mesh:setVertexMap(self._vtx_map)
     Lg.setColor(1, 1, 1)
