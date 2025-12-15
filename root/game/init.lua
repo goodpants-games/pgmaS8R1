@@ -187,11 +187,17 @@ function Game:new(progression)
 
     self.cam_shake = 0
     self.battery_shake = 0
+    self.color_shake = 0
 
     ---@private
     self._battery_shake_ox = 0
     ---@private
     self._battery_shake_oy = 0
+
+    ---@private
+    self._color_shake_ox = 0
+    ---@private
+    self._color_shake_oy = 0
 
     -- test to make sure edge autotiler doesn't crash
     if true or not Debug.enabled then
@@ -364,6 +370,15 @@ function Game:tick()
         else
             self._battery_shake_ox = 0.0
             self._battery_shake_oy = 0.0
+        end
+
+        if self.color_shake > 0 then
+            self._color_shake_ox = love.math.random(-2, 2)
+            self._color_shake_oy = love.math.random(-2, 2)
+            self.color_shake = math.max(self.color_shake - 2, 0)
+        else
+            self._color_shake_ox = 0.0
+            self._color_shake_oy = 0.0
         end
     end
 
@@ -556,9 +571,12 @@ function Game:_draw_ui()
     self._ui_icons_sprite:drawCel(3, sprite_ox + 54, text_origin_y + sprite_oy)
 
     -- resonant frequency (aka player color)
-    local player_color = UI_COLOR_TABLE[self.player_color]
-    Lg.setColor(unpack(player_color.color))
-    Lg.print(player_color.display, 68, text_origin_y)
+    Lg.push()
+    Lg.translate(self._color_shake_ox, self._color_shake_oy)
+        local player_color = UI_COLOR_TABLE[self.player_color]
+        Lg.setColor(unpack(player_color.color))
+        Lg.print(player_color.display, 68, text_origin_y)
+    Lg.pop()
 
     -- map
     local MAP_CELL_SIZE = 5

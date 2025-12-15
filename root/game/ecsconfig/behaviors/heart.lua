@@ -128,6 +128,7 @@ function Behavior:tick()
         if self.game.player_color ~= ent.heart.color then
             health.value = health.max
             self.game:sound_quick_play("fleshblob_hurt", self.entity)
+            game.color_shake = game.color_shake + 6
         else
             self.beat_speed = self.beat_speed * 2.0
 
