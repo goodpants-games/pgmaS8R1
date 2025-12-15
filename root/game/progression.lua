@@ -48,7 +48,7 @@ function GameProgression.reset_progression(difficulty)
     -- place red hearts
     for i=1, 3 do
         out.rooms[i].heart_color = 1
-        out.rooms[i].heart_visible = true
+        out.rooms[i].heart_visible = i ~= 1
     end
 
     -- place green hearts

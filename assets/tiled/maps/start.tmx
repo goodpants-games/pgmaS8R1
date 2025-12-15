@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="32" height="32" tilewidth="16" tileheight="16" infinite="0" nextlayerid="5" nextobjectid="21">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="32" height="32" tilewidth="16" tileheight="16" infinite="0" nextlayerid="5" nextobjectid="23">
  <tileset firstgid="1" source="../tilesets/voxel.tsx"/>
  <layer id="1" name="Floor" width="32" height="32">
   <data encoding="base64">
@@ -51,6 +51,12 @@
   <object id="20" name="tutorial" type="entity" x="465" y="334">
    <properties>
     <property name="anim" value="terminal"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="22" name="tutorial" type="entity" x="438.167" y="178.667">
+   <properties>
+    <property name="anim" value="ping"/>
    </properties>
    <point/>
   </object>

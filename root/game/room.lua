@@ -2,6 +2,7 @@ local Concord = require("concord")
 local bit = require("bit")
 local r3d = require("r3d")
 local Sprite = require("sprite")
+local userpref = require("userpref")
 
 local ecsconfig = require("game.ecsconfig")
 local map_loader = require("game.map_loader")
@@ -202,6 +203,24 @@ function Room:new(game, map_path, data)
 
                 local init_anim = obj.properties.anim
                 if init_anim and e.sprite then
+                    if obj.name == "tutorial" then
+                        local res = Sprite.loadResource("res/sprites/tutorial.json")
+                        local mouse_name = "mouse_"..init_anim
+                        local wasd_name = "wasd_"..init_anim
+                        local arrow_name = "arrow_"..init_anim
+
+                        local use_mouse = userpref.control_mode == "dual"
+                        local use_wasd = use_mouse or userpref.input_mode == "wasd"
+
+                        if use_mouse and res.animations[mouse_name] then
+                            init_anim = mouse_name
+                        elseif use_wasd and res.animations[wasd_name] then
+                            init_anim = wasd_name
+                        elseif res.animations[arrow_name] then
+                            init_anim = arrow_name
+                        end
+                    end
+
                     e.sprite:play(init_anim)
                 end
             end
