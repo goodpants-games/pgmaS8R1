@@ -495,7 +495,12 @@ function Game:draw(paused)
 
     if not paused and userpref.control_mode == "dual" then
         Lg.setColor(1, 1, 1)
-        Lg.rectangle("line", MOUSE_X - 1.5, MOUSE_Y - 1.5, 3, 3)
+        local draw_x = math.round(MOUSE_X)
+        local draw_y = math.round(MOUSE_Y)
+        local draw_w = 3
+        local draw_h = 3
+        Lg.setLineStyle("rough")
+        Lg.rectangle("line", draw_x - draw_w/2.0 + 0.5, draw_y - draw_h/2.0 + 0.5, draw_w, draw_h)
     end
 
     -- local tl = self._tiled_map.layers[1] --[[@as pklove.tiled.TileLayer]]
