@@ -255,7 +255,7 @@ function scene.draw()
             local old_canvas = Lg.getCanvas()
             Lg.setCanvas({ scndat.canvas, depth = true })
             Lg.clear(Lg.getBackgroundColor())
-            scndat.game:draw()
+            scndat.game:draw(true)
             Lg.setColor(1, 1, 1)
             Lg.draw(scndat.img_sad_bot,
                     (DISPLAY_WIDTH - scndat.img_sad_bot:getWidth()) / 2,
@@ -289,7 +289,7 @@ function scene.draw()
             Lg.draw(scndat.canvas, 0, 0)
         end
     else
-        scndat.game:draw()
+        scndat.game:draw(scndat.paused)
     end
 
     if scndat.paused and not scndat.game.player_is_dead then

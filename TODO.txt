@@ -1,11 +1,6 @@
 IMPORTANT!!!
-  Concrete edge set
-  Update player shading
   FIX wasd support (aka remove it?)
-  difficulty modes?
-    easy: hearts give you 100% of health
-    normal: hearts give you 50% of health
-    hard: hearts give you no health, enemies do more damage
+  hitting a heart you can't destroy flashes/shakes resonant freq. display
 
 name: System Shutdown Imminent
       (then, this text should be spammed on death animation)

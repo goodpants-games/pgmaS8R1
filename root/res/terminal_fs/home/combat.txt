@@ -1,21 +1,16 @@
-== WEAPONS ==
+== COMBAT TIPS ==
 
-MELEE (Metal Bar):
-This weapon is harder to use than the laser gun, but it does not use any battery. It takes a relatively long time to swing it, and you are vulnerable to damage while doing so. Thus, you must be aware of your positioning, surroundings, and time your attacks properly while using it.
+- Don't enter unnecessary fights.
+- Be aware of your spacing, positioning, and timing.
+- Back off after every melee hit to give yourself space for the next swing.
+- If you are struggling too much with the combat, try changing your control mode to "mouse" using the pref command, which enables mouse aim. Please note that this is an assist setting; the game is not intended to be played that way.
 
-It typically takes three swings to kill things with it. It is advised to back off from the enemy you are trying to kill after you hit it, so that you have enough space to get another hit in before it is able to attack you.
+== CREATURE LOG ==
 
-RANGED (Laser Gun):
-Your left arm has a laser gun attached to it. It is much easier to use than the metal bar, and can attack enemies from afar, but it costs 2% of your battery per shot. It is advised to not use this weapon frequently; only when you feel using the melee weapon instead is too risky.
+#04: This creature resembles a blob of flesh with four eyes. Moves slowly yet at an unbreakable efficiency.
 
-It typically takes two shots to kill things with it.
-
-== ENEMIES ==
-
-#04: This creature resembles a blob of flesh with four eyes. A basic enemy.
+#06: These creatures resemble a heart, and serve their entire lives as energy pumps for the facility. They are completely defenseless and unable to move.
 
 #15: This creature resembles a block of metal with eight strings of flesh coming out of its bottom, like an octopus. It is able to fly and hover above ground through unknown means. It uses this flight to dodge melee attacks, but is vulnerable to it when it does its dive-attack.
 
-#31: This creature takes over the bodies of fallen machines. It only moves when not in view. Compared to other creatures, it does significantly more damage when it attacks. Stay vigilant.
-
-#06: Referred to as "cores", this creature resembles a human heart, and most likely functions similarly to one. They are completely defenseless and unable to move.
+#31: This creature takes over the bodies of fallen machines. It only moves when not in view. Compared to other creatures, it is invulnerable and does significantly more damage when it attacks. Stay vigilant.

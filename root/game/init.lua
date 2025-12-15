@@ -8,6 +8,7 @@ local map_loader = require("game.map_loader")
 
 local ecsconfig = require("game.ecsconfig")
 local consts = require("game.consts")
+local userpref = require("userpref")
 
 ---@class Game.Attack
 ---@field x number
@@ -433,7 +434,8 @@ function Game:update(dt)
     self.sound:update()
 end
 
-function Game:draw()
+---@param paused boolean
+function Game:draw(paused)
     local mat4 = require("r3d.mat4")
 
     local r3d_world = self.r3d_world
@@ -489,6 +491,11 @@ function Game:draw()
     if self._transport_trans_state > 0 then
         Lg.setColor(0, 0, 0, self._transport_timer)
         Lg.rectangle("fill", 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT)
+    end
+
+    if not paused and userpref.control_mode == "dual" then
+        Lg.setColor(1, 1, 1)
+        Lg.rectangle("line", MOUSE_X - 1.5, MOUSE_Y - 1.5, 3, 3)
     end
 
     -- local tl = self._tiled_map.layers[1] --[[@as pklove.tiled.TileLayer]]
@@ -574,7 +581,12 @@ function Game:_draw_ui()
     Lg.push()
     Lg.translate(self._color_shake_ox, self._color_shake_oy)
         local player_color = UI_COLOR_TABLE[self.player_color]
-        Lg.setColor(unpack(player_color.color))
+        if self.color_shake % 4 == 0 then
+            Lg.setColor(unpack(player_color.color))
+        else
+            Lg.setColor(1, 1, 1)
+        end
+
         Lg.print(player_color.display, 68, text_origin_y)
     Lg.pop()
 

@@ -78,6 +78,10 @@ function system:update(dt)
             if input:released("player_switch_weapon") and not self.did_ping then
                 control.trigger_weapon_switch = true
             end
+
+            if input:pressed("player_lock") then
+                control.trigger_quick_turn = true
+            end
         end
     end
 end

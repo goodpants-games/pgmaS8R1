@@ -66,6 +66,7 @@ Concord.component("player_control", function(cmp)
     cmp.run = false
     cmp.lock = false
 
+    cmp.trigger_quick_turn = false
     cmp.trigger_attack = 0
     cmp.trigger_weapon_switch = false
 

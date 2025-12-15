@@ -1,4 +1,5 @@
 local consts = require("game.consts")
+local userpref = require("userpref")
 
 ---@class game.PlayerBehavior: game.Behavior
 local PlayerBehavior = batteries.class {
@@ -9,6 +10,7 @@ local PlayerBehavior = batteries.class {
 function PlayerBehavior:new()
     self:super() ---@diagnostic disable-line
     self.selected_weapon = 1
+    self.quick_turn_reference = 0.0
 end
 
 function PlayerBehavior:_fire_shoot_scanline()
@@ -70,6 +72,8 @@ function PlayerBehavior:tick()
     local attackable = ent.attackable
 
     local game_evil = game:get_difficulty() == 4
+    local mouse_aim = userpref.control_mode == "dual"
+    local tank_move = userpref.control_mode == "tank"
     local battery_drain_scale = 0.003
     local battery_drain = 0.4
 
@@ -130,6 +134,9 @@ function PlayerBehavior:tick()
     if player.lock or movement_lock then
         actor.move_x = 0.0
         actor.move_y = 0.0
+    elseif userpref.control_mode == "tank" then
+        actor.move_x = math.cos(rotation.ang) * -player.move_y
+        actor.move_y = math.sin(rotation.ang) * -player.move_y
     else
         actor.move_x, actor.move_y = player.move_x, player.move_y
     end
@@ -153,6 +160,8 @@ function PlayerBehavior:tick()
             actor.move_y = transport_dy
             player.move_x = transport_dx
             player.move_y = transport_dy
+            tank_move = false
+            mouse_aim = false
             actor.move_speed = 0.5
             player.state = "move"
             movement_lock = false
@@ -164,17 +173,30 @@ function PlayerBehavior:tick()
     local input_move_len =
         math.sqrt(player.move_x * player.move_x + player.move_y * player.move_y)
     local move_min = 0.1
-    if rotation and input_move_len > move_min and not movement_lock then
-        local ang = math.atan2(player.move_y, player.move_x)
-        local ang_diff = math.abs(math.angle_difference(rotation.ang, ang))
+    if rotation and (mouse_aim or tank_move or input_move_len > move_min) and not movement_lock then
+        if tank_move then
+            rotation.ang = rotation.ang + player.move_x * 0.1
 
-        -- snap angle when either close enough or turning 180 degrees
-        -- if ang_diff < math.rad(0.5) or math.abs(ang_diff - math.pi) < math.rad(1) then
-        --     rotation.ang = ang
-        -- else
-            rotation.ang = math.lerp_angle(rotation.ang, ang, 0.2)
-        -- end
+            if player.trigger_quick_turn then
+                self.quick_turn_reference = math.pi
+            end
+
+            local old_qtr = self.quick_turn_reference
+            self.quick_turn_reference = math.lerp_angle(self.quick_turn_reference, 0.0, 0.3)
+            rotation.ang = rotation.ang + (self.quick_turn_reference - old_qtr)
+        else
+            local ang
+            if mouse_aim then
+                ang = math.atan2(player.aim_y, player.aim_x)
+            else
+                ang = math.atan2(player.move_y, player.move_x)
+            end
+            
+            rotation.ang = math.lerp_angle(rotation.ang, ang, 0.3)
+        end
     end
+
+    player.trigger_quick_turn = false
 
     local lookx, looky = 0.0, 0.0
 

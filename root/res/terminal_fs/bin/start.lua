@@ -39,7 +39,7 @@ Type, or "x" to cancel:
             break
         elseif input == "evil" then
             print("Confirm EVIL mode?")
-            print("Notice: We are not responsible for\nany loss of sanity, hair, familial\nreputation, educational\nperformance, or employment\nsecurity.")
+            print("Notice: We are not responsible for\nany loss of sanity, hair, familial\nreputation, academic performance, or employment security.")
             puts("(y/n): ")
 
             local c = string.lower(get_line())

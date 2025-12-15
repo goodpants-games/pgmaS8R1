@@ -1,11 +1,38 @@
-Arrow Keys  Move/Look
-Z           Attack
-X           Sprint
-C           Switch Weapon
-Hold C      Ping
-Shift       Move Lock
-ESC         Pause and Show
-            Terminal
+ESC          Pause and Show
+             Terminal
 
-To force a cycle to complete, use
-the shutdown command.
+== arrow (DEFAULT) ==
+Arrow Keys   Move/Look
+Z            Attack
+X            Sprint
+C            Switch Weapon
+Hold C       Ping
+LShift       Move Lock
+LShift       Quick Turn
+             (tank controls)
+
+== MODE: wasd ==
+WASD         Move/Look
+Semicolon    Attack
+Quote        Sprint
+L            Switch Weapon
+Hold L       Ping
+LShift       Move Lock
+LShift       Quick Turn
+             (tank controls)
+
+== MODE: wasd/mouse ==
+WASD         Move
+Mouse        Look
+Mouse Left   Attack
+LShift       Sprint
+E            Switch Weapon
+Hold E       Ping
+ESC          Pause and Show
+             Terminal
+
+To force a cycle to complete, use the shutdown command.
+
+To configure input/control mode, use the pref command.
+
+Please note that mouse aim is an assist setting for if you're struggling too much; the game is not intended to be played that way.
