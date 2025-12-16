@@ -126,15 +126,11 @@ local function display_list()
     for _, k in ipairs({ "fulscr", "vol", "keymap", "control" }) do
         print(options[k].help)
     end
-    print("\nType pref <option> <value> to\napply.")
+    print("\nType pref <option> <value> to\napply. Without <value>, it will\ndisplay the current setting.")
+    -- print("\nType pref <option to\nsee the current value.")
 end
 
 if not arg_option or arg_option == "-h" or arg_option == "--help" or arg_option == "/?" then
-    display_help()
-    return
-end
-
-if arg_option == "-l" or arg_option == "--list" then
     display_list()
     return
 end

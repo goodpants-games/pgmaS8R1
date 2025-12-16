@@ -227,6 +227,10 @@ function scene.update(dt)
         scndat.game:update(dt)
     end
 
+    if scndat.paused and not scndat.game.player_is_dead then
+        scndat.terminal:update(dt)
+    end
+
     if scndat.frame_capture then
         update_screen_melt()
     end

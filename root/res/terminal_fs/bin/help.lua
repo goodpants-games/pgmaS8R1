@@ -12,9 +12,4 @@ start       Fully boot up the
             machine.
 shutdown    Shut down the machine.
 pref        Adjust preferences.
-
-TIP: The directory has files which
-     contain useful information;
-     please use the ls and read
-     commands to read them.
 ]]

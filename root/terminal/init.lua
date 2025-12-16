@@ -56,14 +56,16 @@ function Terminal:new(process_env, no_startup_msg)
         local startup_msg =
 [[
 Unit ID: M016.52.%i
-Loaded modules:
-- Intelligence
+Loaded intelligence modules:
+- Recursive transform neural
+  network
 
 Type "help" and press Enter to get
 a list of commands.
 
 Type "start" and press Enter to
-fully boot up the machine.
+fully boot up the machine. (start
+the game)
 
 ]]
         local pcol = 1
@@ -299,10 +301,10 @@ function Terminal:text_input(text)
         elseif text_end == text_start then
             self:puts("\n")
             if self.cur_process == nil then
-                self:execute_command(self.text_buffer)
+                self:execute_command(self.text_buffer:lower())
                 self.text_buffer = ""
             elseif self.cur_process_wait_mode == "line" then
-                self:_resume_process(self.text_buffer)
+                self:_resume_process(self.text_buffer:lower())
                 self.text_buffer = ""
             end
             

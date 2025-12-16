@@ -889,9 +889,11 @@ function Game:player_ping()
         ---@type number
         local health_deduct -- as a percentage
         if self.progression.difficulty == 1 then
-            health_deduct = 0.10
+            health_deduct = 0.07
+        elseif self.progression.difficulty == 2 then
+            health_deduct = 0.17
         else
-            health_deduct = 0.23
+            health_deduct = 0.25
         end
 
         health.value = health.value - health.max * health_deduct

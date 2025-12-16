@@ -1,9 +1,8 @@
 == COMBAT TIPS ==
 
 - Don't enter unnecessary fights.
-- Be aware of your spacing, positioning, and timing.
+- Be aware of your spacing, positioning, timing, and other enemies in the general vicinity.
 - Back off after every melee hit to give yourself space for the next swing.
-- If you are struggling too much with the combat, try changing your control mode to "mouse" using the pref command, which enables mouse aim. Please note that this is an assist setting; the game is not intended to be played that way.
 
 == CREATURE LOG ==
 
