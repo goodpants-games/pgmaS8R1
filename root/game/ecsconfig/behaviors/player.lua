@@ -93,7 +93,7 @@ function PlayerBehavior:tick()
     end
 
     local was_attack_triggered = false
-    if player.trigger_attack > 0 then
+    if player.trigger_attack > 0 and player.state == "move" then
         if player.state == "move" then
             if self.selected_weapon == 1 then
                 player.state = "melee_attack"
@@ -113,16 +113,19 @@ function PlayerBehavior:tick()
 
     if player.trigger_weapon_switch then
         if not game_evil then
-            local last_selected_weapon = self.selected_weapon
-
-            self.selected_weapon = self.selected_weapon % 2 + 1
             player.trigger_weapon_switch = false
 
-            if self.selected_weapon == 2 and last_selected_weapon ~= 2 then
-                ent:give("gun_sight", 1, 0, 0)
-                ent.gun_sight.auto_aim = true
-            elseif self.selected_weapon ~= 2 and last_selected_weapon == 2 then
-                ent:remove("gun_sight")
+            if player.state == "move" then
+                local last_selected_weapon = self.selected_weapon
+
+                self.selected_weapon = self.selected_weapon % 2 + 1
+
+                if self.selected_weapon == 2 and last_selected_weapon ~= 2 then
+                    ent:give("gun_sight", 1, 0, 0)
+                    ent.gun_sight.auto_aim = true
+                elseif self.selected_weapon ~= 2 and last_selected_weapon == 2 then
+                    ent:remove("gun_sight")
+                end
             end
         else
             game:sound_quick_play("small_impact")
