@@ -225,7 +225,7 @@ function PlayerBehavior:tick()
                 game:add_attack({
                     x = position.x + lookx * 14,
                     y = position.y + looky * 14,
-                    radius = 12,
+                    radius = 16,
                     damage = 10,
                     dx = lookx,
                     dy = looky,

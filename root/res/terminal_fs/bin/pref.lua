@@ -4,7 +4,7 @@ local UserPref = require("userpref")
 
 local function update_baton()
     local Input = require("input")
-    Input.update_config(UserPref.input_mode, UserPref.control_mode == "dual")
+    Input.update_config()
 end
 
 local options = {

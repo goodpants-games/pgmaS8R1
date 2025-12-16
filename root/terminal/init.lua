@@ -32,6 +32,8 @@ function Terminal:new(process_env, no_startup_msg)
     ---@type table
     self.process_env = nil
 
+    self._cursor_time = 0.0
+
     if process_env then
         self.process_env = table.copy(process_env)
     else
@@ -57,6 +59,12 @@ Unit ID: M016.52.%i
 Loaded modules:
 - Intelligence
 
+Type "help" and press Enter to get
+a list of commands.
+
+Type "start" and press Enter to
+fully boot up the machine.
+
 ]]
         local pcol = 1
         if GameProgression.progression then
@@ -64,13 +72,14 @@ Loaded modules:
         end
 
         self:puts(startup_msg:format(pcol + 18))
-    end
-
-    self:puts[[Type "help" to get a list of
-commands.
+    else
+        self:puts[[Type "help" and press Enter to get
+a list of commands.
 
 
 ]]
+    end
+
     self:puts(">")
 end
 
@@ -308,6 +317,8 @@ function Terminal:text_input(text)
         text_start = text_end
         ::continue::
     end
+
+    self._cursor_time = 0.0
 end
 
 ---@param key love.KeyConstant
@@ -336,6 +347,7 @@ function Terminal:key_pressed(key)
         elseif self.text_buffer:len() > 0 then
             self:backspace()
             self.text_buffer = self.text_buffer:sub(1, -2)
+            self._cursor_time = 0.0
         end
 
         return
@@ -361,6 +373,8 @@ function Terminal:update(dt)
             self:_resume_process(self.cur_process_time_accum)
         end
     end
+
+    self._cursor_time = self._cursor_time + dt
 end
 
 ---@param bg_opacity number?
@@ -379,7 +393,9 @@ function Terminal:draw(bg_opacity)
         Lg.print(line, 1, line_height * (i - 1))
     end
 
-    Lg.rectangle("fill", (self.cursor_x - 1) * char_w + 1, (self.cursor_y - 1) * line_height + 1, 1, line_height)
+    if self._cursor_time % 1.0 < 0.5 then
+        Lg.rectangle("fill", (self.cursor_x - 1) * char_w + 1, (self.cursor_y - 1) * line_height + 1, 1, line_height)
+    end
 
     Lg.pop()
 end

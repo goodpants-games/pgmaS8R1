@@ -1,5 +1,6 @@
 local Input = {}
 local baton = require("input.baton")
+local UserPref = require("userpref")
 
 local base_controls = {
     pause = {'key:escape', 'button:start'},
@@ -15,9 +16,10 @@ local base_controls = {
     player_switch_weapon = {'button:x'},
 }
 
----@param input_mode "arrow"|"wasd"
----@param mouse boolean
-local function get_baton_config(input_mode, mouse)
+local function get_new_baton_config()
+    local input_mode = UserPref.input_mode
+    local mouse = UserPref.control_mode == "dual"
+
     local controls = table.deep_copy(base_controls) --[[@as table]]
     local tinsert = table.insert
 
@@ -58,17 +60,15 @@ end
 
 Input.players = {}
 Input.players[1] = baton.new {
-    controls = get_baton_config("arrow", false),
+    controls = get_new_baton_config(),
     pairs = {
         move = {'left', 'right', 'up', 'down'}
     },
     joystick = love.joystick.getJoysticks()[1],
 }
 
----@param input_mode "arrow"|"wasd"
----@param mouse boolean
-function Input.update_config(input_mode, mouse)
-    local new_config = get_baton_config(input_mode, mouse)
+function Input.update_config()
+    local new_config = get_new_baton_config()
     local active_config = Input.players[1].config.controls
 
     for k, sources in pairs(active_config) do
