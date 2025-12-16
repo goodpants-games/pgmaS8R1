@@ -17,9 +17,6 @@ local function results_proc(term)
         end
     end
 
-    printf("MISSION END STATISTICS\n\n")
-    coroutine.yield(1.0)
-
     local prog = GameProgression.progression
     assert(prog)
 
@@ -29,6 +26,37 @@ local function results_proc(term)
             hearts_destroyed = hearts_destroyed + 1
         end
     end
+
+    local grade
+
+    if hearts_destroyed == 9 then
+        grade = "s"
+    elseif hearts_destroyed >= 7 then
+        grade = "a"
+    elseif hearts_destroyed >= 6 then
+        grade = "b"
+    elseif hearts_destroyed >= 5 then
+        grade = "c"
+    elseif hearts_destroyed >= 2 then
+        grade = "d"
+    else
+        grade = "f"
+    end
+
+    local music
+    do
+        local music_grade = grade
+        -- Bruh. You're on easy mode. you dont get to hear these sick tunes.
+        if prog.difficulty == 1 and grade == "s" then
+            music_grade = "a"
+        end
+        music = love.audio.newSource(("res/music/completion_%s.ogg"):format(music_grade), "stream")
+        music:setVolume(0.5)
+        music:play()
+    end
+
+    printf("MISSION END STATISTICS\n\n")
+    coroutine.yield(1.0)
 
     local diff
     if prog.difficulty == 1 then
@@ -47,23 +75,17 @@ local function results_proc(term)
     coroutine.yield(1.0)
 
     -- local destroy_percentage = hearts_destroyed / 9
-    local grade
+    local grade_display
 
-    if hearts_destroyed == 9 then
-        grade = "S !!!"
-    elseif hearts_destroyed >= 7 then
-        grade = "A"
-    elseif hearts_destroyed >= 6 then
-        grade = "B"
-    elseif hearts_destroyed >= 5 then
-        grade = "C"
-    elseif hearts_destroyed >= 2 then
-        grade = "D"
+    if grade == "s" then
+        grade_display = "S !!!"
+    elseif grade == "f" then
+        grade_display = "F.\nUtter mission failure.\n"
     else
-        grade = "F.\nUtter mission failure.\n"
+        grade_display = string.upper(grade)
     end
 
-    printf("Grade: %s\n\n", grade)
+    printf("Grade: %s\n\n", grade_display)
 
     coroutine.yield(1.0)
 
@@ -85,6 +107,9 @@ local function results_proc(term)
     end
 
     print("Key is pressed")
+
+    music:stop()
+    music:release()
 
     self.terminal = Terminal()
     self.results = false
