@@ -243,7 +243,7 @@ function scene.keypressed(k)
 end
 
 function scene.textinput(txt)
-    if scndat.paused and not scndat.game.player_is_dead then
+    if scndat.paused and not scndat.game.player_is_dead and txt ~= "`" then
         scndat.terminal:text_input(txt)
     end
 end

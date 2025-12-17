@@ -3,7 +3,7 @@ local baton = require("input.baton")
 local UserPref = require("userpref")
 
 local base_controls = {
-    pause = {'key:escape', 'button:start'},
+    pause = {'key:escape', 'key:`', 'button:start'},
 
     left = {'axis:leftx-', 'button:dpleft'},
     right = {'axis:leftx+', 'button:dpright'},

@@ -1,4 +1,4 @@
-ESC          Pause and Show
+ESC/`        Pause and Show
              Terminal
 
 == wasd+mouse (default) ==
