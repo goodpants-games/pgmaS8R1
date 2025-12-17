@@ -17,6 +17,28 @@ local function results_proc(term)
         end
     end
 
+    local function printfc(fmt, ...)
+        local str = string.format(fmt, ...)
+        local list = string.split(str, "\n")
+        for i, l in ipairs(list) do
+            if i == #list and l == "" then
+                goto continue
+            end
+
+            if i > 1 then
+                term:puts("\n")
+            end
+
+            local align = math.floor((term.cols - l:len()) / 2.0)
+            align = math.max(0, align)
+
+            term:puts(string.rep(" ", align))
+            printf(l)
+
+            ::continue::
+        end
+    end
+
     local prog = GameProgression.progression
     assert(prog)
 
@@ -55,8 +77,9 @@ local function results_proc(term)
         music:play()
     end
 
-    printf("MISSION END STATISTICS\n\n")
+    printfc("MISSION REPORT")
     coroutine.yield(1.0)
+    printf("\n\n")
 
     local diff
     if prog.difficulty == 1 then
@@ -69,9 +92,10 @@ local function results_proc(term)
         diff = "EVIL"
     end
 
-    printf("Difficulty: %s\n", diff)
+    printfc("Difficulty: %s", diff)
     coroutine.yield(1.0)
-    printf("Hearts destroyed: %i/%i\n", hearts_destroyed, 9)
+    printf("\n")
+    printfc("Hearts destroyed: %i/%i", hearts_destroyed, 9)
     coroutine.yield(1.0)
 
     -- local destroy_percentage = hearts_destroyed / 9
@@ -85,19 +109,24 @@ local function results_proc(term)
         grade_display = string.upper(grade)
     end
 
-    printf("Grade: %s\n\n", grade_display)
+    printf("\n")
+    printfc("Grade: %s", grade_display)
 
     coroutine.yield(1.0)
 
+    printf("\n\n")
     if hearts_destroyed == 0 then
-        printf("\n\nUtter...")
+        printfc("\n\nUtter...")
         coroutine.yield(4.0)
-        printf("Moo...")
+        printfc("Moo...")
         coroutine.yield(5.0)
     end
-    printf("\n\nmade by pkhead\n")
+
+    printf("\n\n")
+    printfc("made by pkhead")
     coroutine.yield(1.0)
-    printf("thanks for playing my game!\n")
+    printf("\n")
+    printfc("thanks for playing my game!")
     coroutine.yield(2.0)
 
     term:puts("\n\nPress any key to continue...")
