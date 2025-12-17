@@ -4,13 +4,13 @@ local Terminal = batteries.class {
     name = "Terminal"
 }
 
-local GameProgression = require("game.progression")
+local fontres = require("fontres")
 
 ---@param process_env table?
 ---@param no_startup_msg boolean?
 function Terminal:new(process_env, no_startup_msg)
     self.lines = {""}
-    self.font = Lg.newFont("res/fonts/DepartureMono-Regular.otf", 11, "none", 1.0)
+    self.font = fontres.departure
 
     local char_width = self.font:getWidth("X")
     local char_height = self.font:getBaseline()
@@ -69,6 +69,7 @@ the game)
 
 ]]
         local pcol = 1
+        local GameProgression = require("game.progression")
         if GameProgression.progression then
             pcol = GameProgression.progression.player_color
         end
@@ -86,10 +87,6 @@ a list of commands.
 end
 
 function Terminal:release()
-    if self.font then
-        self.font:release()
-        self.font = nil
-    end
 end
 
 ---@private

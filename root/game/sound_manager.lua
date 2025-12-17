@@ -92,6 +92,12 @@ function SoundManager:release()
     end
 end
 
+function SoundManager:stop_all()
+    for _, snd in ipairs(self._active) do
+        snd.src:stop()
+    end
+end
+
 ---can be used for preloading
 ---@param snd_name string
 function SoundManager:load_source(snd_name)

@@ -5,6 +5,8 @@ local Room = require("game.room")
 local Collision = require("game.collision")
 local SoundManager = require("game.sound_manager")
 local map_loader = require("game.map_loader")
+local mat4 = require("r3d.mat4")
+local fontres = require("fontres")
 
 local ecsconfig = require("game.ecsconfig")
 local consts = require("game.consts")
@@ -76,6 +78,10 @@ function Game:new(progression)
     self.r3d_world:add_object(self.r3d_batch)
     self.r3d_world:add_object(self.r3d_sprite_batch)
 
+    self.r3d_world.ambient.r = 0.04
+    self.r3d_world.ambient.g = 0.04
+    self.r3d_world.ambient.b = 0.04
+
     self.resources = {}
 
     local heart_mesh = r3d.mesh.load_obj("res/heart_model.obj")
@@ -87,7 +93,6 @@ function Game:new(progression)
         map_loader.create_edge_atlas({ "metal", "concrete", "flesh" })
 
     self._ui_icons_sprite = Sprite.new("res/sprites/ui_icons.json")
-    self._font = Lg.newFont("res/fonts/DepartureMono-Regular.otf", 11, "mono", 1.0)
 
     self.layout_width = consts.LAYOUT_WIDTH
     self.layout_height = consts.LAYOUT_HEIGHT
@@ -200,6 +205,9 @@ function Game:new(progression)
     ---@private
     self._color_shake_oy = 0
 
+    ---@private
+    self._shutdown_sequence = nil
+
     -- test to make sure edge autotiler doesn't crash
     if true or not Debug.enabled then
         return
@@ -244,7 +252,6 @@ function Game:release()
     self.r3d_batch:release()
     self.r3d_sprite_batch:release()
     self._ui_icons_sprite:release()
-    self._font:release()
     self.sound:release()
 
     for _, res in pairs(self.resources) do
@@ -383,6 +390,34 @@ function Game:tick()
         end
     end
 
+    local shutdown = self._shutdown_sequence
+    if shutdown then
+        local phase_len = 1.125 -- synced with the siren
+        local tsec = shutdown.frames * consts.TICK_LEN
+        local t = (math.sin(tsec * phase_len * 2 * math.pi) + 1.0) / 2.0
+        self.r3d_world.ambient.r = t * 0.9
+
+        shutdown.frames = shutdown.frames + 1
+        shutdown.frames_until_vo = shutdown.frames_until_vo - 1
+
+        if shutdown.frames_until_vo == 0 then
+            shutdown.frames_until_vo = 240
+            shutdown.vo_source:seek(0)
+            shutdown.vo_source:play()
+            shutdown.vo_count = shutdown.vo_count + 1
+
+            if shutdown.vo_count == 3 then
+                shutdown.is_done = true
+                shutdown.siren_sound:stop()
+                self.sound:stop_all()
+            end
+        end
+
+        local rot_power = shutdown.frames / 780.0
+        self.room.cam.rot = math.sin(shutdown.frames * 0.3) * math.rad(25 * rot_power)
+        self.cam_shake = 10
+    end
+
     self.frame = self.frame + 1
 end
 
@@ -436,14 +471,13 @@ end
 
 ---@param paused boolean
 function Game:draw(paused)
-    local mat4 = require("r3d.mat4")
-
     local r3d_world = self.r3d_world
     local cam_x = math.round(self.room.cam.x + self.room.cam.shake_ox)
     local cam_y = math.round(self.room.cam.y + self.room.cam.shake_oy)
 
     r3d_world.cam.transform:identity()
     r3d_world.cam:set_position(cam_x, cam_y, 0.0)
+    r3d_world.cam.transform = mat4.rotation_z(nil, self.room.cam.rot) * r3d_world.cam.transform
 
     if Debug.enabled and love.keyboard.isDown("e") then
         r3d_world.cam.transform =
@@ -459,10 +493,6 @@ function Game:draw(paused)
     r3d_world.sun.r = 0
     r3d_world.sun.g = 0
     r3d_world.sun.b = 0
-
-    r3d_world.ambient.r = 0.04
-    r3d_world.ambient.g = 0.04
-    r3d_world.ambient.b = 0.04
 
     self.r3d_batch:clear()
     self.r3d_sprite_batch:clear()
@@ -528,7 +558,7 @@ local UI_COLOR_TABLE = {
 ---@private
 function Game:_draw_ui()
     local old_font = Lg.getFont()
-    Lg.setFont(self._font)
+    Lg.setFont(fontres.departure)
 
     -- display battery ui
     local player_health = self.player.health
@@ -692,6 +722,10 @@ end
 ---comment
 ---@param transport_dir "right"|"up"|"left"|"down"
 function Game:initiate_room_transport(transport_dir)
+    if self._shutdown_sequence then
+        return
+    end
+
     self._transport_triggered = true
 
     if self._transport_trans_state ~= 0 or self._transport_debounce then
@@ -796,6 +830,35 @@ function Game:heart_destroyed()
         if health.value > health.max then
             health.value = health.max
         end
+    end
+
+    -- if all hearts were destroyed, then initiate ending sequence
+    local all_destroyed = true
+    for y=1, self.layout_height do
+        for x=1, self.layout_width do
+            local dat = self.room_data[y][x]
+            if dat.prog and dat.prog.heart_color then
+                all_destroyed = false
+                goto exit_check
+            end
+        end
+    end
+    ::exit_check::
+
+    if all_destroyed then
+        local siren_sound = love.audio.newSource("res/sounds/siren.ogg", "static")
+        siren_sound:play()
+
+        local vo_source = love.audio.newSource("res/sounds/voice_system_shutdown_imminent.ogg", "static")
+
+        self._shutdown_sequence = {
+            frames = 0,
+            frames_until_vo = 60,
+            vo_count = 0,
+            is_done = false,
+            siren_sound = siren_sound,
+            vo_source = vo_source
+        }
     end
 end
 
@@ -908,6 +971,20 @@ end
 
 function Game:get_difficulty()
     return self.progression.difficulty
+end
+
+---@return integer?
+function Game:shutdown_sequence_status()
+    local dat = self._shutdown_sequence
+    if not dat then
+        return nil
+    end
+
+    if dat.is_done then
+        return 2
+    else
+        return 1
+    end
 end
 
 return Game

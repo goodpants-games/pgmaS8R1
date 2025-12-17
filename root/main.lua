@@ -3,6 +3,7 @@ require("postconf")
 
 local Input = require("input")
 local sceneman = require("sceneman")
+local fontres = require("fontres")
 
 local display_canvas = Lg.newCanvas(DISPLAY_WIDTH, DISPLAY_HEIGHT, { dpiscale = 1.0 })
 
@@ -10,7 +11,7 @@ local display_ox = 0.0
 local display_oy = 0.0
 local display_scale = 1.0
 
-local font = Lg.newFont("res/fonts/ProggyClean.ttf", 16, "none", 1.0)
+local font = fontres.proggy
 
 function love.load(args)
     love.keyboard.setTextInput(false)

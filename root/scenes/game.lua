@@ -5,6 +5,7 @@ local Game = require("game")
 local GameProgression = require("game.progression")
 local Terminal = require("terminal")
 local Input = require("input")
+local fontres = require("fontres")
 
 local scndat
 
@@ -186,6 +187,12 @@ local function update_screen_melt()
     end
 end
 
+local function end_cycle()
+    GameProgression.progression = scndat.game:get_new_progression()
+    love.audio.stop()
+    sceneman.switchScene("terminal")
+end
+
 function scene.update(dt)
     assert(scndat)
 
@@ -200,9 +207,7 @@ function scene.update(dt)
             end
 
             if new_stage == "done" then
-                GameProgression.progression = scndat.game:get_new_progression()
-                love.audio.stop()
-                sceneman.switchScene("terminal")
+                end_cycle()
             end
         end
 
@@ -216,19 +221,36 @@ function scene.update(dt)
 
     scndat.was_player_dead = scndat.game.player_is_dead
 
-    if Input.players[1]:pressed("pause") and not scndat.game.player_is_dead then
-        scndat.paused = not scndat.paused
+    local shutdown_seq_status = scndat.game:shutdown_sequence_status()
+    local force_pause = false
+    if not shutdown_seq_status then
+        if Input.players[1]:pressed("pause") and not scndat.game.player_is_dead then
+            scndat.paused = not scndat.paused
+    
+            love.keyboard.setKeyRepeat(scndat.paused)
+            love.keyboard.setTextInput(scndat.paused)
+        end
+    else
+        scndat.music:stop()
 
-        love.keyboard.setKeyRepeat(scndat.paused)
-        love.keyboard.setTextInput(scndat.paused)
+        if shutdown_seq_status == 2 then
+            force_pause = true
+            if not scndat.end_card_t then
+                scndat.end_card_t = 0.0
+            else
+                scndat.end_card_t = scndat.end_card_t + dt
+            end
+        end
     end
 
-    if not scndat.paused then
-        scndat.game:update(dt)
-    end
+    if not force_pause then
+        if not scndat.paused then
+            scndat.game:update(dt)
+        end
 
-    if scndat.paused and not scndat.game.player_is_dead then
-        scndat.terminal:update(dt)
+        if scndat.paused and not scndat.game.player_is_dead then
+            scndat.terminal:update(dt)
+        end
     end
 
     if scndat.frame_capture then
@@ -248,8 +270,54 @@ function scene.textinput(txt)
     end
 end
 
+local function draw_end_card()
+    Lg.setColor(0, 0, 0)
+    Lg.rectangle("fill", 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT)
+
+    Lg.setColor(1, 1, 1)
+    local font = fontres.departure
+    Lg.setFont(font)
+
+    if not scndat.end_card_t then
+        scndat.end_card_t = 0.0
+    end
+
+    local lines
+    local text_scale
+    if scndat.end_card_t < 5.0 then
+        text_scale = 2.0
+        lines = {"SYSTEM", "SHUTDOWN", "IMMINENT"}
+    else
+        text_scale = 1.0
+        lines = {"MADE BY PKHEAD"}
+    end
+
+    if scndat.end_card_t > 10.0 then
+        end_cycle()
+
+        -- err shouldn't be possible to not have this condition
+        if Debug.enabled then
+            GameProgression.progression.player_color = 4
+        end
+    end
+
+    local w = 0.0
+    for _, l in ipairs(lines) do
+        w = math.max(w, font:getWidth(l))
+    end
+    local h = font:getHeight() * font:getLineHeight() * #lines
+    local draw_x = (DISPLAY_WIDTH - w * text_scale) / 2.0
+    local draw_y = (DISPLAY_HEIGHT - h * text_scale) / 2.0
+    Lg.print(table.concat(lines, "\n"), draw_x, draw_y, 0.0, text_scale, text_scale)
+end
+
 function scene.draw()
     assert(scndat)
+
+    if scndat.game:shutdown_sequence_status() == 2 then
+        draw_end_card()
+        return
+    end
 
     if scndat.was_player_dead then
         if scndat.frame_capture_tex then
