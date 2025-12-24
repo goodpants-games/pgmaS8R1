@@ -41,8 +41,8 @@ function Game:new(progression)
 
     ---@private
     self.progression = progression
-
     self.sound = SoundManager()
+    self.resources = {}
 
     self.ecs_world = Concord.world()
     self.ecs_world.game = self
@@ -65,15 +65,50 @@ function Game:new(progression)
     -- create r3d world
     self.r3d_world = r3d.world()
 
+    -- create shaders
+    do
+        local shd = r3d.shader()
+        shd:prepare()
+        self.resources.shader_default = shd
+    end
+
+    do
+        local shd = r3d.shader()
+        shd.alpha_discard = true
+        shd:prepare()
+        self.resources.shader_alpha_discard = shd
+    end
+
+    do
+        local shd = r3d.shader()
+        shd.custom_fragment = "res/shaders/r3d_alpha_influence.glsl"
+        shd:prepare()
+        self.resources.shader_alpha_influence = shd
+    end
+
+    do
+        local shd = r3d.shader()
+        shd.light_ignore_normals = true
+        shd:prepare()
+        self.resources.shader_ignore_normal = shd
+    end
+
+    do
+        local shd = r3d.shader()
+        shd.shading = "none"
+        shd:prepare()
+        self.resources.shader_unshaded = shd
+    end
+
     self.r3d_sprite_batch = r3d.batch(2048)
     self.r3d_sprite_batch.opaque = false
     self.r3d_sprite_batch.double_sided = true
-    self.r3d_sprite_batch:set_shader("shaded_ignore_normal")
+    self.r3d_sprite_batch.base_shader = self.resources.shader_ignore_normal
 
     self.r3d_batch = r3d.batch(2048)
     self.r3d_batch.opaque = true
     self.r3d_batch.double_sided = false
-    self.r3d_batch:set_shader("basic")
+    self.r3d_batch.base_shader = self.resources.shader_unshaded
 
     self.r3d_world:add_object(self.r3d_batch)
     self.r3d_world:add_object(self.r3d_sprite_batch)
@@ -82,11 +117,9 @@ function Game:new(progression)
     self.r3d_world.ambient.g = 0.04
     self.r3d_world.ambient.b = 0.04
 
-    self.resources = {}
-
     local heart_mesh = r3d.mesh.load_obj("res/heart_model.obj")
     self.resources.heart_model = r3d.model(heart_mesh)
-    self.resources.heart_model.shader = "basic"
+    self.resources.heart_model.shader = self.resources.shader_unshaded
 
     self.resources.tileset = Lg.newImage("res/tilesets/test_tileset.png")
     self.resources.edge_tileset, self.resources.edge_tileset_data =

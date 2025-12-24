@@ -10,68 +10,6 @@ local PointLight = Light.point
 local SPOTLIGHT_COUNT = 2
 local POINT_LIGHT_COUNT = 2
 
-local SHADER_SOURCE_SHADED = [[
-#include <res/shaders/r3d/lighting.glsl>
-#include <res/shaders/r3d/frag.glsl>
-
-vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
-{
-    vec3 light_sum = r3d_calc_lighting(v_normal, v_view_pos);
-    vec4 texturecolor = Texel(tex, texture_coords);
-    texturecolor.rgb *= light_sum;
-    return texturecolor * color;
-}
-]]
-
-local SHADER_SOURCE_SHADED_ALPHA_DISCARD = [[
-#include <res/shaders/r3d/lighting.glsl>
-#include <res/shaders/r3d/frag.glsl>
-
-vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
-{
-    vec3 light_sum = r3d_calc_lighting(v_normal, v_view_pos);
-    vec4 texturecolor = Texel(tex, texture_coords);
-    texturecolor.rgb *= light_sum;
-    vec4 out_color = texturecolor * color;
-    if (out_color.a < 0.5) discard;
-    return out_color;
-}
-]]
-
-local SHADER_SOURCE_SHADED_ALPHA_INFLUENCE = [[
-#include <res/shaders/r3d/lighting.glsl>
-#include <res/shaders/r3d/frag.glsl>
-
-vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
-{
-    vec3 light_sum = r3d_calc_lighting(v_normal, v_view_pos);
-    vec4 texturecolor = Texel(tex, texture_coords);
-    texturecolor.rgb *= light_sum * texturecolor.a;
-    return vec4(texturecolor.rgb, 1.0) * color;
-}
-]]
-
----@param path string
----@return string?
-local function shader_preproc(path)
-    if path == nil then
-        return nil
-    end
-
-    local lines = {
-        "#define SPOT_LIGHT_COUNT " .. SPOTLIGHT_COUNT,
-        "#define POINT_LIGHT_COUNT " .. POINT_LIGHT_COUNT
-    }
-
-    if love.filesystem.getInfo(path) then
-        lines[#lines+1] = "#include <" .. path .. ">"
-    else
-        lines[#lines+1] = path
-    end
-
-    return table.concat(lines, "\n")
-end
-
 ---@param vertexcode string?
 ---@param pixelcode string?
 ---@return love.Shader
@@ -120,7 +58,9 @@ end
 ---@class r3d.DrawContext
 ---@field package _mv mat4
 ---@field package _mv_norm mat3
----@field package _processed_shaders {[string]:boolean}
+---@field package _proj mat4
+---@field package _vn mat3
+---@field package _processed_shaders {[love.Shader]:boolean}
 ---@field package _world r3d.World
 ---@overload fun(world:r3d.World):r3d.DrawContext
 local DrawContext = batteries.class({ name = "r3d.DrawContext" })
@@ -129,25 +69,40 @@ function DrawContext:new(world)
     self._world = world
 end
 
----@param shader_name string
-function DrawContext:activate_shader(shader_name)
+---@param shader r3d.Shader
+function DrawContext:activate_shader(shader)
+    local sh = shader:get_raw()
+    Lg.setShader(sh)
+
+    if not self._processed_shaders[sh] then
+        shader_try_send(sh, "u_mat_modelview", self._mv)
+        shader_try_send(sh, "u_mat_modelview_norm", self._mv_norm)
+        self._processed_shaders[sh] = true
+    end
+
     local world = self._world
-    local shader = world.shaders[shader_name]
-    if not shader then
-        error(("no shader '%s' exists"):format(shader_name))
-    end
-    Lg.setShader(shader)
+    if not world._global_processed_shaders[sh] then
+        -- send light information to shader
+        shader._max_point_lights = POINT_LIGHT_COUNT
+        shader._max_spot_lights = SPOTLIGHT_COUNT
 
-    if self._processed_shaders[shader_name] then
-        return
-    end
+        shader_try_send(sh, "u_light_ambient_color", world:_pack_color(world.ambient))
+        shader_try_send(sh, "u_light_sun_color", world:_pack_color(world.sun))
+        shader_try_send(sh, "u_light_sun_direction", world:_pack_vec(world.sun, self._vn))
 
-    shader:send("u_mat_modelview", self._mv)
-    if shader:hasUniform("u_mat_modelview_norm") then
-        shader:send("u_mat_modelview_norm", self._mv_norm)
-    end
+        shader_try_send(sh, "u_light_spot_pos", unpack(world._u_spotlights.pos))
+        shader_try_send(sh, "u_light_spot_dir_angle", unpack(world._u_spotlights.dir_angle))
+        shader_try_send(sh, "u_light_spot_color_pow", unpack(world._u_spotlights.color_pow))
+        shader_try_send(sh, "u_light_spot_control", unpack(world._u_spotlights.control))
 
-    self._processed_shaders[shader_name] = true
+        shader_try_send(sh, "u_light_point_pos", unpack(world._u_pointlights.pos))
+        shader_try_send(sh, "u_light_point_color_pow", unpack(world._u_pointlights.color_pow))
+        shader_try_send(sh, "u_light_point_control", unpack(world._u_pointlights.control))
+
+        shader_try_send(sh, "u_mat_projection", self._proj)
+
+        world._global_processed_shaders[sh] = true
+    end
 end
 
 function World:new()
@@ -173,21 +128,6 @@ function World:new()
     ---@type r3d.Object[]
     self.objects = {}
 
-    ---@type {[string]: love.Shader}
-    self.shaders = {}
-
-    local vertex_code = "res/shaders/r3d/r3d.vert.glsl"
-    self.shaders.shaded =
-        new_shader(SHADER_SOURCE_SHADED, vertex_code)
-    self.shaders.shaded_ignore_normal =
-        new_shader("#define R3D_LIGHT_IGNORE_NORMAL\n" .. SHADER_SOURCE_SHADED, vertex_code)
-    self.shaders.shaded_alpha_discard =
-        new_shader(SHADER_SOURCE_SHADED_ALPHA_DISCARD, vertex_code)
-    self.shaders.shaded_alpha_influence =
-        new_shader(SHADER_SOURCE_SHADED_ALPHA_INFLUENCE, vertex_code)
-    self.shaders.basic =
-        new_shader(nil, vertex_code)
-
     ---@private
     ---@type mat4[]
     self._tmp_mat = {}
@@ -208,7 +148,7 @@ function World:new()
     ---@private
     self._draw_ctx = DrawContext(self)
 
-    ---@private
+    ---@package
     ---@type {pos:number[][], dir_angle:number[][], color_pow:number[][], control:number[][]}
     self._u_spotlights = {
         pos = {},
@@ -217,7 +157,7 @@ function World:new()
         control = {}
     }
 
-    ---@private
+    ---@package
     ---@type {pos:number[][], color_pow:number[][], control:number[][]}
     self._u_pointlights = {
         pos = {},
@@ -237,16 +177,12 @@ function World:new()
         self._u_pointlights.color_pow[i] = { 0.0, 0.0, 0.0, 0.0 }
         self._u_pointlights.control[i] = { 0.0, 0.0, 0.0, 0.0 }
     end
+
+    ---@package
+    self._global_processed_shaders = {}
 end
 
 function World:release()
-    if self.shaders then
-        for _, shader in pairs(self.shaders) do
-            shader:release()
-        end
-    end
-
-    self.shaders = nil
 end
 
 ---@private
@@ -274,7 +210,7 @@ function World:_restore_mat_stack(pos)
     end
 end
 
----@private
+---@package
 ---@param r number
 ---@param g number
 ---@param b number
@@ -288,7 +224,7 @@ function World:_pack_color(r, g, b)
     return self._tmp_vec3
 end
 
----@private
+---@package
 ---@param x number
 ---@param y number
 ---@param z number
@@ -310,14 +246,12 @@ function World:_pack_vec(x, y, z, mat)
     return self._tmp_vec3
 end
 
-function World:_draw_ctx_activate_shader(shader_name)
-
-end
-
 ---@private
 ---@param obj r3d.Drawable
+---@param proj_mat mat4
 ---@param view_mat mat4
-function World:_draw_object(obj, view_mat)
+---@param view_normal mat3
+function World:_draw_object(obj, proj_mat, view_mat, view_normal)
     if not obj.visible then
         return
     end
@@ -333,6 +267,9 @@ function World:_draw_object(obj, view_mat)
                     :transpose(self:_push_mat())
     self._draw_ctx._mv_norm = mv_it:to_mat3(self._tmp_mat3)
 
+    self._draw_ctx._proj = proj_mat
+    self._draw_ctx._vn = view_normal
+
     if obj.double_sided then
         Lg.setMeshCullMode("none")
     else
@@ -344,13 +281,43 @@ function World:_draw_object(obj, view_mat)
     self:_restore_mat_stack(sp)
 end
 
+---@private
+---@param proj_mat mat4
+---@param view_mat mat4
+---@param view_normal mat3
+function World:_draw_objects(proj_mat, view_mat, view_normal)
+    -- opaque pass
+    Lg.setDepthMode("less", true)
+    for _, obj in ipairs(self.objects) do
+        if obj:is(Drawable) then
+            ---@cast obj r3d.Drawable
+            if obj.opaque and obj.visible then
+                self:_draw_object(obj, proj_mat, view_mat, view_normal)
+            end
+        end
+    end
+
+    -- transparent pass
+    -- objects are assumed to be already sorted from back-to-front. or at least,
+    -- adequately so.
+    Lg.setDepthMode("less", false)
+    for _, obj in ipairs(self.objects) do
+        if obj:is(Drawable) then
+            ---@cast obj r3d.Drawable
+            if not obj.opaque and obj.visible then
+                self:_draw_object(obj, proj_mat, view_mat, view_normal)
+            end
+        end
+    end
+end
+
 function World:draw()
     self._tmp_mat_i = 1
+    self._global_processed_shaders = {}
 
     Lg.push("all")
     Lg.setColor(1, 1, 1)
 
-    -- local shader = self.shaders.base
     local projection = self:_push_mat()
     if self.cam.type == "top_down_oblique" then
         local we = self.cam.frustum_width / 2.0
@@ -363,16 +330,9 @@ function World:draw()
         error("unknown camera projection type")
     end
 
-    for _, shader in pairs(self.shaders) do
-        shader:send("u_mat_projection", projection)
-    end
-
-    self:_pop_mat()
-
     local view_mat =
         self.cam.transform:inverse(self:_push_mat())
 
-    local sp = self._tmp_mat_i
     local view_normal = view_mat:inverse(self:_push_mat())
                                 :transpose(self:_push_mat())
                                 :to_mat3(self._tmp_mat3)
@@ -456,48 +416,9 @@ function World:draw()
             u_control[1], u_control[2], u_control[3], u_control[4] = 1, 0, 0, 0
         end
     end
-
-    -- send light information to shaders
-    for _, shader in pairs(self.shaders) do
-        shader_try_send(shader, "u_light_ambient_color", self:_pack_color(self.ambient))
-        shader_try_send(shader, "u_light_sun_color", self:_pack_color(self.sun))
-        shader_try_send(shader, "u_light_sun_direction", self:_pack_vec(self.sun, view_normal))
-
-        shader_try_send(shader, "u_light_spot_pos", unpack(self._u_spotlights.pos))
-        shader_try_send(shader, "u_light_spot_dir_angle", unpack(self._u_spotlights.dir_angle))
-        shader_try_send(shader, "u_light_spot_color_pow", unpack(self._u_spotlights.color_pow))
-        shader_try_send(shader, "u_light_spot_control", unpack(self._u_spotlights.control))
-
-        shader_try_send(shader, "u_light_point_pos", unpack(self._u_pointlights.pos))
-        shader_try_send(shader, "u_light_point_color_pow", unpack(self._u_pointlights.color_pow))
-        shader_try_send(shader, "u_light_point_control", unpack(self._u_pointlights.control))
-    end
     
-    self:_restore_mat_stack(sp)
-
-    -- opaque pass
-    Lg.setDepthMode("less", true)
-    for _, obj in ipairs(self.objects) do
-        if obj:is(Drawable) then
-            ---@cast obj r3d.Drawable
-            if obj.opaque and obj.visible then
-                self:_draw_object(obj, view_mat)
-            end
-        end
-    end
-
-    -- transparent pass
-    Lg.setDepthMode("less", false)
-    for _, obj in ipairs(self.objects) do
-        if obj:is(Drawable) then
-            ---@cast obj r3d.Drawable
-            if not obj.opaque and obj.visible then
-                self:_draw_object(obj, view_mat)
-            end
-        end
-    end
-
-    self:_pop_mat(1)
+    self:_draw_objects(projection, view_mat, view_normal)
+    self:_restore_mat_stack(1)
     assert(self._tmp_mat_i == 1)
     Lg.pop()
 end

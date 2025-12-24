@@ -2,11 +2,12 @@
 ---@overload fun(mesh:love.Mesh):r3d.Model
 local Model = batteries.class({ name = "r3d.Model", extends = require("r3d.drawable") })
 local mat4 = require("r3d.mat4")
+local Shader = require("r3d.shader")
 
 ---@param mesh love.Mesh
 function Model:new(mesh)
     self:super() ---@diagnostic disable-line
-    self.shader = "shaded"
+    self.shader = Shader()
     self.mesh = mesh
     self.transform = mat4.new()
 

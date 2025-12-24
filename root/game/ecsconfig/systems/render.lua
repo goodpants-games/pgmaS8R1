@@ -224,8 +224,11 @@ function render_system:sync_sprite_graphic(sprite, rotation)
 end
 
 function render_system:draw_sprites()
+    ---@type Game
+    local game = self:getWorld().game
+
     ---@type r3d.Batch
-    local draw_batch = self:getWorld().game.r3d_sprite_batch
+    local draw_batch = game.r3d_sprite_batch
 
     local tmpmat0 = mat4.new()
     local tmpmat1 = mat4.new()
@@ -290,7 +293,7 @@ function render_system:draw_sprites()
         -- draw shadow circle
         if sprite.drop_shadow then
             local shadow_transform = mat4.translation(nil, px - 8, py - 4, 1.0)
-            draw_batch:set_shader("basic")
+            draw_batch:set_shader(game.resources.shader_unshaded)
             draw_batch:set_color(0.0, 0.0, 0.0, 0.5)
             draw_batch:add_image(self._shadow_tex --[[@as love.Texture]], shadow_transform)
         end
@@ -316,10 +319,10 @@ function render_system:draw_sprites()
         end
 
         if sprite.unshaded then
-            draw_batch:set_shader("basic")
+            draw_batch:set_shader(game.resources.shader_unshaded)
             draw_batch:set_color(sprite.r, sprite.g, sprite.b, sprite.a)
         else
-            draw_batch:set_shader("shaded_ignore_normal")
+            draw_batch:set_shader(game.resources.shader_ignore_normal)
 
             -- darken sprite so that it's not too bright when close to the light
             draw_batch:set_color(sprite.r * 0.3, sprite.g * 0.3, sprite.b * 0.3, sprite.a)
@@ -396,7 +399,7 @@ function render_system:draw_gun_sights()
             local zpos = 8
 
             if game.frame % 3 == 0 then
-                batch:set_shader("basic")
+                batch:set_shader(game.resources.shader_unshaded)
                 batch:set_color(gun_sight.r, gun_sight.g, gun_sight.b)
                 batch:add_line(position.x, position.y, zpos, end_x, end_y, zpos + gun_sight.target_zoff, 1)
             end

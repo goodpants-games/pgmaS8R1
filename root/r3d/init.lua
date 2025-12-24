@@ -8,5 +8,6 @@ r3d.world = require("r3d.world")
 r3d.model = require("r3d.model")
 r3d.mesh = require("r3d.mesh")
 r3d.batch = require("r3d.batch")
+r3d.shader = require("r3d.shader")
 
 return r3d

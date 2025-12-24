@@ -5,14 +5,14 @@ uniform vec3 u_light_ambient_color;
 uniform vec3 u_light_sun_color;
 uniform vec3 u_light_sun_direction;
 
-uniform vec3 u_light_spot_pos      [SPOT_LIGHT_COUNT];
-uniform vec4 u_light_spot_dir_angle[SPOT_LIGHT_COUNT]; // .xyz = dir, .w = cos(angle)
-uniform vec4 u_light_spot_color_pow[SPOT_LIGHT_COUNT]; // .rgb = color, .a = power
-uniform vec4 u_light_spot_control  [SPOT_LIGHT_COUNT]; // .x = constant .y = linear, .z = quadratic
+uniform vec3 u_light_spot_pos      [R3D_MAX_SPOT_LIGHTS];
+uniform vec4 u_light_spot_dir_angle[R3D_MAX_SPOT_LIGHTS]; // .xyz = dir, .w = cos(angle)
+uniform vec4 u_light_spot_color_pow[R3D_MAX_SPOT_LIGHTS]; // .rgb = color, .a = power
+uniform vec4 u_light_spot_control  [R3D_MAX_SPOT_LIGHTS]; // .x = constant .y = linear, .z = quadratic
 
-uniform vec3 u_light_point_pos      [POINT_LIGHT_COUNT];
-uniform vec4 u_light_point_color_pow[POINT_LIGHT_COUNT]; // .rgb - color, .a = power
-uniform vec4 u_light_point_control  [POINT_LIGHT_COUNT]; // .x = constant, .y = lienar, .z = quadratic
+uniform vec3 u_light_point_pos      [R3D_MAX_POINT_LIGHTS];
+uniform vec4 u_light_point_color_pow[R3D_MAX_POINT_LIGHTS]; // .rgb - color, .a = power
+uniform vec4 u_light_point_control  [R3D_MAX_POINT_LIGHTS]; // .x = constant, .y = lienar, .z = quadratic
 
 float r3d_calc_light_influence(vec3 light_pos, float light_power,
                                vec4 light_params, vec3 normal, vec3 view_pos,
@@ -26,7 +26,7 @@ float r3d_calc_light_influence(vec3 light_pos, float light_power,
     dir = normalize(pos_diff);
 
     float facing;
-    #ifdef R3D_LIGHT_IGNORE_NORMAL
+    #ifdef R3D_LIGHT_IGNORE_NORMALS
     facing = 1.0;
     #else
     facing = max(0.0, dot(normal, -dir));
@@ -55,7 +55,7 @@ vec3 r3d_calc_lighting(vec3 normal, vec3 view_pos)
 
     vec3 light_source_sum = vec3(0.0, 0.0, 0.0);
 
-    for (int i = 0; i < POINT_LIGHT_COUNT; ++i)
+    for (int i = 0; i < R3D_MAX_POINT_LIGHTS; ++i)
     {
         vec3  light_pos       = u_light_point_pos[i].xyz;
         vec3  light_color     = u_light_point_color_pow[i].rgb;
@@ -70,7 +70,7 @@ vec3 r3d_calc_lighting(vec3 normal, vec3 view_pos)
         light_source_sum += light_color * light_influence;
     }
 
-    for (int i = 0; i < SPOT_LIGHT_COUNT; ++i)
+    for (int i = 0; i < R3D_MAX_SPOT_LIGHTS; ++i)
     {
         vec3  light_pos       = u_light_spot_pos[i].xyz;
         vec3  light_dir       = u_light_spot_dir_angle[i].xyz;

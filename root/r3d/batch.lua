@@ -3,6 +3,7 @@
 local Batch = batteries.class({ name = "r3d.Batch", extends = require("r3d.drawable") })
 local mat4 = require("r3d.mat4")
 local mat3 = require("r3d.mat3")
+local Shader = require("r3d.shader")
 local new_mesh = require("r3d.mesh").new
 
 local function tappend(t, ...)
@@ -70,8 +71,10 @@ function Batch:new(vertex_count)
     ---@private
     self._color = { 1.0, 1.0, 1.0, 1.0 }
 
+    self.base_shader = Shader()
+
     ---@private
-    self._shader = "shaded"
+    self._shader = nil
 
     ---@private
     self._dirty = false
@@ -100,7 +103,8 @@ function Batch:clear()
     self._vtxi = 1
     self._vtx_map = {}
     self._last_tex = nil
-    self._shader = nil
+    self._last_shader = nil
+    self._dirty = false
 end
 
 ---@private
@@ -134,7 +138,7 @@ function Batch:_flush()
 end
 
 ---@param tex love.Texture
----@param shader string?
+---@param shader r3d.Shader?
 function Batch:_begin_draw(tex, shader)
     if shader == nil then
         shader = self._shader
@@ -164,9 +168,9 @@ function Batch:set_color(r, g, b, a)
     t[1], t[2], t[3], t[4] = r, g, b, a
 end
 
----@param shader_name string
-function Batch:set_shader(shader_name)
-    self._shader = shader_name
+---@param shader r3d.Shader?
+function Batch:set_shader(shader)
+    self._shader = shader
 end
 
 function Batch:get_shader()
