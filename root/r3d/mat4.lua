@@ -306,4 +306,28 @@ function mat4.oblique(mat, left, right, top, bottom, near, far)
     return mat
 end
 
+---Create a perspective projection matrix.
+---@param mat mat4
+---@param fovy number Vertical field of view, in radians.
+---@param aspect number
+---@param near number
+---@param far number
+---@return mat4
+function mat4.perspective(mat, fovy, aspect, near, far)
+    mat = mat or mat4.new()
+
+	near = near or 0.1
+	far = far or 1000.0
+	
+	local scale = math.tan(fovy / 2.0)
+	mat:set(0, 0,  1.0 / (aspect * scale))
+	   :set(1, 1,  1.0 / scale)
+	   :set(2, 2,  -(far + near) / (far - near))
+	   :set(3, 2,  -1.0)
+	   :set(2, 3,  -(2.0 * far * near) / (far - near))
+       :set(3, 3,  0)
+	
+	return mat
+end
+
 return mat4

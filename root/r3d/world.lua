@@ -98,8 +98,12 @@ end
 local World = batteries.class({ name = "r3d.World" })
 
 ---@class r3d.Camera: r3d.Object
----@field frustum_width number
----@field frustum_height number
+---@field frustum_width number Used for the "top_down_oblique" projection type
+---@field frustum_height number Used for the "top_down_oblique" projection type
+---@field fovy number Used for the "perspective" projection type. In radians.
+---@field near number For "top_down_oblique", recommended to be negative.
+---@field far number
+---@field type "perspective"|"top_down_oblique"
 ---@overload fun():r3d.Camera
 local Camera = batteries.class({ name = "r3d.Camera", extends = Object })
 
@@ -107,6 +111,10 @@ function Camera:new()
     self:super() ---@diagnostic disable-line
     self.frustum_width = 1
     self.frustum_height = 1
+    self.type = "top_down_oblique"
+    self.near = -32.0
+    self.far = 32.0
+    self.fovy = math.rad(70.0)
 end
 
 ---@class r3d.DrawContext
@@ -343,9 +351,17 @@ function World:draw()
     Lg.setColor(1, 1, 1)
 
     -- local shader = self.shaders.base
-
-    local projection =
-        mat4.oblique(self:_push_mat(), 0, self.cam.frustum_width, 0, self.cam.frustum_height, -32, 32)
+    local projection = self:_push_mat()
+    if self.cam.type == "top_down_oblique" then
+        local we = self.cam.frustum_width / 2.0
+        local he = self.cam.frustum_height / 2.0
+        mat4.oblique(projection, -we, we, -he, he, self.cam.near, self.cam.far)
+    elseif self.cam.type == "perspective" then
+        local aspect = DISPLAY_WIDTH / DISPLAY_HEIGHT
+        mat4.perspective(projection, self.cam.fovy, aspect, self.cam.near, self.cam.far)
+    else
+        error("unknown camera projection type")
+    end
 
     for _, shader in pairs(self.shaders) do
         shader:send("u_mat_projection", projection)
@@ -355,7 +371,6 @@ function World:draw()
 
     local view_mat =
         self.cam.transform:inverse(self:_push_mat())
-        * mat4.translation(self:_push_mat(), self.cam.frustum_width / 2, self.cam.frustum_height / 2, 0)
 
     local sp = self._tmp_mat_i
     local view_normal = view_mat:inverse(self:_push_mat())
@@ -482,7 +497,7 @@ function World:draw()
         end
     end
 
-    self:_pop_mat(2)
+    self:_pop_mat(1)
     assert(self._tmp_mat_i == 1)
     Lg.pop()
 end
