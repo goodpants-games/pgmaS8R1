@@ -110,7 +110,7 @@ local function process_file(output, src, require_file)
 
 	for line in str_lines(src) do
 		---@type string?
-		local include_path = string.match(line, "^%s*#include%s(.*)")
+		local include_path = string.match(line, "^%s*#%s*include%s(.*)")
 		if include_path then
 			local is_relative
 

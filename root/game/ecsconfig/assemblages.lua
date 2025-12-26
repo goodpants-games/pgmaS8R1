@@ -83,6 +83,7 @@ function asm.entity.player(e, x, y, health)
     
     e.collision.group = consts.COLGROUP_PLAYER
     e.light.power = 5.0
+    e.light.shadows = true
     e.light.linear = 0.007
     e.light.quadratic = 0.0002
 end

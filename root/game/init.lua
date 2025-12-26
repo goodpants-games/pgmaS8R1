@@ -121,8 +121,9 @@ function Game:new(progression)
 
     local heart_mesh = r3d.mesh.load_obj("res/heart_model.obj")
     self.resources.heart_model = r3d.model(heart_mesh)
+    self.resources.heart_model.double_sided = true
     self.resources.heart_model.shader = self.resources.shader_unshaded
-    self.resources.heart_model.cast_shadow = false
+    -- self.resources.heart_model.cast_shadow = false
 
     self.resources.tileset = Lg.newImage("res/tilesets/test_tileset.png")
     self.resources.edge_tileset, self.resources.edge_tileset_data =

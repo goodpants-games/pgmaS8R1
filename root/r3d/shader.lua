@@ -4,6 +4,8 @@ local bit = require("bit")
 ---@overload fun():r3d.Shader
 local Shader = batteries.class({ name = "r3d.Shader" })
 
+---@alias r3d.ShaderVariant "base"|"no_color"|"shadowed"
+
 ---Internal
 ---@class r3d._ShaderResource
 ---@field hash string?
@@ -150,7 +152,7 @@ local function insert_shader(src, lines)
 end
 
 ---@private
----@param variant "normal"|"no_color"
+---@param variant r3d.ShaderVariant
 function Shader:_compile_shader(variant)
     local vlines = {}
     local flines = {}
@@ -158,14 +160,17 @@ function Shader:_compile_shader(variant)
     insert_defines(self, vlines)
     insert_defines(self, flines)
 
-    table.insert(vlines, "#include <res/shaders/r3d/r3d.vert.glsl>")
+    if variant == "shadowed" then
+        table.insert(vlines, "#define R3D_SHADOWS")
+        table.insert(flines, "#define R3D_SHADOWS")
+    end
 
     if variant == "no_color" then
+        table.insert(vlines, "#include <res/shaders/r3d/r3d_nocolor.vert.glsl>")
         table.insert(flines, "#include <res/shaders/r3d/r3d_nocolor.frag.glsl>")
-    elseif variant == "normal" then
-        table.insert(flines, "#include <res/shaders/r3d/r3d.frag.glsl>")
     else
-        error("unknown shader variant " .. variant)
+        table.insert(vlines, "#include <res/shaders/r3d/r3d.vert.glsl>")
+        table.insert(flines, "#include <res/shaders/r3d/r3d.frag.glsl>")
     end
 
     insert_shader(self.custom_vertex or DEFAULT_VERTEX, vlines)
@@ -187,8 +192,9 @@ function Shader:_create_resource(hash)
         shaders = {}
     }
 
-    res.shaders.normal = self:_compile_shader("normal")
+    res.shaders.base = self:_compile_shader("base")
     res.shaders.no_color = self:_compile_shader("no_color")
+    res.shaders.shadowed = self:_compile_shader("shadowed")
 
     return res
 end
@@ -222,15 +228,15 @@ function Shader:prepare()
     end
 end
 
----@param variant string?
+---@param variant r3d.ShaderVariant?
 ---@return love.Shader
 function Shader:get(variant)
     self:prepare()
 
-    return self._sh.shaders[variant or "normal"]
+    return self._sh.shaders[variant or "base"]
 end
 
----@param variant string?
+---@param variant r3d.ShaderVariant?
 function Shader:use(variant)
     Lg.setShader(self:get(variant))
 end

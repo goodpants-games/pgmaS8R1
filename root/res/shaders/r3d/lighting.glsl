@@ -8,7 +8,9 @@ uniform vec3 u_light_sun_direction;
 uniform vec3 u_light_spot_pos      [R3D_MAX_SPOT_LIGHTS];
 uniform vec4 u_light_spot_dir_angle[R3D_MAX_SPOT_LIGHTS]; // .xyz = dir, .w = cos(angle)
 uniform vec4 u_light_spot_color_pow[R3D_MAX_SPOT_LIGHTS]; // .rgb = color, .a = power
-uniform vec4 u_light_spot_control  [R3D_MAX_SPOT_LIGHTS]; // .x = constant .y = linear, .z = quadratic
+uniform vec4 u_light_spot_control  [R3D_MAX_SPOT_LIGHTS]; // .x = constant .y = linear, .z = quadratic, .w = shadow bias
+uniform mat4 u_light_spot_mat_vp   [R3D_MAX_SPOT_LIGHTS];
+uniform sampler2D u_light_spot_depth[R3D_MAX_SPOT_LIGHTS];
 
 uniform vec3 u_light_point_pos      [R3D_MAX_POINT_LIGHTS];
 uniform vec4 u_light_point_color_pow[R3D_MAX_POINT_LIGHTS]; // .rgb - color, .a = power
@@ -38,6 +40,14 @@ float r3d_calc_light_influence(vec3 light_pos, float light_power,
 
     return light_power * combined_power;
 }
+
+// float linearize_depth(float depth)
+// {
+//     float z = depth * 2.0 - 1.0; // Back to NDC 
+//     float near_plane = 1.0;
+//     float far_plane = 64.0;
+//     return (2.0 * near_plane * far_plane) / (far_plane + near_plane - z * (far_plane - near_plane)) / far_plane;
+// }
 
 float r3d_log_snap(float v, float snap)
 {
@@ -72,12 +82,12 @@ vec3 r3d_calc_lighting(vec3 normal, vec3 view_pos)
 
     for (int i = 0; i < R3D_MAX_SPOT_LIGHTS; ++i)
     {
-        vec3  light_pos       = u_light_spot_pos[i].xyz;
-        vec3  light_dir       = u_light_spot_dir_angle[i].xyz;
-        float light_angle_cos = u_light_spot_dir_angle[i].w;
-        vec3  light_color     = u_light_spot_color_pow[i].rgb;
-        float light_power     = u_light_spot_color_pow[i].a;
-        vec4  light_params    = u_light_spot_control[i];
+        vec3      light_pos       = u_light_spot_pos[i].xyz;
+        vec3      light_dir       = u_light_spot_dir_angle[i].xyz;
+        float     light_angle_cos = u_light_spot_dir_angle[i].w;
+        vec3      light_color     = u_light_spot_color_pow[i].rgb;
+        float     light_power     = u_light_spot_color_pow[i].a;
+        vec4      light_params    = u_light_spot_control[i];
 
         vec3 dir;
         float light_influence =
@@ -88,6 +98,18 @@ vec3 r3d_calc_lighting(vec3 normal, vec3 view_pos)
         float vis_influence = (sign(cone_visibility) + 1.0) / 2.0;
 
         float combined_power = light_influence * vis_influence;
+
+#ifdef R3D_SHADOWS
+        // shadow mapping
+        vec4 spot_view_pos = u_light_spot_mat_vp[i] * vec4(view_pos, 1.0);
+        vec3 view_pos_ndc = spot_view_pos.xyz / spot_view_pos.w;
+        vec3 shadow_stp = (view_pos_ndc + vec3(1.0, 1.0, 1.0)) / 2.0;
+        float shadowmap_depth = Texel(u_light_spot_depth[i], shadow_stp.st).r;
+        float shadow_bias = light_params.w;
+        float shadow_light_value = shadowmap_depth - (shadow_stp.p - shadow_bias);
+        combined_power *= shadow_light_value >= 0.0 ? 1.0 : 0.0;
+#endif
+
         light_source_sum += light_color * combined_power;
     }
 

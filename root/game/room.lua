@@ -330,6 +330,8 @@ function Room:new(game, map_path, data)
         map_edge_mesh:setTexture(game.resources.edge_tileset)
         self._map_edge_model = r3d.model(map_edge_mesh)
         self._map_edge_model.shader = game.resources.shader_alpha_influence
+        self._map_edge_model.cast_shadow = false
+        self._map_edge_model.receive_shadow = false
         self._map_edge_model:set_scale(16, 16, 16)
         self._map_edge_model:set_position(0, 0, -16)
         game.r3d_world:add_object(self._map_edge_model)

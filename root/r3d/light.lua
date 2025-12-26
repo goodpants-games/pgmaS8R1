@@ -11,6 +11,8 @@ function Light:new()
     self.b = 1.0
     self.power = 1.0
     self.enabled = true
+    self.shadows = false
+    self.shadow_bias = 0.0009
 
     self.constant = 1.0
     self.linear = 0.022
