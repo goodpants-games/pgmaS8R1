@@ -1,6 +1,5 @@
 IMPORTANT!!!
-  FIX wasd support (aka remove it?)
-  hitting a heart you can't destroy flashes/shakes resonant freq. display
+  love.data.pack crashes Love/Lua5.2
 
 name: System Shutdown Imminent
       (then, this text should be spammed on death animation)

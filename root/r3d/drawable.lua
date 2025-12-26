@@ -9,6 +9,7 @@ function Drawable:new()
     self.opaque = true
     self.double_sided = false
     self.visible = true
+    self.cast_shadow = true
 end
 
 ---@param draw_ctx r3d.DrawContext

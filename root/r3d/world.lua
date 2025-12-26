@@ -10,6 +10,9 @@ local PointLight = Light.point
 local SPOTLIGHT_COUNT = 2
 local POINT_LIGHT_COUNT = 2
 
+local SPOT_LIGHT_FB_WIDTH = 256
+local SPOT_LIGHT_FB_HEIGHT = 256
+
 ---@param vertexcode string?
 ---@param pixelcode string?
 ---@return love.Shader
@@ -61,6 +64,7 @@ end
 ---@field package _proj mat4
 ---@field package _vn mat3
 ---@field package _processed_shaders {[love.Shader]:boolean}
+---@field package _shadow_pass boolean
 ---@field package _world r3d.World
 ---@overload fun(world:r3d.World):r3d.DrawContext
 local DrawContext = batteries.class({ name = "r3d.DrawContext" })
@@ -71,7 +75,12 @@ end
 
 ---@param shader r3d.Shader
 function DrawContext:activate_shader(shader)
-    local sh = shader:get_raw()
+    local sh_variant = "normal"
+    if self._shadow_pass then
+        sh_variant = "no_color"
+    end
+
+    local sh = shader:get(sh_variant)
     Lg.setShader(sh)
 
     if not self._processed_shaders[sh] then
@@ -133,7 +142,7 @@ function World:new()
     self._tmp_mat = {}
     ---@package
     self._tmp_mat_i = 1
-    for i=1, 16 do
+    for i=1, 32 do
         table.insert(self._tmp_mat, mat4.new())
     end
 
@@ -149,12 +158,12 @@ function World:new()
     self._draw_ctx = DrawContext(self)
 
     ---@package
-    ---@type {pos:number[][], dir_angle:number[][], color_pow:number[][], control:number[][]}
     self._u_spotlights = {
         pos = {},
         dir_angle = {},
         color_pow = {},
-        control = {}
+        control = {},
+        depth_buffers = {}
     }
 
     ---@package
@@ -170,6 +179,9 @@ function World:new()
         self._u_spotlights.dir_angle[i] = { 0.0, 0.0, 0.0, 0.0 }
         self._u_spotlights.color_pow[i] = { 0.0, 0.0, 0.0, 0.0 }
         self._u_spotlights.control[i] = { 0.0, 0.0, 0.0, 0.0 }
+        self._u_spotlights.depth_buffers[i] =
+            Lg.newCanvas(SPOT_LIGHT_FB_WIDTH, SPOT_LIGHT_FB_HEIGHT,
+                         { format = "depth16", dpiscale = 1.0, readable = true })
     end
 
     for i=1, POINT_LIGHT_COUNT do
@@ -183,6 +195,9 @@ function World:new()
 end
 
 function World:release()
+    for _, fb in ipairs(self._u_spotlights.depth_buffers) do
+        fb:release()
+    end
 end
 
 ---@private
@@ -251,7 +266,8 @@ end
 ---@param proj_mat mat4
 ---@param view_mat mat4
 ---@param view_normal mat3
-function World:_draw_object(obj, proj_mat, view_mat, view_normal)
+---@param shadow_pass boolean
+function World:_draw_object(obj, proj_mat, view_mat, view_normal, shadow_pass)
     if not obj.visible then
         return
     end
@@ -269,6 +285,7 @@ function World:_draw_object(obj, proj_mat, view_mat, view_normal)
 
     self._draw_ctx._proj = proj_mat
     self._draw_ctx._vn = view_normal
+    self._draw_ctx._shadow_pass = shadow_pass
 
     if obj.double_sided then
         Lg.setMeshCullMode("none")
@@ -285,14 +302,17 @@ end
 ---@param proj_mat mat4
 ---@param view_mat mat4
 ---@param view_normal mat3
-function World:_draw_objects(proj_mat, view_mat, view_normal)
+---@param shadow_pass boolean
+function World:_draw_objects(proj_mat, view_mat, view_normal, shadow_pass)
+    self._global_processed_shaders = {}
+
     -- opaque pass
     Lg.setDepthMode("less", true)
     for _, obj in ipairs(self.objects) do
         if obj:is(Drawable) then
             ---@cast obj r3d.Drawable
-            if obj.opaque and obj.visible then
-                self:_draw_object(obj, proj_mat, view_mat, view_normal)
+            if obj.opaque and obj.visible and (not shadow_pass or obj.cast_shadow) then
+                self:_draw_object(obj, proj_mat, view_mat, view_normal, shadow_pass)
             end
         end
     end
@@ -304,8 +324,8 @@ function World:_draw_objects(proj_mat, view_mat, view_normal)
     for _, obj in ipairs(self.objects) do
         if obj:is(Drawable) then
             ---@cast obj r3d.Drawable
-            if not obj.opaque and obj.visible then
-                self:_draw_object(obj, proj_mat, view_mat, view_normal)
+            if not obj.opaque and obj.visible and (not shadow_pass or obj.cast_shadow) then
+                self:_draw_object(obj, proj_mat, view_mat, view_normal, shadow_pass)
             end
         end
     end
@@ -313,7 +333,6 @@ end
 
 function World:draw()
     self._tmp_mat_i = 1
-    self._global_processed_shaders = {}
 
     Lg.push("all")
     Lg.setColor(1, 1, 1)
@@ -349,6 +368,8 @@ function World:draw()
                     goto continue
                 end
 
+                local sp = self._tmp_mat_i
+
                 local px, py, pz = obj:get_position()
                 local dx, dy, dz = obj:get_light_direction()
 
@@ -356,6 +377,7 @@ function World:draw()
                 local u_dir_ang   = self._u_spotlights.dir_angle[spotlight_i]
                 local u_color_pow = self._u_spotlights.color_pow[spotlight_i]
                 local u_control   = self._u_spotlights.control[spotlight_i]
+                local depth_buf   = self._u_spotlights.depth_buffers[spotlight_i]
                 
                 u_pos[1], u_pos[2], u_pos[3] = view_mat:mul_vec(px, py, pz)
 
@@ -367,7 +389,25 @@ function World:draw()
 
                 u_control[1], u_control[2], u_control[3] = obj.constant, obj.linear, obj.quadratic
 
+                -- render shadow map
+                local light_proj = self:_push_mat():perspective(obj.angle * 2.0, 1.0, 2.0, 500.0)
+                local light_view_mat =
+                    (mat4.rotation_y(nil, math.pi / 2.0) * obj.transform):inverse()
+                local light_view_normal =
+                    light_view_mat:inverse(self:_push_mat())
+                                  :transpose(self:_push_mat())
+                                  :to_mat3()
+
+                Lg.push("all")
+                Lg.setCanvas({ depthstencil = depth_buf })
+                Lg.clear()
+                self:_draw_objects(light_proj, light_view_mat, light_view_normal, true)
+                Lg.pop()
+
+                self:_restore_mat_stack(sp)
+
                 spotlight_i = spotlight_i + 1
+
 
             elseif pointlight_i <= POINT_LIGHT_COUNT and obj:is(PointLight) then
                 ---@cast obj r3d.PointLight
@@ -417,10 +457,13 @@ function World:draw()
         end
     end
     
-    self:_draw_objects(projection, view_mat, view_normal)
+    self:_draw_objects(projection, view_mat, view_normal, false)
     self:_restore_mat_stack(1)
     assert(self._tmp_mat_i == 1)
     Lg.pop()
+
+    Lg.setColor(1, 1, 1)
+    Lg.draw(self._u_spotlights.depth_buffers[1], 0, 0, 0., 0.5, 0.5)
 end
 
 ---@param object r3d.Object

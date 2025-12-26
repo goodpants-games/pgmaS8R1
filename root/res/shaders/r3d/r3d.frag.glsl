@@ -10,7 +10,7 @@ varying vec3 v_light_influence;
 #endif
 
 vec4 r3d_frag(vec4 color, vec4 tex_color, Image tex, vec2 texture_coords,
-              vec2 screen_coords, vec3 light_influence);
+              vec3 light_influence);
 
 vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
 {
@@ -29,6 +29,5 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
     vec3 light_influence = vec3(1.0, 1.0, 1.0);
 #endif
 
-    return r3d_frag(color, tex_color, tex, texture_coords, screen_coords,
-                    light_influence);
+    return r3d_frag(color, tex_color, tex, texture_coords, light_influence);
 }

@@ -5,10 +5,10 @@ local bit = require("bit")
 local Shader = batteries.class({ name = "r3d.Shader" })
 
 ---Internal
----@class r3d.ShaderResource
----@field hash string
----@field shader love.Shader
----@field refs {[r3d.Shader]:boolean}
+---@class r3d._ShaderResource
+---@field hash string?
+---@field shaders {[string]:love.Shader}
+---@field refs {[r3d.Shader]:boolean}?
 
 local DEFAULT_VERTEX = [[
 vec3 r3d_vert(vec3 vertex_position)
@@ -19,23 +19,14 @@ vec3 r3d_vert(vec3 vertex_position)
 
 local DEFAULT_FRAGMENT = [[
 vec4 r3d_frag(vec4 color, vec4 tex_color, Image tex, vec2 texture_coords,
-              vec2 screen_coords, vec3 light_influence)
+              vec3 light_influence)
 {
     return color * tex_color * vec4(light_influence, 1.0);
 }
 ]]
 
----@type {[string]:r3d.ShaderResource}
+---@type {[string]:r3d._ShaderResource}
 local shader_cache = setmetatable({}, { __mode = "v" })
-
----@param obj any
----@return boolean
-local function is_love_shader(obj)
-    if obj == nil or type(obj.typeOf) ~= "function" then
-        return false
-    end
-    return not not obj:typeOf("Shader")
-end
 
 function Shader:new()
     self._max_spot_lights = 4
@@ -53,8 +44,11 @@ function Shader:new()
     self.custom_fragment = nil
 
     ---@private
-    ---@type r3d.ShaderResource|love.Shader
+    ---@type r3d._ShaderResource?
     self._sh = nil
+
+    ---@private
+    self._unique = false
 
     ---@private
     ---@type string
@@ -81,8 +75,8 @@ function Shader:_pack_config()
     assert(shtype <= 2)
 
     int = bit.bor(int, shtype)
-    if self.alpha_discard        then int = bit.bor(int, 4) end
-    if self.light_ignore_normals then int = bit.bor(int, 8) end
+    if self.alpha_discard        then int = bit.bor(int, 4)  end
+    if self.light_ignore_normals then int = bit.bor(int, 8)  end
 
     -- print("A")
     local v = love.data.pack("string", "<I2I2I4",
@@ -95,20 +89,26 @@ function Shader:release()
     self:invalidate()
 end
 
+---@param sh r3d._ShaderResource
+local function release_resource(sh)
+    for _, v in pairs(sh.shaders) do
+        v:release()
+    end
+    table.clear(sh.shaders)
+end
+
 function Shader:invalidate()
     local sh = self._sh
     self._sh = nil
 
     if sh then
-        if is_love_shader(sh) then
-            ---@cast sh love.Shader
-            sh:release()
+        if self._unique then
+            release_resource(sh)
         else
-            ---@cast sh r3d.ShaderResource
             sh.refs[self] = nil
             if not next(sh.refs) then
                 shader_cache[sh.hash] = nil
-                sh.shader:release()
+                release_resource(sh)
             end
         end
     end
@@ -149,10 +149,9 @@ local function insert_shader(src, lines)
     end
 end
 
----@param self r3d.Shader
----@param vert string?
----@param frag string?
-local function create_shader(self, vert, frag)
+---@private
+---@param variant "normal"|"no_color"
+function Shader:_compile_shader(variant)
     local vlines = {}
     local flines = {}
 
@@ -160,15 +159,38 @@ local function create_shader(self, vert, frag)
     insert_defines(self, flines)
 
     table.insert(vlines, "#include <res/shaders/r3d/r3d.vert.glsl>")
-    table.insert(flines, "#include <res/shaders/r3d/r3d.frag.glsl>")
 
-    insert_shader(vert or DEFAULT_VERTEX, vlines)
-    insert_shader(frag or DEFAULT_FRAGMENT, flines)
+    if variant == "no_color" then
+        table.insert(flines, "#include <res/shaders/r3d/r3d_nocolor.frag.glsl>")
+    elseif variant == "normal" then
+        table.insert(flines, "#include <res/shaders/r3d/r3d.frag.glsl>")
+    else
+        error("unknown shader variant " .. variant)
+    end
+
+    insert_shader(self.custom_vertex or DEFAULT_VERTEX, vlines)
+    insert_shader(self.custom_fragment or DEFAULT_FRAGMENT, flines)
 
     local vsrc = table.concat(vlines, "\n")
     local fsrc = table.concat(flines, "\n")
 
+    print("Compile Shader")
     return Lg.newShader(fsrc, vsrc)
+end
+
+---@private
+---@param hash string?
+function Shader:_create_resource(hash)
+    ---@type r3d._ShaderResource
+    local res = {
+        hash = hash,
+        shaders = {}
+    }
+
+    res.shaders.normal = self:_compile_shader("normal")
+    res.shaders.no_color = self:_compile_shader("no_color")
+
+    return res
 end
 
 ---@private
@@ -176,16 +198,15 @@ function Shader:_recompile()
     self:invalidate()
 
     if self.custom_vertex or self.custom_fragment then
-        self._sh = create_shader(self, self.custom_vertex, self.custom_fragment)
+        self._unique = true
+        self._sh = self:_create_resource()
     else
+        self._unique = false
         local hash = self:_pack_config()
         local sh = shader_cache[hash]
         if not sh then
-            sh = {
-                hash = hash,
-                shader = create_shader(self, self.custom_vertex, self.custom_fragment),
-                refs = setmetatable({}, { __mode = "k" })
-            }
+            sh = self:_create_resource(hash)
+            sh.refs = setmetatable({}, { __mode = "k" })
             shader_cache[hash] = sh
         end
         sh.refs[self] = true
@@ -201,31 +222,17 @@ function Shader:prepare()
     end
 end
 
+---@param variant string?
 ---@return love.Shader
-function Shader:get_raw()
+function Shader:get(variant)
     self:prepare()
 
-    if is_love_shader(self._sh) then
-        return self._sh --[[@as love.Shader]]
-    else
-        return self._sh.shader
-    end
+    return self._sh.shaders[variant or "normal"]
 end
 
-function Shader:use()
-    Lg.setShader(self:get_raw())
-end
-
----@param name any
----@param ... any
-function Shader:send(name, ...)
-    self:get_raw():send(name, ...)
-end
-
----@param name string
----@return boolean
-function Shader:hasUniform(name)
-    return self:get_raw():hasUniform(name)
+---@param variant string?
+function Shader:use(variant)
+    Lg.setShader(self:get(variant))
 end
 
 return Shader

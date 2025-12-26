@@ -103,11 +103,13 @@ function Game:new(progression)
     self.r3d_sprite_batch = r3d.batch(2048)
     self.r3d_sprite_batch.opaque = false
     self.r3d_sprite_batch.double_sided = true
+    self.r3d_sprite_batch.cast_shadow = false
     self.r3d_sprite_batch.base_shader = self.resources.shader_ignore_normal
 
     self.r3d_batch = r3d.batch(2048)
     self.r3d_batch.opaque = true
     self.r3d_batch.double_sided = false
+    self.r3d_batch.cast_shadow = false
     self.r3d_batch.base_shader = self.resources.shader_unshaded
 
     self.r3d_world:add_object(self.r3d_batch)
@@ -120,6 +122,7 @@ function Game:new(progression)
     local heart_mesh = r3d.mesh.load_obj("res/heart_model.obj")
     self.resources.heart_model = r3d.model(heart_mesh)
     self.resources.heart_model.shader = self.resources.shader_unshaded
+    self.resources.heart_model.cast_shadow = false
 
     self.resources.tileset = Lg.newImage("res/tilesets/test_tileset.png")
     self.resources.edge_tileset, self.resources.edge_tileset_data =
