@@ -6,7 +6,6 @@ local sceneman = require("sceneman")
 local fontres = require("fontres")
 
 local display_canvas = Lg.newCanvas(DISPLAY_WIDTH, DISPLAY_HEIGHT, { dpiscale = 1.0 })
-local display_depth = Lg.newCanvas(DISPLAY_WIDTH, DISPLAY_HEIGHT, { dpiscale = 1.0, format = "depth16" })
 
 local display_ox = 0.0
 local display_oy = 0.0
@@ -107,7 +106,7 @@ end
 function love.draw()
     local draw_ts = love.timer.getTime()
 
-    Lg.setCanvas({ display_canvas, depthstencil = display_depth })
+    Lg.setCanvas(display_canvas)
     local bg_r, bg_g, bg_b, bg_a = Lg.getBackgroundColor()
     Lg.clear(bg_r, bg_g, bg_b, bg_a)
 

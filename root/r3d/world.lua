@@ -198,11 +198,20 @@ function World:new()
 
     ---@package
     self._global_processed_shaders = {}
+
+    ---@private
+    ---@type love.Canvas?
+    self._depth_rbuf = nil
 end
 
 function World:release()
     for _, fb in ipairs(self._u_spotlights.depth_buffers) do
         fb:release()
+    end
+
+    if self._depth_rbuf then
+        self._depth_rbuf:release()
+        self._depth_rbuf = nil
     end
 end
 
@@ -340,6 +349,7 @@ end
 
 function World:draw()
     self._tmp_mat_i = 1
+    local base_canvas = Lg.getCanvas()
 
     Lg.push("all")
     Lg.setColor(1, 1, 1)
@@ -481,6 +491,26 @@ function World:draw()
             u_color_pow[1], u_color_pow[2], u_color_pow[3], u_color_pow[4] = 0, 0, 0, 0
             u_control[1], u_control[2], u_control[3], u_control[4] = 1, 0, 0, 0
         end
+    end
+
+    if base_canvas then
+        local rw = base_canvas:getPixelWidth()
+        local rh = base_canvas:getPixelHeight()
+        if not self._depth_rbuf
+           or  self._depth_rbuf:getPixelWidth() ~= rw
+           or  self._depth_rbuf:getPixelHeight() ~= rh
+        then
+            if self._depth_rbuf then
+                self._depth_rbuf:release()
+            end
+
+            self._depth_rbuf = Lg.newCanvas(rw, rh, { dpiscale = 1.0, format = "depth16" })
+        end
+
+        Lg.setCanvas({ base_canvas, depthstencil = self._depth_rbuf })
+        Lg.clear(false, false, true) -- clear only depth buffer
+    else
+        Lg.setCanvas({ depth = true })
     end
     
     self:_draw_objects(projection, view_mat, view_normal, false)
