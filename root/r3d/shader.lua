@@ -179,7 +179,6 @@ function Shader:_compile_shader(variant)
     local vsrc = table.concat(vlines, "\n")
     local fsrc = table.concat(flines, "\n")
 
-    print("Compile Shader")
     return Lg.newShader(fsrc, vsrc)
 end
 
