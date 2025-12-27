@@ -5,11 +5,11 @@ local Terminal = batteries.class {
 }
 
 local fontres = require("fontres")
+local utf8 = require("utf8")
 
 ---@param process_env table?
 ---@param no_startup_msg boolean?
 function Terminal:new(process_env, no_startup_msg)
-    self.lines = {""}
     self.font = fontres.departure
 
     local char_width = self.font:getWidth("X")
@@ -18,9 +18,13 @@ function Terminal:new(process_env, no_startup_msg)
     self.cols = math.floor(DISPLAY_WIDTH / char_width)
     self.rows = math.floor(DISPLAY_HEIGHT / char_height)
 
-    self.cursor_x = 1
-    self.cursor_y = 1
-    self.text_buffer = ""
+    self.input_buffer = ""
+    self.cursor_pos = 1
+    self.buffer = {}
+
+    for i=1, self.cols * self.rows do
+        self.buffer[i] = 32
+    end
 
     self.cur_process = nil
     self.cur_process_time_accum = nil
@@ -60,8 +64,7 @@ Loaded intelligence modules:
 - Recursive transform neural
   network
 
-Type "help" and press Enter to get
-a list of commands.
+Type "help" and press Enter to geta list of commands.
 
 Type "start" and press Enter to
 fully boot up the machine. (start
@@ -76,8 +79,7 @@ the game)
 
         self:puts(startup_msg:format(pcol + 18))
     else
-        self:puts[[Type "help" and press Enter to get
-a list of commands.
+        self:puts[[Type "help" and press Enter to geta list of commands.
 
 
 ]]
@@ -90,10 +92,75 @@ function Terminal:release()
 end
 
 ---@private
+function Terminal:_line_shift()
+    local r, c = self.rows, self.cols
+    local last_row = (r-1) * c + 1
+    for i=1, last_row - 1 do
+        self.buffer[i] = self.buffer[i+c]
+    end
+
+    for i=last_row, r*c do
+        self.buffer[i] = 32
+    end
+
+    self.cursor_pos = self.cursor_pos - self.cols
+end
+
 function Terminal:_newline()
-    self.lines[#self.lines+1] = ""
-    if #self.lines > self.rows then
-        table.remove(self.lines, 1)
+    local cx, cy = self:cpos()
+    if cy == self.rows then
+        print("Need line shift")
+        self:_line_shift()
+        cy=cy-1
+    end
+    self.cursor_pos = self:_idx(1, cy+1)
+end
+
+---@private
+---@param x number
+---@param y number
+function Terminal:_idx(x, y)
+    if x < 1 or y < 1 or x > self.cols or y > self.rows then
+        error("given position is out of bounds", 2)
+    end
+
+    return (y-1) * self.cols + (x-1) + 1
+end
+
+---@return integer x, integer y
+function Terminal:cpos()
+    local cpos = self.cursor_pos - 1
+    local x = cpos % self.cols + 1
+    local y = math.floor(cpos / self.cols) + 1
+    return x, y
+end
+
+---@private
+---@param x integer
+---@param y integer
+---@param ch integer
+function Terminal:set_char(x, y, ch)
+    self.buffer[self:_idx(x, y)] = ch
+end
+
+---@param x integer
+---@param y integer
+function Terminal:go_to(x, y)
+    self.cursor_pos = self:_idx(x, y)
+end
+
+---@param ch integer
+function Terminal:_putc(ch)
+    if ch == 10 then
+        self:_newline()
+    else
+        self.buffer[self.cursor_pos] = ch
+        self.cursor_pos = self.cursor_pos + 1
+
+        if self.cursor_pos > self.rows * self.cols then
+            self:_line_shift()
+            self.cursor_pos = self:_idx(1, self.rows)
+        end
     end
 end
 
@@ -101,47 +168,8 @@ end
 function Terminal:puts(...)
     for i=1, select("#", ...) do
         local text = select(i, ...)
-
-        local s = 1
-        local full_len = text:len()
-        while s <= full_len do
-            local li = #self.lines
-            local free = self.cols - self.lines[li]:len()
-
-            local e
-            local nl = string.find(text, "\n", s, true)
-            if nl then
-                e = nl - 1
-            else
-                e = full_len
-            end
-
-            if free >= e - s + 1 then
-                self.lines[li] = self.lines[li] .. text:sub(s, e)
-                s = e + 1
-            else
-                self.lines[li] = self.lines[li] .. text:sub(s, s + free - 1)
-                s = s + free
-                self:_newline()
-            end
-
-            if text:sub(s,s) == "\n" then
-                s=s+1
-                self:_newline()
-            end
-        end
-    end
-
-    self.cursor_y = #self.lines
-    self.cursor_x = self.lines[self.cursor_y]:len() + 1
-    -- print(self.cursor_x, self.cols)
-    if self.cursor_x > self.cols then
-        -- newline()
-        self.cursor_x = 1
-        self.cursor_y = self.cursor_y + 1
-        if self.cursor_y > self.rows then
-            self.cursor_y = self.rows
-            self:_newline()
+        for _, ch in utf8.codes(text) do
+            self:_putc(ch)
         end
     end
 end
@@ -161,34 +189,17 @@ function Terminal:print(...)
 end
 
 function Terminal:backspace()
-    if not self.lines[1] then return end
-
-    if self.cursor_x == 1 then
-        if self.cursor_y == 1 then
-            return
-        end
-
-        assert(self.cursor_y == #self.lines)
-        table.remove(self.lines)
-        self.cursor_y = self.cursor_y - 1
-        self.cursor_x = #self.lines[self.cursor_y] + 1
-    end
-
-    if self.lines[self.cursor_y]:len() > 0 then
-        self.lines[self.cursor_y] = self.lines[self.cursor_y]:sub(1, -2)
-        self.cursor_x = self.cursor_x - 1
-    end
-    -- if self.cursor_x < 1 then
-    --     self.cursor_y = self.cursor_y - 1
-    --     self.cursor_x = #self.lines[self.cursor_y]
-    -- end
+    self.cursor_pos = math.max(1, self.cursor_pos - 1)
+    self.buffer[self.cursor_pos] = 32
 end
 
 ---@param no_prompt_string boolean?
 function Terminal:clear(no_prompt_string)
-    self.lines = {""}
-    self.cursor_x = 1
-    self.cursor_y = 1
+    for i=1, self.rows * self.cols do
+        self.buffer[i] = 32
+    end
+
+    self.cursor_pos = 1
 
     if not no_prompt_string then
         self:puts(">")
@@ -278,9 +289,10 @@ end
 function Terminal:text_input(text)
     if self.cur_process_wait_mode == "char" then
         local ti = 1
-        local strlen = text:len()
+        local textcp = { utf8.codepoint(text, 1, -1) }
+        local strlen = #textcp
         while ti <= strlen and self.cur_process_wait_mode == "char" do
-            self:_resume_process(text:sub(ti, ti))
+            self:_resume_process(utf8.char(textcp[ti]))
             ti=ti+1
         end
         return
@@ -298,11 +310,11 @@ function Terminal:text_input(text)
         elseif text_end == text_start then
             self:puts("\n")
             if self.cur_process == nil then
-                self:execute_command(self.text_buffer:lower())
-                self.text_buffer = ""
+                self:execute_command(self.input_buffer:lower())
+                self.input_buffer = ""
             elseif self.cur_process_wait_mode == "line" then
-                self:_resume_process(self.text_buffer:lower())
-                self.text_buffer = ""
+                self:_resume_process(self.input_buffer:lower())
+                self.input_buffer = ""
             end
             
             text_start = text_end + 1
@@ -310,7 +322,7 @@ function Terminal:text_input(text)
         end
 
         local slice = string.sub(text, text_start, text_end - 1)
-        self.text_buffer = self.text_buffer .. slice
+        self.input_buffer = self.input_buffer .. slice
         self:puts(slice)
 
         text_start = text_end
@@ -343,10 +355,19 @@ function Terminal:key_pressed(key)
     if key == "backspace" then
         if self.cur_process_wait_mode == "char" then
             self:_resume_process("backspace")
-        elseif self.text_buffer:len() > 0 then
-            self:backspace()
-            self.text_buffer = self.text_buffer:sub(1, -2)
-            self._cursor_time = 0.0
+        else
+            local len = utf8.len(self.input_buffer)
+            if len > 0 then
+                self:backspace()
+
+                if len == 1 then
+                    self.input_buffer = ""
+                else
+                    self.input_buffer = self.input_buffer:sub(1, utf8.offset(self.input_buffer, -1) - 1)
+                end
+
+                self._cursor_time = 0.0
+            end
         end
 
         return
@@ -388,12 +409,24 @@ function Terminal:draw(bg_opacity)
 
     local line_height = self.font:getBaseline()
     local char_w = self.font:getWidth("X")
-    for i, line in ipairs(self.lines) do
-        Lg.print(line, 1, line_height * (i - 1))
+
+    for row=1, self.rows do
+        for col=1 , self.cols do
+            local cp = self.buffer[self:_idx(col, row)]
+            if cp ~= 32 then
+                Lg.print(utf8.char(cp),
+                         char_w * (col -1) + 1,
+                         line_height * (row - 1))
+            end
+        end
+        -- local rs = (row-1) * self.cols + 1
+        -- local re = rs + self.cols - 1
+        -- local line = utf8.char(unpack(self.buffer, rs, re))
     end
 
     if self._cursor_time % 1.0 < 0.5 then
-        Lg.rectangle("fill", (self.cursor_x - 1) * char_w + 1, (self.cursor_y - 1) * line_height + 1, 1, line_height)
+        local cx, cy = self:cpos()
+        Lg.rectangle("fill", (cx - 1) * char_w + 1, (cy - 1) * line_height + 1, 1, line_height)
     end
 
     Lg.pop()

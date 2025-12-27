@@ -107,15 +107,18 @@ local options = {
 
 local function display_help()
     puts
-[[Usage: pref SETTING [VALUE]
-       pref [OPTIONS...]
+[[    pref OPTION [VALUE]
 Sets the SETTING setting to VALUE.
 If VALUE is not given, it will
 instead print the current setting.
 
+    pref list PAGE
+List page no. PAGE of the
+preferences list, starting from 1.
+
   -h --help   Show this help
               screen.
-  -l --list   Show list of
+  -l --list <page>   Show list of
               available options.
 
 Type "pref -l" to list options. 
@@ -147,6 +150,8 @@ if arg_value then
     if not s then
         display_help()
         print("error: " .. err)
+    else
+        print(("%s set to %s"):format(arg_option, opt_data.get()))
     end
 else
     print(opt_data.get())

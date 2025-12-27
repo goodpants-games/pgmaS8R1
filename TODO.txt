@@ -1,5 +1,6 @@
 IMPORTANT!!!
   love.data.pack crashes Love/Lua5.2
+  typing the name of a file in terminal will automatically open the reader
 
 name: System Shutdown Imminent
       (then, this text should be spammed on death animation)

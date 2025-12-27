@@ -12,8 +12,7 @@ if not GameProgression.progression then
 [[Choose game difficulty.
 EASY:    Ping penalty is lowered.
 NORMAL:  Balanced difficulty.
-HARD:    Destroying cores recovers
-         no HP. Enemies do more
+HARD:    Destroying cores recovers         no HP. Enemies do more
          damage.
 EVIL:    For those who are sick
          in the head.
